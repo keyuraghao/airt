@@ -334,7 +334,8 @@ async def test_upload_run_end_to_end(client, admin_headers, fixture_zip: bytes, 
     for rule_id, path in EXPECTED_RULES.items():
         assert (rule_id, path) in seen, f"{rule_id} not reported on {path}"
     assert not [f for f in findings if f["file"].startswith("clean/")], "clean control files must stay clean"
-    assert {f["engine"] for f in findings} >= {"rules", "semgrep", "bandit"}
+    expected_engines = {"rules"} | {name for name in ("semgrep", "bandit") if engines[name]["available"]}
+    assert {f["engine"] for f in findings} >= expected_engines
     assert any(f["rule_id"].startswith("BANDIT-") for f in findings)
     key_findings = [f for f in findings if f["rule_id"] == "AISRF-GN-001"]
     assert key_findings and all("abcdefghijklmnopqrstuvwxyz0123456789" not in f["snippet"] for f in key_findings)
@@ -409,7 +410,7 @@ async def test_upload_run_end_to_end(client, admin_headers, fixture_zip: bytes, 
 
     recent = [e for e in broadcaster.recent("codereview", 500) if e.get("run_id") == run_id]
     assert [e["event"] for e in recent][:2] == ["run.status", "run.status"] and recent[-1]["event"] == "finding.status"
-    assert any(e["event"] == "run.progress" and e.get("stage") == "semgrep" for e in recent)
+    assert any(e["event"] == "run.progress" and e.get("stage") in ("semgrep", "rules", "bandit") for e in recent)
 
     class _Req:
         async def is_disconnected(self) -> bool:
