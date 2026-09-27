@@ -1,6 +1,9 @@
 name: CI
 
 on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
   push:
     branches: [main]
   pull_request:
@@ -64,7 +67,7 @@ jobs:
       - name: Create venv and install
         run: |
           uv venv .venv --python ${{ matrix.python }}
-          uv pip install --python .venv/bin/python -e ".[dev]" pytest-cov
+          uv pip install --python .venv/bin/python -e ".[dev,codereview]" pytest-cov
       - name: Ruff check (strict)
         continue-on-error: false
         run: .venv/bin/ruff check --output-format=github aisrf tests examples
@@ -103,6 +106,24 @@ jobs:
         run: |
           .venv/bin/aisrf version
           .venv/bin/aisrf --help > /dev/null
+
+  heavy-extras:
+    # garak, PyRIT, LLM Guard and NeMo pull multi-gigabyte ML dependencies; run on demand or weekly.
+    name: heavy extras (scanners + guardrails)
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Create venv and install everything
+        run: |
+          uv venv .venv --python 3.12
+          uv pip install --python .venv/bin/python -e ".[dev,all]"
+      - name: Scanner and guardrail tests
+        env:
+          AISRF_SECRET_KEY: ci-only-secret-key-not-for-production-use
+        run: .venv/bin/python -m pytest tests/test_scanners.py tests/test_guardrails.py tests/test_codereview.py -q
 
   node:
     name: node sdk self-test
