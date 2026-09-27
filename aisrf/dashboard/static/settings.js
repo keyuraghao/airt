@@ -2,7 +2,7 @@
   "use strict";
   var A = window.AISRF;
   var MASK = "********";
-  var INTEGRATIONS = ["llm_guard", "nemo_guardrails", "lakera", "rebuff", "garak", "promptfoo", "pyrit", "pyrit_ship"];
+  var INTEGRATIONS = ["typesafe", "llm_guard", "nemo_guardrails", "lakera", "rebuff", "garak", "promptfoo", "pyrit", "pyrit_ship"];
   var SEVERITIES = ["INFO", "LOW", "MEDIUM", "HIGH", "CRITICAL"];
 
   /* ---------- generic controls ---------- */

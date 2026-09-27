@@ -23,6 +23,7 @@
 - [[Analyzers]]
 - [[Taxonomy-and-OWASP-Mapping]]
 - [[Guardrails]]
+- [[TypeSafe-Integration]]
 - [[Canary-Words]]
 - [[Custom-Rules]]
 

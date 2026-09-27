@@ -22,7 +22,7 @@
         <select id="f-severity"><option value="">Any severity</option><option>CRITICAL</option><option>HIGH</option><option>MEDIUM</option><option>LOW</option><option>INFO</option></select>
         <select id="f-pack"><option value="">All packs</option></select>
         <select id="f-engine"><option value="">All engines</option><option>rules</option><option>semgrep</option><option>bandit</option><option>llm</option></select>
-        <select id="f-status"><option value="">Any status</option><option value="open">open</option><option value="false_positive">false positive</option><option value="accepted">accepted</option></select>
+        <select id="f-status"><option value="open,false_positive,accepted">Any status</option><option value="open">open</option><option value="false_positive">false positive</option><option value="likely_false_positive">likely false positive (TypeSafe)</option><option value="accepted">accepted</option><option value="">Everything incl. likely false positives</option></select>
         <input type="search" id="f-file" placeholder="File path">
         <input type="search" id="f-search" placeholder="Search rule, title, snippet">
       </div>

@@ -22,9 +22,22 @@
       else container.appendChild(bar);
       container.appendChild(legend);
     }
+    var typesafe = null;
+    function typesafeTile() {
+      /* "TypeSafe savings" tile fed by GET /api/settings/typesafe/status, only while the integration is enabled */
+      if (!typesafe || !typesafe.enabled) return null;
+      var sv = typesafe.savings || {};
+      var dollars = Number(sv.dollars_saved || 0);
+      var value = "$" + (dollars >= 100 ? dollars.toFixed(0) : dollars >= 1 ? dollars.toFixed(2) : dollars.toFixed(4)) + " saved";
+      var tokens = Number(sv.tokens_saved || 0);
+      var sub = (typesafe.calls || 0) + " calls, " + (typesafe.cache_hits || 0) + " cached, " + (tokens >= 1000000 ? (tokens / 1000000).toFixed(1) + "M" : tokens >= 1000 ? (tokens / 1000).toFixed(1) + "k" : tokens) + " judge tokens avoided";
+      return tile("TypeSafe savings", value, sub, typesafe.last_error ? "hot" : "ok");
+    }
     function render(s) {
       var tiles = A.$("#tiles");
       A.clear(tiles);
+      var ts = typesafeTile();
+      if (ts) tiles.appendChild(ts);
       tiles.appendChild(tile("Pending review", s.pending || 0, "waiting for a decision", s.pending ? "hot" : "ok"));
       tiles.appendChild(tile("Total tickets", s.total || 0, "all time"));
       tiles.appendChild(tile("Denied", (s.by_status && s.by_status.DENIED) || 0, "blocked before upstream"));
@@ -54,7 +67,9 @@
       document.head.appendChild(A.el("style", { text: css }));
     }
     statusStyle();
-    function loadStats() { return A.get("/api/tickets/stats").then(render).catch(A.fail); }
+    function loadStats() {
+      return A.get("/api/settings/typesafe/status").catch(function () { return null; }).then(function (t) { typesafe = t; return A.get("/api/tickets/stats"); }).then(render).catch(A.fail);
+    }
     function loadPending() {
       A.get("/api/tickets?status=PENDING&limit=8").then(function (r) {
         var box = A.$("#recent-pending");

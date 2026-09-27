@@ -540,6 +540,10 @@ input[type="color"] { width: 44px; height: 30px; padding: 2px; border: 1px solid
 .match-ok { color: var(--danger); font-weight: 600; }
 .match-no { color: var(--text-faint); }
 .chip.owasp { background: var(--crit-bg); color: var(--crit); border-color: transparent; }
+.chip.typesafe-malicious { background: var(--crit-bg); color: var(--crit); border-color: transparent; }
+.chip.typesafe-benign { background: var(--ok-bg, var(--bg-elev-2)); color: var(--ok); border-color: transparent; }
+.chip.typesafe-uncertain, .chip.typesafe-likely_false_positive, .chip.typesafe-true_positive { background: var(--info-bg); color: var(--info); border-color: transparent; }
+.typesafe table { width: 100%; margin-top: 6px; }
 .chip.greshake { background: var(--info-bg); color: var(--info); border-color: transparent; }
 .chip.thacker { background: var(--warn-bg); color: var(--warn); border-color: transparent; }
 .raw-editor textarea { min-height: 260px; }

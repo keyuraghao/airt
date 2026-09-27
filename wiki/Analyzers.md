@@ -14,7 +14,8 @@ All code lives in `aisrf/analysis/`: `base.py` (types and scoring), `runner.py` 
 
 1. imports `aisrf.analysis.analyzers`, which registers the nine built-in request analyzers and seven response analyzers, and the LLM judge pair when `enable_llm_judge` is true;
 2. registers `custom_rules` (request) and `custom_rules_response` (response);
-3. imports `aisrf.guardrails`, which registers `rebuff`, `llm_guard_input`, `nemo_guardrails_input`, `lakera_guard` (request) and `llm_guard_output`, `nemo_guardrails_output`, `lakera_guard_output` (response). A failure to import the guardrails package is logged as `guardrails.load_failed` and ignored.
+3. imports `aisrf.guardrails`, which registers `rebuff`, `llm_guard_input`, `nemo_guardrails_input`, `lakera_guard` (request) and `llm_guard_output`, `nemo_guardrails_output`, `lakera_guard_output` (response). A failure to import the guardrails package is logged as `guardrails.load_failed` and ignored;
+4. imports `aisrf.typesafe`, which registers `typesafe_guard` (request) and `typesafe_response_guard` (response), both no-ops until `integrations.typesafe` is enabled with a key ([[TypeSafe-Integration]]). Execution is phased: every analyzer except the LLM judge runs first, and the judge runs only if TypeSafe is disabled, or escalation is on and the TypeSafe verdict is uncertain.
 
 The complete registry, as reported by `list_analyzers()` and `GET /api/settings/analyzers`:
 
@@ -32,6 +33,7 @@ The complete registry, as reported by `list_analyzers()` and `GET /api/settings/
 | request | `custom_rules` | `custom_rules.py` |
 | request | `llm_judge` (only with `enable_llm_judge=true`) | `analyzers/llm_judge.py` |
 | request | `rebuff`, `llm_guard_input`, `nemo_guardrails_input`, `lakera_guard` | `aisrf/guardrails/` |
+| request | `typesafe_guard` | `aisrf/typesafe/analyzers.py` |
 | response | `system_prompt_leak` | `analyzers/response_analyzers.py` |
 | response | `pii_leak` | `analyzers/response_analyzers.py` |
 | response | `secrets_leak` | `analyzers/response_analyzers.py` |
@@ -42,6 +44,7 @@ The complete registry, as reported by `list_analyzers()` and `GET /api/settings/
 | response | `custom_rules_response` | `custom_rules.py` |
 | response | `llm_judge_response` (only with `enable_llm_judge=true`) | `analyzers/llm_judge.py` |
 | response | `llm_guard_output`, `nemo_guardrails_output`, `lakera_guard_output` | `aisrf/guardrails/` |
+| response | `typesafe_response_guard` | `aisrf/typesafe/analyzers.py` |
 
 ### Concurrency and fault isolation
 

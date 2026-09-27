@@ -25,7 +25,7 @@ from .inventory import language_of
 from .rules import RULES_BY_ID
 
 log = get_logger("aisrf.codereview.service")
-FINDING_STATUSES = ("open", "false_positive", "accepted")
+FINDING_STATUSES = ("open", "false_positive", "likely_false_positive", "accepted")
 MAX_FILE_VIEW_BYTES = 512 * 1024
 
 
@@ -89,6 +89,7 @@ def finding_to_dict(f: CodeReviewFinding) -> dict[str, Any]:
         "reviewed_by": f.reviewed_by or "",
         "ts": _ts(f.ts),
         "references": (rule.to_dict()["references"] if rule else []),
+        "metadata": dict(f.meta or {}),
     }
 
 
@@ -111,7 +112,8 @@ def finding_row(run_id: str, f: Finding) -> CodeReviewFinding:
         owasp=list(f.owasp),
         cwe=f.cwe,
         fingerprint=f.fingerprint,
-        status="open",
+        status=f.status if f.status in FINDING_STATUSES else "open",
+        meta={k: v for k, v in (f.metadata or {}).items() if k != "note"},
     )
 
 
@@ -233,7 +235,9 @@ async def list_findings(
     if file:
         q = q.where(or_(CodeReviewFinding.file == file, CodeReviewFinding.file.like(f"{file}%")))
     if status:
-        q = q.where(CodeReviewFinding.status == status)
+        statuses = [x.strip() for x in (status.split(",") if isinstance(status, str) else status) if x.strip()]
+        if statuses:
+            q = q.where(CodeReviewFinding.status.in_(statuses))
     if rule_id:
         q = q.where(CodeReviewFinding.rule_id == rule_id)
     if search:

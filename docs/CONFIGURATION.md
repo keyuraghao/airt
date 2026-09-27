@@ -77,6 +77,7 @@ List valued settings are parsed as JSON by pydantic-settings, so quote them:
 | `AISRF_JUDGE_BASE_URL` | unset | Judge endpoint |
 | `AISRF_JUDGE_API_KEY` | unset | Judge credential |
 | `AISRF_JUDGE_MODEL` | `gpt-4o-mini` | Judge model |
+| `TYPESAFE_API_KEY` | unset | TypeSafe (Jev) key used when `integrations.typesafe.api_key` is empty; the layer itself is switched on in the `integrations` settings namespace (see `docs/TYPESAFE.md`) |
 
 ## Red team
 

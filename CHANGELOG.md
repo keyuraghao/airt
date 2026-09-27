@@ -10,6 +10,16 @@ heading (see `docs/RELEASING.md`).
 
 ### Added
 
+- TypeSafe decision layer (`aisrf/typesafe/`): `typesafe_guard` and `typesafe_response_guard`
+  analyzers judge each request and response with one TypeSafe (Jev) call of typed questions and set
+  a `malicious`, `benign` or `uncertain` verdict with a confidence; the analysis runner is phased so
+  the LLM judge runs only for uncertain verdicts (`escalate_to_llm_judge`); optional confidence-gated
+  policy routing (`typesafe.auto_deny`, `typesafe.auto_approve`); red-team evaluation that overrides
+  the heuristics when confident; a `typesafe` code review engine that triages findings and introduces
+  the `likely_false_positive` status (hidden by the default filter); `integrations.typesafe`
+  settings, `GET /api/settings/typesafe/status` and `POST /api/settings/typesafe/health`; TypeSafe
+  chips and answer tables on tickets and code review findings, a savings tile on the overview, new
+  Prometheus metrics and `docs/TYPESAFE.md`.
 - Repository governance: strict CI (ruff, pytest with coverage on Python 3.11 and 3.12, Node
   self-test, Docker build, style guard), tag-driven release workflow (wheel, sdist, CycloneDX SBOM,
   checksums, multi-arch image on GHCR, GitHub Release), CodeQL, dependency review, Dependabot,

@@ -21,6 +21,53 @@ class PolicyDecision:
         return {"action": self.action, "reasons": self.reasons, "matched_rules": self.matched_rules}
 
 
+def typesafe_route(agent: Agent, findings: list[dict[str, Any]]) -> PolicyDecision | None:
+    """Confidence-gated routing on the TypeSafe verdict (integrations.typesafe.auto_route).
+
+    Runs after the auto-deny patterns and before the risk thresholds. A ``typesafe_guard`` finding
+    whose verdict is malicious with confidence >= auto_deny_confidence denies the request
+    (rule ``typesafe.auto_deny``); a benign verdict with confidence >= auto_approve_confidence approves
+    it for agents that require approval (rule ``typesafe.auto_approve``), unless any finding is HIGH or
+    CRITICAL. Everything else falls through to the normal rules, so the human queue only receives what
+    TypeSafe could not settle.
+    """
+    cfg = settings_store.get_value("integrations", "typesafe", {}) or {}
+    if not cfg.get("auto_route"):
+        return None
+    best: dict[str, Any] | None = None
+    for f in findings:
+        if f.get("analyzer") != "typesafe_guard":
+            continue
+        ts = (f.get("metadata") or {}).get("typesafe")
+        if isinstance(ts, dict) and (best is None or float(ts.get("confidence") or 0) > float(best.get("confidence") or 0)):
+            best = ts
+    if not best:
+        return None
+    verdict = str(best.get("verdict") or "")
+    confidence = float(best.get("confidence") or 0)
+    try:
+        deny_at = float(cfg.get("auto_deny_confidence", 0.95))
+        approve_at = float(cfg.get("auto_approve_confidence", 0.9))
+    except (TypeError, ValueError):
+        deny_at, approve_at = 0.95, 0.9
+    if verdict == "malicious" and confidence >= deny_at:
+        return PolicyDecision(
+            "deny",
+            [f"TypeSafe verdict malicious with confidence {confidence:.2f} >= {deny_at}"],
+            ["typesafe.auto_deny"],
+        )
+    if verdict == "benign" and confidence >= approve_at and agent.require_approval:
+        severe = [f for f in findings if str(f.get("severity")) in ("HIGH", "CRITICAL")]
+        if severe:
+            return None
+        return PolicyDecision(
+            "approve",
+            [f"TypeSafe verdict benign with confidence {confidence:.2f} >= {approve_at} and no HIGH or CRITICAL finding"],
+            ["typesafe.auto_approve"],
+        )
+    return None
+
+
 def evaluate(
     agent: Agent, normalized: dict[str, Any], path: str, risk_score: int, findings: list[dict[str, Any]]
 ) -> PolicyDecision:
@@ -71,6 +118,10 @@ def evaluate(
         rules.append("rules.custom")
     if reasons:
         return PolicyDecision("deny", reasons, rules)
+
+    routed = typesafe_route(agent, findings)
+    if routed is not None:
+        return routed
 
     if agent.auto_deny_at_risk and risk_score >= agent.auto_deny_at_risk:
         return PolicyDecision(

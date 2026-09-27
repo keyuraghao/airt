@@ -431,7 +431,7 @@ class CampaignRunner:
             ticket_id = result.ticket_id
             response_text = result.response_text or ""
             latency_ms = result.latency_ms
-            verdict, confidence, evidence = evaluators.evaluate(probe, result)
+            verdict, confidence, evidence = await evaluators.evaluate_async(probe, result)
         except Exception as exc:
             verdict = "ERROR"
             confidence = 0.0

@@ -23,7 +23,7 @@ PACKS: list[str] = [
     "rag_poisoning_exfil",
     "general",
 ]
-ENGINES: list[str] = ["rules", "semgrep", "bandit", "llm"]
+ENGINES: list[str] = ["rules", "semgrep", "bandit", "typesafe", "llm"]
 DEFAULTS: dict[str, Any] = {
     "max_archive_bytes": 200 * 1024 * 1024,
     "max_files": 20000,
@@ -55,7 +55,7 @@ DEFAULTS: dict[str, Any] = {
     "download_timeout_seconds": 120,
     "semgrep_timeout_seconds": 180,
     "bandit_timeout_seconds": 120,
-    "default_engines": ["rules", "semgrep", "bandit"],
+    "default_engines": ["rules", "semgrep", "bandit", "typesafe"],  # typesafe is a no-op until integrations.typesafe is enabled
     "semgrep_binary": "",  # empty = auto-detect (project venv first, then PATH)
     "bandit_binary": "",
     "llm_review": {

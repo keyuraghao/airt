@@ -5,9 +5,36 @@
   A.pages.codereview_run = function () {
     var id = document.body.getAttribute("data-run-id");
     var run = null, expanded = {};
-    var F = { limit: 50, offset: 0, severity: "", pack: "", engine: "", status: "", file: "", search: "" };
+    /* the status filter starts on the select's first option, which hides TypeSafe "likely false positive" findings by default */
+    var F = { limit: 50, offset: 0, severity: "", pack: "", engine: "", status: (A.$("#f-status") && A.$("#f-status").value) || "", file: "", search: "" };
     var SEVERITIES = ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"];
-    var STAGES = ["created", "intake", "inventory", "rules", "semgrep", "bandit", "llm", "persist", "completed"];
+    var STAGES = ["created", "intake", "inventory", "rules", "semgrep", "bandit", "typesafe", "llm", "persist", "completed"];
+    var STATUS_LABELS = { false_positive: "false positive", likely_false_positive: "likely false positive" };
+    function typesafeChip(md) {
+      /* compact TypeSafe verdict chip plus a details table of the raw answers; textContent only, never HTML */
+      var t = md && md.typesafe;
+      if (!t || typeof t !== "object") return null;
+      var pct = t.confidence != null ? Math.round(Number(t.confidence) * 100) + "%" : "";
+      var box = A.el("div", { class: "typesafe" });
+      var chips = A.el("div", { class: "chips" });
+      chips.appendChild(A.el("span", { class: "chip typesafe-" + String(t.verdict || "uncertain"), text: "TypeSafe: " + (t.verdict || "n/a") + (pct ? " " + pct : "") }));
+      if (md.typesafe_true_positive != null) chips.appendChild(A.el("span", { class: "chip", text: "true positive " + Number(md.typesafe_true_positive).toFixed(2) }));
+      if (md.typesafe_exploitability != null) chips.appendChild(A.el("span", { class: "chip", text: "exploitability " + Number(md.typesafe_exploitability).toFixed(1) + " / 3" }));
+      box.appendChild(chips);
+      var answers = t.answers || {};
+      var names = Object.keys(answers);
+      if (names.length) {
+        var tbody = A.el("tbody");
+        names.forEach(function (n) {
+          var a = answers[n] || {};
+          var value = a.type === "noul" ? Number(a.noul).toFixed(2) : a.type === "choice" ? String(a.choice) : a.type === "score" ? Number(a.score).toFixed(2) : "";
+          var probs = a.probabilities ? Object.keys(a.probabilities).map(function (k) { return k + " " + Math.round(Number(a.probabilities[k]) * 100) + "%"; }).join(", ") : "";
+          tbody.appendChild(A.el("tr", null, [A.el("td", { class: "mono", text: n }), A.el("td", { text: a.type || "" }), A.el("td", { class: "num", text: value }), A.el("td", { class: "num", text: a.confidence != null ? Math.round(Number(a.confidence) * 100) + "%" : "" }), A.el("td", { class: "small", text: probs })]));
+        });
+        box.appendChild(A.el("details", { class: "raw" }, [A.el("summary", { text: "TypeSafe answers (" + names.length + ")" + (t.model ? ", model " + t.model : "") }), A.el("table", { class: "small" }, [A.el("thead", null, A.el("tr", null, [A.el("th", { text: "question" }), A.el("th", { text: "type" }), A.el("th", { class: "right", text: "answer" }), A.el("th", { class: "right", text: "confidence" }), A.el("th", { text: "probabilities" })])), tbody])]));
+      }
+      return box;
+    }
     var terminal = function (s) { return s === "COMPLETED" || s === "FAILED" || s === "CANCELLED"; };
 
     function tile(label, value, cls, sub) { return A.el("div", { class: "tile " + (cls || "") }, [A.el("div", { class: "label", text: label }), A.el("div", { class: "value", text: value }), sub ? A.el("div", { class: "sub", text: sub }) : null]); }
@@ -118,6 +145,8 @@
       chips.appendChild(A.el("span", { class: "chip", text: "confidence " + f.confidence }));
       chips.appendChild(A.el("span", { class: "chip mono", title: f.fingerprint, text: "fp " + String(f.fingerprint || "").slice(0, 12) }));
       box.appendChild(chips);
+      var tsChip = typesafeChip(f.metadata);
+      if (tsChip) box.appendChild(tsChip);
       if (f.reviewer_note || f.reviewed_by) box.appendChild(A.el("p", { class: "hint", text: "Reviewed by " + (f.reviewed_by || "") + (f.reviewer_note ? ": " + f.reviewer_note : "") }));
       var actions = A.el("div", { class: "flex" });
       if (run && run.work_dir_available) actions.appendChild(A.el("button", { class: "btn xs", text: "Open file", onclick: function () { openFile(f.file, f.line_start); } }));
@@ -146,7 +175,7 @@
           A.el("td", { class: "num", text: f.line_start }),
           A.el("td", null, A.el("span", { class: "chip", text: f.engine })),
           A.el("td", { class: "num", text: f.confidence }),
-          A.el("td", null, A.badge(f.status === "false_positive" ? "false positive" : f.status))
+          A.el("td", null, A.badge(STATUS_LABELS[f.status] || f.status))
         ]);
         var detailRow = null;
         var show = function () { detailRow = A.el("tr", { class: "expand-row" }, A.el("td", { colspan: 9 }, detail(f))); tr.parentNode.insertBefore(detailRow, tr.nextSibling); toggle.textContent = "-"; expanded[f.id] = true; };

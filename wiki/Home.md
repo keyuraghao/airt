@@ -47,6 +47,7 @@ Nothing reaches the upstream without a decision. In `aisrf/gateway/router.py` th
 | [[Analyzers]] | Request and response analyzers |
 | [[Taxonomy-and-OWASP-Mapping]] | OWASP LLM Top 10, Greshake and Thacker mappings |
 | [[Guardrails]] | LLM Guard, NeMo Guardrails, Lakera, Rebuff |
+| [[TypeSafe-Integration]] | TypeSafe (Jev) decision layer: verdicts, confidence-gated escalation and routing, red-team and code review triage |
 | [[Canary-Words]] | Canary injection and leak detection |
 | [[Custom-Rules]] | Regex rules with flag or deny actions |
 

@@ -42,8 +42,9 @@ async def analyzers(_: Principal = Depends(current_principal)) -> dict[str, Any]
 @router.get("/guardrails")
 async def guardrails_status(_: Principal = Depends(current_principal)) -> dict[str, Any]:
     from .guardrails import status
+    from .typesafe import status as typesafe_status
 
-    return {"integrations": status()}
+    return {"integrations": [*status(), typesafe_status()]}
 
 
 @router.post("/guardrails/health")
@@ -51,6 +52,22 @@ async def guardrails_health(_: Principal = Depends(require_role("admin"))) -> di
     from .guardrails import health_check
 
     return {"results": await health_check()}
+
+
+@router.get("/typesafe/status")
+async def typesafe_status(_: Principal = Depends(current_principal)) -> dict[str, Any]:
+    """Enabled, configured, model, cache size, calls, tokens, estimated savings and last error of the TypeSafe layer."""
+    from .typesafe import status
+
+    return status()
+
+
+@router.post("/typesafe/health")
+async def typesafe_health(_: Principal = Depends(require_role("admin"))) -> dict[str, Any]:
+    """One tiny (uncached) TypeSafe evaluation to prove the key and the endpoint work."""
+    from .typesafe import health_check
+
+    return await health_check()
 
 
 @router.get("/taxonomy")

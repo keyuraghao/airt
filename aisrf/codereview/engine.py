@@ -22,7 +22,7 @@ from ..logging import broadcaster, get_logger
 from ..models import CodeReviewRun, CodeReviewStatus, utcnow
 from . import intake
 from .config import ENGINES, PACKS, get_config
-from .engines import bandit_engine, llm_engine, rules_engine, semgrep_engine
+from .engines import bandit_engine, llm_engine, rules_engine, semgrep_engine, typesafe_engine
 from .findings import Finding, dedupe
 from .inventory import WalkStats, build_inventory, walk_files
 from .secrets import mask_secrets, redact_mapping, redact_url
@@ -206,13 +206,26 @@ class CodeReviewRunner:
                 all_findings.extend(found)
                 engine_status["bandit"] = {**status, "seconds": round(time.perf_counter() - t0, 2)}
                 self._check_cancel(state)
-            if "llm" in engines:
-                await self._stage(run_id, "llm", len(all_findings))
+            if "typesafe" in engines:
+                # triages the findings collected so far in place (true positive, exploitability, likely false positives)
+                await self._stage(run_id, "typesafe", len(all_findings))
                 t0 = time.perf_counter()
-                found, status = await self._safe(llm_engine.run_llm_review(files, all_findings, cfg, should_stop=lambda: state.cancelled), "llm")
+                found, status = await self._safe(typesafe_engine.run_typesafe_triage(files, all_findings, cfg, should_stop=lambda: state.cancelled), "typesafe")
                 all_findings.extend(found)
-                engine_status["llm"] = {**status, "seconds": round(time.perf_counter() - t0, 2)}
+                engine_status["typesafe"] = {**status, "seconds": round(time.perf_counter() - t0, 2)}
                 self._check_cancel(state)
+            if "llm" in engines:
+                # with TypeSafe triage in place the LLM pass only sees the uncertain findings, and only when escalation is on
+                llm_input, skip_reason = typesafe_engine.escalation_subset(all_findings, engine_status.get("typesafe"))
+                if skip_reason:
+                    engine_status["llm"] = {"engine": "llm", "available": False, "findings": 0, "error": skip_reason}
+                else:
+                    await self._stage(run_id, "llm", len(all_findings))
+                    t0 = time.perf_counter()
+                    found, status = await self._safe(llm_engine.run_llm_review(files, llm_input, cfg, should_stop=lambda: state.cancelled), "llm")
+                    all_findings.extend(found)
+                    engine_status["llm"] = {**status, "seconds": round(time.perf_counter() - t0, 2)}
+                    self._check_cancel(state)
 
             unique = dedupe(all_findings)
             unique = [f for f in unique if f.pack in packs or f.engine in ("bandit", "llm")]

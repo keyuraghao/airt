@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextlib
 from collections.abc import AsyncIterator
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
@@ -65,7 +66,27 @@ async def init_db() -> None:
             await conn.execute(text("PRAGMA journal_mode=WAL"))
             await conn.execute(text("PRAGMA foreign_keys=ON"))
         await conn.run_sync(Base.metadata.create_all)
+        await conn.run_sync(_add_missing_columns)
     await _seed_counters()
+
+
+# Columns added after a release. create_all never alters existing tables, so they are added here.
+_LATER_COLUMNS: dict[str, list[tuple[str, str]]] = {"codereview_findings": [("meta", "JSON")]}
+
+
+def _add_missing_columns(conn: Any) -> None:
+    """Sync callback for ``run_sync``: add columns introduced after the table was first created."""
+    from sqlalchemy import inspect, text
+
+    insp = inspect(conn)
+    tables = set(insp.get_table_names())
+    for table, columns in _LATER_COLUMNS.items():
+        if table not in tables:
+            continue
+        existing = {c["name"] for c in insp.get_columns(table)}
+        for name, ddl in columns:
+            if name not in existing:
+                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {name} {ddl}"))
 
 
 async def _seed_counters() -> None:

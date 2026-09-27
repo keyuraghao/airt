@@ -52,6 +52,7 @@ More diagrams in [docs/DIAGRAMS.md](docs/DIAGRAMS.md): ticket state machine, red
 - **Human review**: dashboard queue with live updates, keyboard shortcuts, bulk decisions, notes for the audit trail; the same actions via REST, CLI, MCP tools and Slack or webhook notifications.
 - **Analysis**: prompt injection, jailbreak, PII (with Luhn, IBAN and national id validation), secrets, data exfiltration, tool abuse, harmful content, obfuscation, anomalies, optional LLM judge; response analyzers for system prompt leaks, PII and secret leaks, refusals, harmful compliance, exfil markers and canary leaks. Every finding carries OWASP LLM Top 10, Greshake and Thacker taxonomy tags.
 - **Defense integrations**: Rebuff-style layered detection and canary words, LLM Guard input and output scanners, NeMo Guardrails (bundled offline rails), Lakera Guard API. All are toggled and configured live from Settings.
+- **TypeSafe decision layer**: one call to TypeSafe AI's Jev model judges every request and response with typed questions (nine attack nouls, an intent choice, a severity score) in about 100 ms; confident verdicts skip the LLM judge, optionally auto-deny or auto-approve tickets, override red-team heuristics and mark code review findings as likely false positives, with a live savings estimate versus an LLM judge.
 - **Policy engine**: per-agent allowed paths and models, auto-deny regexes, risk thresholds for auto-deny and auto-approve, global rules, custom regex rules with flag or deny actions, response withholding on canary leaks or critical output findings.
 - **Red teaming**: 303-probe corpus in 16 categories with mutators (base64, rot13, leetspeak, reverse, split, suffix), campaigns that run every probe through the ticket pipeline, evaluators (refusal, canary, success indicators, guardrail findings), summaries with OWASP coverage, and comparison groups that run the same probe set against several models in parallel with a heatmap and ranking.
 - **Scanner engines**: garak, promptfoo, PyRIT (in-process target and HTTP mode) and a PyRIT-Ship compatible API so the Burp Suite extension can point at AISRF. External tools authenticate with short-lived scan tokens, so their traffic is ticketed like anything else. Matrix runs compare targets side by side.
@@ -167,6 +168,10 @@ curl http://localhost:8080/v1/chat/completions -H "Authorization: Bearer aisrf_.
 
 Set `timeout` above the approval hold (300 seconds by default) and `max_retries=0`, otherwise the SDK retries a request a human is still deciding on. Applications that cannot wait send `X-AISRF-Async: 1` and poll `/gateway/tickets/{id}` instead.
 
+### TypeSafe decision layer
+
+Optionally, AISRF asks [TypeSafe AI](https://typesafe.ai)'s System One model (Jev) to judge each intercepted conversation. Rather than generating text, Jev answers a battery of typed questions in one parallel call (yes/no probabilities, a choice with per-option probabilities, a score on a rubric), each with a confidence, in roughly 100 ms and at about $0.042 per million input tokens with free output. AISRF turns the answers into findings with a `malicious`, `benign` or `uncertain` verdict; when the verdict is confident the LLM judge is skipped (`escalate_to_llm_judge` runs it only for uncertain cases), and with `auto_route` on the policy engine denies malicious requests and approves benign ones above configurable confidences so the human queue only receives what the model could not settle. The same layer evaluates red-team probe results and triages code review findings (`likely_false_positive`). Export `TYPESAFE_API_KEY` or paste the key in Settings > Integrations > typesafe, switch it on, and watch the savings tile on the overview page. Details in [docs/TYPESAFE.md](docs/TYPESAFE.md).
+
 ## Red teaming and scanners
 
 ```bash
@@ -228,7 +233,7 @@ CI runs lint, style guards, the test suite on Python 3.11 and 3.12, the Node SDK
 
 ## Documentation
 
-[Architecture](docs/ARCHITECTURE.md), [API](docs/API.md), [Configuration](docs/CONFIGURATION.md), [Deployment](docs/DEPLOYMENT.md), [Integrations](docs/INTEGRATIONS.md), [Guardrails](docs/GUARDRAILS.md), [Red team](docs/REDTEAM.md), [Scanners](docs/SCANNERS.md), [Code review](docs/CODE_REVIEW.md), [Reports](docs/REPORTS.md), [MCP](docs/MCP.md), [Security](docs/SECURITY.md), [Brand](docs/BRAND.md), [Roadmap](docs/ROADMAP.md), [Releasing](docs/RELEASING.md).
+[Architecture](docs/ARCHITECTURE.md), [API](docs/API.md), [Configuration](docs/CONFIGURATION.md), [Deployment](docs/DEPLOYMENT.md), [Integrations](docs/INTEGRATIONS.md), [Guardrails](docs/GUARDRAILS.md), [TypeSafe](docs/TYPESAFE.md), [Red team](docs/REDTEAM.md), [Scanners](docs/SCANNERS.md), [Code review](docs/CODE_REVIEW.md), [Reports](docs/REPORTS.md), [MCP](docs/MCP.md), [Security](docs/SECURITY.md), [Brand](docs/BRAND.md), [Roadmap](docs/ROADMAP.md), [Releasing](docs/RELEASING.md).
 
 ## References
 

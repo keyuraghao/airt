@@ -6,7 +6,7 @@
     var catalogue = null, source = "git", packState = {}, engineState = {}, runs = {}, order = [];
     var R = { limit: 25, offset: 0, status: "" };
     var C = { pack: "", severity: "", search: "" };
-    var STAGES = ["created", "intake", "inventory", "rules", "semgrep", "bandit", "llm", "persist", "completed"];
+    var STAGES = ["created", "intake", "inventory", "rules", "semgrep", "bandit", "typesafe", "llm", "persist", "completed"];
     var form = A.$("#run-form");
 
     /* ---------- helpers ---------- */
@@ -115,7 +115,7 @@
     function renderEngineChips() {
       var box = A.$("#engine-checks");
       A.clear(box);
-      var labels = { rules: "AISRF rules", semgrep: "semgrep", bandit: "bandit", llm: "LLM-assisted" };
+      var labels = { rules: "AISRF rules", semgrep: "semgrep", bandit: "bandit", typesafe: "TypeSafe triage", llm: "LLM-assisted" };
       (catalogue ? catalogue.engines : ["rules", "semgrep", "bandit", "llm"]).forEach(function (e) { box.appendChild(chipButton(engineState, e, labels[e] || e, updateSummary)); });
       updateSummary();
     }

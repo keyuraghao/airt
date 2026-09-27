@@ -143,6 +143,16 @@ Each namespace is a JSON document with the defaults below (`settings_store.NAMES
 | | `heuristic_threshold` | `0.75` | Heuristic score threshold |
 | | `use_llm` | `false` | Use the LLM judge as the Rebuff model layer |
 | | `canary_default` | `false` | Inject canaries for every agent regardless of `inject_canary` |
+| `typesafe` | `enabled` | `false` | TypeSafe (Jev) decision layer ([[TypeSafe-Integration]]) |
+| | `api_key` | `""` | TypeSafe credential (masked); falls back to `TYPESAFE_API_KEY` |
+| | `base_url`, `model`, `timeout_seconds` | `https://api.typesafe.ai`, `jev-latest`, `8` | Endpoint, model and per-attempt timeout |
+| | `cache_ttl_seconds`, `max_state_chars` | `300`, `12000` | Result cache TTL and state budget |
+| | `noul_threshold`, `benign_confidence`, `malicious_confidence` | `0.7`, `0.85`, `0.9` | Finding threshold and verdict confidences |
+| | `escalate_to_llm_judge` | `false` | Run the LLM judge only for uncertain verdicts |
+| | `auto_route`, `auto_deny_confidence`, `auto_approve_confidence` | `false`, `0.95`, `0.9` | Confidence-gated policy routing |
+| | `redteam_evaluator`, `redteam_confidence` | `true`, `0.8` | Red-team evaluation and override confidence |
+| | `max_findings`, `triage_min_severity`, `triage_confidence`, `triage_concurrency` | `200`, `LOW`, `0.8`, `8` | Code review triage |
+| | `judge_input_price_per_million`, `judge_output_price_per_million`, `price_per_million_input` | `0.15`, `0.6`, `0.042` | Prices behind the savings estimate |
 | `garak` | `enabled` | `true` | Allow garak scanner runs |
 | | `default_probes` | `["promptinject", "dan", "encoding", "leakreplay"]` | Default garak probes |
 | | `generations` | `1` | Generations per probe |

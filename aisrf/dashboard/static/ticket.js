@@ -25,14 +25,39 @@
       if (pos < text.length) frag.appendChild(document.createTextNode(text.slice(pos)));
       return frag;
     }
+    function typesafeChip(md) {
+      /* "TypeSafe: verdict 93%" chip when the analyzer stored a verdict in metadata.typesafe */
+      var t = md && md.typesafe;
+      if (!t || typeof t !== "object") return null;
+      var pct = t.confidence != null ? " " + Math.round(Number(t.confidence) * 100) + "%" : "";
+      return A.el("span", { class: "chip typesafe-" + String(t.verdict || "uncertain"), title: "TypeSafe verdict with confidence", text: "TypeSafe: " + (t.verdict || "n/a") + pct });
+    }
+    function typesafeDetails(md) {
+      /* expandable table of every TypeSafe answer: type, value, confidence, probabilities; textContent only */
+      var answers = md && md.answers;
+      if (!answers || typeof answers !== "object") return null;
+      var names = Object.keys(answers);
+      if (!names.length) return null;
+      var tbody = A.el("tbody");
+      names.forEach(function (n) {
+        var a = answers[n] || {};
+        var value = a.type === "noul" ? Number(a.noul).toFixed(2) : a.type === "choice" ? String(a.choice) : a.type === "score" ? Number(a.score).toFixed(2) : "";
+        var probs = a.probabilities ? Object.keys(a.probabilities).sort(function (x, y) { return a.probabilities[y] - a.probabilities[x]; }).slice(0, 6).map(function (k) { return k + " " + Math.round(Number(a.probabilities[k]) * 100) + "%"; }).join(", ") : "";
+        tbody.appendChild(A.el("tr", null, [A.el("td", { class: "mono", text: n }), A.el("td", { text: a.type || "" }), A.el("td", { class: "num", text: value }), A.el("td", { class: "num", text: a.confidence != null ? Math.round(Number(a.confidence) * 100) + "%" : "" }), A.el("td", { class: "small", text: probs })]));
+      });
+      var meta = [md.model ? "model " + md.model : "", md.usage && md.usage.input_tokens != null ? md.usage.input_tokens + " input tokens" : "", md.latency_ms != null ? A.fmtMs(md.latency_ms) : "", md.cached ? "cached" : ""].filter(Boolean).join(", ");
+      return A.el("details", { class: "raw" }, [A.el("summary", { text: "TypeSafe answers (" + names.length + ")" + (meta ? ", " + meta : "") }), A.el("table", { class: "small" }, [A.el("thead", null, A.el("tr", null, [A.el("th", { text: "question" }), A.el("th", { text: "type" }), A.el("th", { class: "right", text: "answer" }), A.el("th", { class: "right", text: "confidence" }), A.el("th", { text: "probabilities" })])), tbody])]);
+    }
     function findingCard(f) {
       var sev = String(f.severity || "INFO").toLowerCase();
+      var md = f.metadata || {};
       return A.el("div", { class: "finding " + sev }, [
-        A.el("div", { class: "flex wrap" }, [A.badge(f.severity || "INFO"), A.el("span", { class: "title", text: f.title || f.category || "finding" }), A.el("span", { class: "hint", text: (f.analyzer || "") + (f.category ? " / " + f.category : "") })]),
+        A.el("div", { class: "flex wrap" }, [A.badge(f.severity || "INFO"), A.el("span", { class: "title", text: f.title || f.category || "finding" }), A.el("span", { class: "hint", text: (f.analyzer || "") + (f.category ? " / " + f.category : "") }), typesafeChip(md)]),
         A.taxonomyChips(f),
         f.description ? A.el("div", { class: "small muted", text: f.description }) : null,
         f.evidence ? A.el("div", { class: "evidence", text: f.evidence }) : null,
-        A.el("div", { class: "hint" }, [f.location ? "at " + f.location + "  " : "", f.confidence != null ? "confidence " + Math.round(Number(f.confidence) * 100) + "%" : "", (f.tags || []).length ? "  tags: " + f.tags.join(", ") : ""])
+        A.el("div", { class: "hint" }, [f.location ? "at " + f.location + "  " : "", f.confidence != null ? "confidence " + Math.round(Number(f.confidence) * 100) + "%" : "", (f.tags || []).length ? "  tags: " + f.tags.join(", ") : ""]),
+        md.typesafe ? typesafeDetails(md) : null
       ]);
     }
     function renderFindings(container, list, countEl) {

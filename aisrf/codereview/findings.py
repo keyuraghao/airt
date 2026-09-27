@@ -44,6 +44,7 @@ class Finding:
     category: str = ""
     fingerprint: str = ""
     metadata: dict[str, Any] = field(default_factory=dict)
+    status: str = "open"  # open | likely_false_positive (set by the TypeSafe triage engine)
 
     def __post_init__(self) -> None:
         self.severity = str(self.severity or "MEDIUM").upper()
