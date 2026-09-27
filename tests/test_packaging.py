@@ -226,13 +226,16 @@ def test_configure_environment_with_aisrf_home_sets_defaults_but_keeps_explicit_
 
 
 def test_cli_exposes_desktop_command():
+    import re
+
     from typer.testing import CliRunner
 
     from aisrf.cli import app
 
-    result = CliRunner().invoke(app, ["desktop", "--help"])
+    result = CliRunner(env={"COLUMNS": "200", "NO_COLOR": "1", "TERM": "dumb"}).invoke(app, ["desktop", "--help"])
     assert result.exit_code == 0
-    assert "--no-window" in result.output and "--port" in result.output
+    plain = re.sub(r"\x1b\[[0-9;]*m", "", result.output)
+    assert "--no-window" in plain and "--port" in plain
 
 
 def test_pyproject_declares_desktop_extra_and_script():
