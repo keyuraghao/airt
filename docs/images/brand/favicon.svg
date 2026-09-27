@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="AISRF">
-  <title>AISRF favicon</title>
-  <rect width="64" height="64" rx="14" fill="#0B1220"/>
-    <!-- The beam: a request in flight, with a human-shaped notch cut out of it -->
-    <path fill="#FFFFFF" fill-rule="evenodd" d="M9 15 H55 A4 4 0 0 1 59 19 V45 A4 4 0 0 1 55 49 H9 A4 4 0 0 1 5 45 V19 A4 4 0 0 1 9 15 Z M21.5 49 V43 A10.5 10.5 0 0 1 42.5 43 V49 Z"/>
-    <!-- The human standing in the beam -->
-    <circle cx="32" cy="25" r="5.4" fill="#F59E0B"/>
-</svg>

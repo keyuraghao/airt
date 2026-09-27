@@ -1,0 +1,45 @@
+name: Wiki sync
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "wiki/**"
+      - ".github/workflows/wiki-sync.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: wiki-sync
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    name: publish wiki/ to the GitHub wiki
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Push wiki pages
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if ! git clone --quiet "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.wiki.git" /tmp/wiki; then
+            echo "The wiki repository does not exist yet. Create the first page in the GitHub UI once, then re-run this workflow."
+            exit 1
+          fi
+          find /tmp/wiki -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp -R wiki/. /tmp/wiki/
+          cd /tmp/wiki
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Wiki already up to date."
+            exit 0
+          fi
+          git commit --quiet -m "Sync wiki from ${GITHUB_SHA}"
+          git push --quiet origin HEAD

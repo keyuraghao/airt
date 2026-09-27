@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}{{ page_title }}{% endblock %} - {{ app_name }}</title>
-<link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+<link rel="icon" type="image/png" href="/static/favicon.png">
 <link rel="apple-touch-icon" href="/static/icon-192.png">
 <link rel="stylesheet" href="/static/style.css">
 </head>
@@ -12,8 +12,7 @@
 {% if principal %}
 <nav class="nav">
   <a class="brand" href="/" title="{{ app_name }} v{{ version }}">
-    <img class="brand-mark brand-mark-dark" src="/static/logo-mark-dark.svg" alt="" aria-hidden="true">
-    <img class="brand-mark brand-mark-light" src="/static/logo-mark.svg" alt="" aria-hidden="true">
+    <img class="brand-mark" src="/static/logo-mark.png" alt="" aria-hidden="true">
     <span class="brand-name">AISRF</span>
   </a>
   <div class="links">
