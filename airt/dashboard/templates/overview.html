@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head">
+  <h1>Overview</h1>
+  <span class="spacer"></span>
+  <a class="btn primary" href="/tickets">Open review queue</a>
+  <a class="btn" href="/agents">Register agent</a>
+  <a class="btn" href="/redteam">New campaign</a>
+  <a class="btn" href="/reports">Reports</a>
+</div>
+<div class="tiles" id="tiles"></div>
+<div class="grid cols-3 mt">
+  <div class="card">
+    <div class="card-head"><h2>Risk level distribution</h2></div>
+    <div id="risk-dist"></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><h2>Status breakdown</h2></div>
+    <div id="status-dist"></div>
+  </div>
+  <div class="card pad-0">
+    <div class="card-head"><h2>Tickets per agent</h2></div>
+    <div class="table-wrap"><table><thead><tr><th>Agent</th><th class="right">Tickets</th><th class="right">Requests</th><th>Last seen</th></tr></thead><tbody id="agent-rows"></tbody></table></div>
+  </div>
+</div>
+<div class="grid side mt">
+  <div class="card">
+    <div class="card-head"><h2>Live ticket feed</h2><span class="hint">events from /api/stream/tickets</span></div>
+    <div id="feed" class="feed"></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><h2>Recent pending</h2><a class="hint" href="/tickets">view all</a></div>
+    <div id="recent-pending" class="stack"></div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/overview.js"></script>{% endblock %}

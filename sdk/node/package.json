@@ -1,0 +1,30 @@
+{
+  "name": "airt-intercept",
+  "version": "1.0.0",
+  "description": "Route fetch based LLM SDK traffic (OpenAI, Anthropic, Gemini, Mistral, Groq, ...) through an AIRT human-in-the-loop gateway",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node test.js"
+  },
+  "keywords": [
+    "airt",
+    "llm",
+    "gateway",
+    "red-team",
+    "human-in-the-loop",
+    "openai",
+    "anthropic",
+    "fetch"
+  ],
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {}
+}

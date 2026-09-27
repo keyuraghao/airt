@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head"><h1>Settings</h1></div>
+<div class="grid side">
+  <div class="stack">
+    <div class="card">
+      <div class="card-head"><h2>Reviewers</h2><span class="hint">{{ 'admin only' if principal.role != 'admin' else '' }}</span></div>
+      {% if principal.role == 'admin' %}
+      <div class="table-wrap"><table><thead><tr><th>Username</th><th>Role</th><th>Active</th><th>Last login</th><th></th></tr></thead><tbody id="reviewer-rows"></tbody></table></div>
+      <form id="reviewer-form" class="flex wrap mt">
+        <input type="text" name="username" placeholder="username" required>
+        <input type="password" name="password" placeholder="password" required autocomplete="new-password">
+        <select name="role"><option value="viewer">viewer</option><option value="reviewer" selected>reviewer</option><option value="admin">admin</option></select>
+        <button type="submit" class="btn primary">Create reviewer</button>
+      </form>
+      {% else %}
+      <p class="muted">Only administrators can manage reviewers. You can still change your own password below.</p>
+      {% endif %}
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Gateway integration</h2></div>
+      <p class="muted">Point any LLM client at this gateway with an agent key from the <a href="/agents">Agents</a> page. Every request becomes a ticket, is analysed, and waits for a decision when the agent policy requires it.</p>
+      <div id="integration"></div>
+    </div>
+  </div>
+  <div class="stack">
+    <div class="card">
+      <div class="card-head"><h2>Current session</h2></div>
+      <dl class="kv">
+        <dt>Username</dt><dd>{{ principal.username }}</dd>
+        <dt>Role</dt><dd><span class="badge role">{{ principal.role }}</span></dd>
+        <dt>Id</dt><dd class="mono">{{ principal.id }}</dd>
+        <dt>Auth via</dt><dd>{{ principal.via }}</dd>
+        <dt>Version</dt><dd>{{ version }} ({{ environment }})</dd>
+      </dl>
+      <form id="own-password-form" class="flex wrap mt">
+        <input type="password" name="password" placeholder="new password" required autocomplete="new-password">
+        <button type="submit" class="btn">Change my password</button>
+      </form>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Roles</h2></div>
+      <dl class="kv">
+        <dt>viewer</dt><dd>read only access to tickets, agents, logs, reports</dd>
+        <dt>reviewer</dt><dd>can approve and deny tickets</dd>
+        <dt>admin</dt><dd>manages agents, reviewers and campaigns</dd>
+      </dl>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/settings.js"></script>{% endblock %}

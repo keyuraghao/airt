@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block body_attrs %}data-ticket-id="{{ ticket_id }}"{% endblock %}
+{% block content %}
+<div class="page-head">
+  <a class="btn ghost sm" href="/tickets">&larr; Queue</a>
+  <h1 id="title">Ticket</h1>
+  <span id="head-badges" class="flex wrap"></span>
+  <span class="spacer"></span>
+  <span id="head-links" class="flex wrap"></span>
+</div>
+<div class="grid side">
+  <div class="stack">
+    <div class="card">
+      <div class="card-head"><h2>Decision</h2><span id="decision-state" class="hint"></span></div>
+      <div class="stack">
+        <textarea id="note" placeholder="Note for the audit trail (optional)"></textarea>
+        <div class="flex wrap">
+          <button class="btn ok lg" id="approve-btn" disabled>Approve</button>
+          <button class="btn danger lg" id="deny-btn" disabled>Deny</button>
+          <span class="hint" id="decision-hint"></span>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Conversation</h2><span class="hint" id="conv-meta"></span></div>
+      <div id="chat" class="chat"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Response</h2><span class="hint" id="resp-meta"></span></div>
+      <div id="response"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Request</h2></div>
+      <div id="request"></div>
+    </div>
+  </div>
+  <div class="stack">
+    <div class="card">
+      <div class="card-head"><h2>Summary</h2></div>
+      <dl class="kv" id="summary"></dl>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Findings</h2><span class="hint" id="findings-count"></span></div>
+      <div id="findings"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Response findings</h2></div>
+      <div id="response-findings"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Policy decision</h2></div>
+      <div id="policy"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Timeline</h2></div>
+      <ul class="timeline" id="timeline"></ul>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Reports</h2></div>
+      <div id="reports"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/ticket.js"></script>{% endblock %}

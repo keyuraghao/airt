@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head">
+  <h1>Review queue</h1>
+  <span class="hint">shortcuts <span class="kbd">j</span>/<span class="kbd">k</span> move, <span class="kbd">a</span> approve, <span class="kbd">d</span> deny, <span class="kbd">x</span> select, <span class="kbd">enter</span> open</span>
+  <span class="spacer"></span>
+  <label class="check"><input type="checkbox" id="sound-toggle"> Sound</label>
+  <button class="btn sm" id="refresh-btn">Refresh</button>
+</div>
+<div class="tabs" id="status-tabs">
+  <button data-status="PENDING" class="active">Pending <span class="pill zero" id="tab-pending">0</span></button>
+  <button data-status="">All</button>
+  <button data-status="DENIED">Denied</button>
+  <button data-status="COMPLETED">Completed</button>
+  <button data-status="EXPIRED">Expired</button>
+  <button data-status="FAILED">Failed</button>
+</div>
+<div class="filters">
+  <select id="f-agent"><option value="">All agents</option></select>
+  <select id="f-risk">
+    <option value="">Any risk</option>
+    <option value="10">Risk 10+</option>
+    <option value="30">Risk 30+</option>
+    <option value="60">Risk 60+</option>
+    <option value="90">Risk 90+</option>
+  </select>
+  <select id="f-source">
+    <option value="">Any source</option>
+    <option value="gateway">gateway</option>
+    <option value="mitm">mitm</option>
+    <option value="sdk">sdk</option>
+    <option value="redteam">redteam</option>
+  </select>
+  <input type="search" id="f-search" placeholder="Search prompt, id, path, correlation">
+  <span class="grow"></span>
+  <div id="bulk-bar" class="flex hidden">
+    <span class="hint"><span id="bulk-count">0</span> selected</span>
+    <button class="btn ok sm" id="bulk-approve">Approve selected</button>
+    <button class="btn danger sm" id="bulk-deny">Deny selected</button>
+  </div>
+</div>
+<div class="card pad-0">
+  <div class="table-wrap">
+    <table id="tickets-table">
+      <thead><tr>
+        <th class="checkbox-cell"><input type="checkbox" id="select-all" title="Select all visible"></th>
+        <th>#</th><th>Created</th><th>Agent</th><th>Model</th><th>Path</th><th>Risk</th><th>Findings</th><th>Policy</th><th>Prompt</th><th>Status</th><th>Actions</th>
+      </tr></thead>
+      <tbody id="ticket-rows"></tbody>
+    </table>
+  </div>
+  <div class="flex between" style="padding:10px 16px"><span id="pager" class="flex"></span><span class="hint" id="count"></span></div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/tickets.js"></script>{% endblock %}

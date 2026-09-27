@@ -1,0 +1,25 @@
+{
+  "_comment": "Drop the 'airt' entry into Claude Desktop's claude_desktop_config.json or Claude Code's .mcp.json / `claude mcp add`. Two transports are shown: stdio via the `airt mcp` CLI (recommended for desktop clients) and the gateway's streamable HTTP endpoint at /mcp.",
+  "mcpServers": {
+    "airt": {
+      "command": "airt",
+      "args": [
+        "mcp",
+        "--url",
+        "http://localhost:8080",
+        "--token",
+        "${AIRT_ADMIN_API_TOKEN}"
+      ],
+      "env": {
+        "AIRT_ADMIN_API_TOKEN": "replace-with-AIRT_ADMIN_API_TOKEN"
+      }
+    },
+    "airt-http": {
+      "type": "http",
+      "url": "http://localhost:8080/mcp",
+      "headers": {
+        "Authorization": "Bearer replace-with-AIRT_ADMIN_API_TOKEN"
+      }
+    }
+  }
+}

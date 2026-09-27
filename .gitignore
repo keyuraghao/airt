@@ -1,0 +1,41 @@
+# python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# environments
+.venv/
+venv/
+env/
+.env
+.env.*
+!.env.example
+
+# runtime state
+data/
+logs/
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+
+# node
+node_modules/
+sdk/node/package-lock.json
+
+# editors / os
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# mitmproxy
+.mitmproxy/

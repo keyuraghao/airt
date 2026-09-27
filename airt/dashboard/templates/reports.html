@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head">
+  <h1>Reports</h1>
+  <span class="hint">every report kind in every export format</span>
+</div>
+<div class="card">
+  <div class="card-head"><h2>Filters</h2><span class="hint">applied to the report kinds that accept them</span></div>
+  <div class="form-grid">
+    <label class="field">Since<input type="datetime-local" id="f-since"></label>
+    <label class="field">Until<input type="datetime-local" id="f-until"></label>
+    <label class="field">Agent<select id="f-agent"><option value="">All agents</option></select></label>
+    <label class="field">Campaign<select id="f-campaign"><option value="">Select campaign</option></select></label>
+    <label class="field">Ticket status<select id="f-status"><option value="">Any</option><option>PENDING</option><option>APPROVED</option><option>DENIED</option><option>EXPIRED</option><option>COMPLETED</option><option>FAILED</option></select></label>
+    <label class="field">Ticket id (for the single ticket report)<input type="text" id="f-ticket" placeholder="tkt_..."></label>
+  </div>
+</div>
+<div class="card mt pad-0">
+  <div class="card-head"><h2>Report matrix</h2><span class="hint" id="matrix-status"></span></div>
+  <div class="table-wrap"><table class="matrix"><thead id="matrix-head"></thead><tbody id="matrix-body"></tbody></table></div>
+</div>
+<div class="card mt">
+  <div class="card-head"><h2>Formats</h2></div>
+  <div id="formats" class="chips"></div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/reports.js"></script>{% endblock %}

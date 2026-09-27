@@ -1,0 +1,56 @@
+# docker compose up -d                      -> gateway on http://localhost:8080 with SQLite in the airt-data volume
+# docker compose --profile postgres up -d   -> gateway + PostgreSQL (set AIRT_DATABASE_URL in .env, see below)
+services:
+  gateway:
+    build: .
+    image: airt:latest
+    container_name: airt-gateway
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      AIRT_HOST: 0.0.0.0
+      AIRT_PORT: "8080"
+      AIRT_DATA_DIR: /app/data
+      AIRT_LOG_DIR: /app/logs
+      AIRT_LOG_JSON_CONSOLE: "true"
+      # Uncomment (or set in .env) to use the postgres service instead of SQLite:
+      # AIRT_DATABASE_URL: postgresql+asyncpg://airt:airt@postgres:5432/airt
+    ports:
+      - "${AIRT_BIND_ADDRESS:-127.0.0.1}:${AIRT_PORT:-8080}:8080"
+    volumes:
+      - airt-data:/app/data
+      - airt-logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    depends_on:
+      postgres:
+        condition: service_healthy
+        required: false
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: airt-postgres
+    profiles: ["postgres"]
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-airt}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-airt}
+      POSTGRES_DB: ${POSTGRES_DB:-airt}
+    volumes:
+      - airt-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-airt} -d ${POSTGRES_DB:-airt}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  airt-data:
+  airt-logs:
+  airt-pgdata:

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head">
+  <h1>Agent logs</h1>
+  <span class="hint">live stream of every agent event, /api/stream/logs</span>
+  <span class="spacer"></span>
+  <select id="f-agent"><option value="">All agents</option></select>
+  <select id="f-level"><option value="">All levels</option><option>DEBUG</option><option>INFO</option><option>WARNING</option><option>ERROR</option></select>
+  <input type="search" id="f-search" placeholder="Filter text">
+  <button class="btn sm" id="log-pause">Pause</button>
+  <button class="btn sm" id="log-clear">Clear</button>
+  <button class="btn sm" id="log-download">Download JSON</button>
+  <label class="check"><input type="checkbox" id="autoscroll" checked> Follow</label>
+  <span class="hint" id="log-status"></span>
+</div>
+<div class="log-view" id="log-view" style="height:76vh"></div>
+{% endblock %}
+{% block scripts %}<script src="/static/logs.js"></script>{% endblock %}

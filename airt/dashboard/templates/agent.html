@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block body_attrs %}data-agent-id="{{ agent_id }}"{% endblock %}
+{% block content %}
+<div class="page-head">
+  <a class="btn ghost sm" href="/agents">&larr; Agents</a>
+  <h1 id="title">Agent</h1>
+  <span id="head-badges" class="flex wrap"></span>
+  <span class="spacer"></span>
+  <button class="btn" id="rotate-btn">Rotate key</button>
+  <button class="btn danger" id="disable-btn">Disable</button>
+  <button class="btn ok hidden" id="enable-btn">Enable</button>
+  <span id="report-links"></span>
+</div>
+<div class="tiles" id="tiles"></div>
+<div class="grid side mt">
+  <div class="stack">
+    <div class="card">
+      <div class="card-head"><h2>Configuration</h2><span class="hint">PATCH /api/agents/{id}</span></div>
+      <form id="agent-form" class="form-grid">
+        <label class="field">Name<input type="text" name="name" required></label>
+        <label class="field">Owner<input type="text" name="owner"></label>
+        <label class="field span-2">Description<input type="text" name="description"></label>
+        <label class="field">Tags (comma separated)<input type="text" name="tags"></label>
+        <label class="field">Upstream provider<select name="upstream_provider"><option value="openai">openai</option><option value="anthropic">anthropic</option><option value="custom">custom</option></select></label>
+        <label class="field">Upstream base URL<input type="url" name="upstream_base_url"></label>
+        <label class="field">Upstream API key<input type="password" name="upstream_api_key" autocomplete="new-password" placeholder="leave blank to keep current"></label>
+        <label class="field">Custom auth header<input type="text" name="upstream_auth_header"></label>
+        <label class="field">Extra upstream headers (JSON)<input type="text" name="upstream_extra_headers"></label>
+        <label class="field">Auto approve below risk<input type="number" name="auto_approve_below_risk" min="0" max="100"></label>
+        <label class="field">Auto deny at risk<input type="number" name="auto_deny_at_risk" min="0" max="101"></label>
+        <label class="field">Auto deny patterns (one per line)<textarea name="auto_deny_patterns" rows="2"></textarea></label>
+        <label class="field">Allowed paths (one per line)<textarea name="allowed_paths" rows="2"></textarea></label>
+        <label class="field">Allowed models (one per line)<textarea name="allowed_models" rows="2"></textarea></label>
+        <label class="field">Rate limit per minute<input type="number" name="rate_limit_per_minute" min="0"></label>
+        <label class="check"><input type="checkbox" name="require_approval"> Require human approval</label>
+        <div class="span-2 flex"><button type="submit" class="btn primary" id="save-btn">Save changes</button><span class="hint" id="save-hint"></span></div>
+      </form>
+    </div>
+    <div class="card pad-0">
+      <div class="card-head"><h2>Recent tickets</h2><a class="hint" id="all-tickets-link" href="/tickets">view in queue</a></div>
+      <div class="table-wrap"><table><thead><tr><th>#</th><th>Created</th><th>Model</th><th>Path</th><th>Risk</th><th>Status</th></tr></thead><tbody id="ticket-rows"></tbody></table></div>
+    </div>
+  </div>
+  <div class="stack">
+    <div class="card">
+      <div class="card-head"><h2>Identity</h2></div>
+      <dl class="kv" id="identity"></dl>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Integration</h2></div>
+      <div id="snippets"></div>
+    </div>
+  </div>
+</div>
+<div class="card mt">
+  <div class="card-head">
+    <h2>Live log</h2>
+    <select id="log-level"><option value="">All levels</option><option>DEBUG</option><option>INFO</option><option>WARNING</option><option>ERROR</option></select>
+    <button class="btn sm" id="log-pause">Pause</button>
+    <button class="btn sm" id="log-clear">Clear</button>
+    <button class="btn sm" id="log-history">Load history</button>
+    <button class="btn sm" id="log-download">Download JSON</button>
+    <span class="hint" id="log-status"></span>
+  </div>
+  <div class="log-view" id="log-view"></div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/agent.js"></script>{% endblock %}

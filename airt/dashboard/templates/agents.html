@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head">
+  <h1>Agents</h1>
+  <span class="hint">registered clients that may send traffic through the gateway</span>
+  <span class="spacer"></span>
+  <label class="check"><input type="checkbox" id="show-inactive"> Show disabled</label>
+  <button class="btn primary" id="new-agent-btn">Register agent</button>
+</div>
+<div class="card pad-0">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Name</th><th>Provider</th><th>Upstream</th><th>Approval</th><th>Thresholds</th><th class="right">Requests</th><th>Last seen</th><th>Active</th><th></th></tr></thead>
+      <tbody id="agent-rows"></tbody>
+    </table>
+  </div>
+</div>
+<div class="card mt hidden" id="create-card">
+  <div class="card-head"><h2>Register a new agent</h2><button class="btn ghost sm" id="cancel-create">Cancel</button></div>
+  <form id="agent-form" class="form-grid">
+    <label class="field">Name *<input type="text" name="name" required maxlength="120"></label>
+    <label class="field">Owner<input type="text" name="owner"></label>
+    <label class="field span-2">Description<input type="text" name="description"></label>
+    <label class="field">Tags (comma separated)<input type="text" name="tags"></label>
+    <label class="field">Upstream provider<select name="upstream_provider"><option value="openai">openai</option><option value="anthropic">anthropic</option><option value="custom">custom</option></select></label>
+    <label class="field">Upstream base URL<input type="url" name="upstream_base_url" placeholder="https://api.openai.com/v1"></label>
+    <label class="field">Upstream API key<input type="password" name="upstream_api_key" autocomplete="new-password" placeholder="stored encrypted, never shown again"></label>
+    <label class="field">Custom auth header (custom provider)<input type="text" name="upstream_auth_header" placeholder="x-api-key"></label>
+    <label class="field">Extra upstream headers (JSON object)<input type="text" name="upstream_extra_headers" placeholder='{"OpenAI-Organization": "org_..."}'></label>
+    <label class="field">Auto approve below risk (0 disables)<input type="number" name="auto_approve_below_risk" min="0" max="100" value="0"></label>
+    <label class="field">Auto deny at risk (101 disables)<input type="number" name="auto_deny_at_risk" min="0" max="101" value="90"></label>
+    <label class="field">Auto deny patterns (regex, one per line)<textarea name="auto_deny_patterns" rows="2"></textarea></label>
+    <label class="field">Allowed paths (glob, one per line, empty = all)<textarea name="allowed_paths" rows="2"></textarea></label>
+    <label class="field">Allowed models (one per line, empty = all)<textarea name="allowed_models" rows="2"></textarea></label>
+    <label class="field">Rate limit per minute (0 = unlimited)<input type="number" name="rate_limit_per_minute" min="0" value="0"></label>
+    <label class="check"><input type="checkbox" name="require_approval" checked> Require human approval</label>
+    <div class="span-2 flex"><button type="submit" class="btn primary">Create agent</button><span class="hint">The AIRT API key is shown once after creation.</span></div>
+  </form>
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/agents.js"></script>{% endblock %}
