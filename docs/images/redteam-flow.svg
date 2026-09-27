@@ -52,57 +52,70 @@
 <path d="M 1308.0 235.0 L 1328.0 235.0" fill="none" stroke="#fb923c" stroke-width="1.8" marker-end="url(#arwfb923c)"/>
 <rect x="32.0" y="370.0" width="1636.0" height="230.0" rx="14" ry="14" fill="#162036" stroke="#2dd4bf" stroke-width="1.5" opacity="1.0"/>
 <text x="48.0" y="396.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="16" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">2. Probes through the human-in-the-loop pipeline</text>
-<text x="48.0" y="414.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#a3adbd" text-anchor="start" font-weight="normal" opacity="1.0">aisrf.gateway.pipeline.submit(source=redteam, campaign_id, probe_id): identical to an HTTP call</text>
-<rect x="48.0" y="428.0" width="250.0" height="140.0" rx="10" ry="10" fill="#134e4a" stroke="#2dd4bf" stroke-width="1.6" opacity="1.0"/>
+<text x="48.0" y="414.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#a3adbd" text-anchor="start" font-weight="normal" opacity="1.0">aisrf.gateway.pipeline.submit(source=redteam, campaign_id, probe_id): identical to an HTTP call; evaluate_async grades the reply, TypeSafe may override the heuristic verdict</text>
+<rect x="48.0" y="428.0" width="210.0" height="150.0" rx="10" ry="10" fill="#134e4a" stroke="#2dd4bf" stroke-width="1.6" opacity="1.0"/>
 <text x="60.0" y="454.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">pipeline.submit()</text>
 <text x="60.0" y="474.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">build provider body from</text>
 <text x="60.0" y="489.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">probe messages + mutator,</text>
 <text x="60.0" y="504.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">normalize, create ticket</text>
 <text x="60.0" y="519.4" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">PENDING with campaign_id</text>
 <text x="60.0" y="534.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">and probe_id</text>
-<rect x="320.0" y="428.0" width="250.0" height="140.0" rx="10" ry="10" fill="#134e4a" stroke="#2dd4bf" stroke-width="1.6" opacity="1.0"/>
-<text x="332.0" y="454.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">Analyzers + policy</text>
-<text x="332.0" y="474.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">same 10 request analyzers</text>
-<text x="332.0" y="489.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">and guardrail integrations;</text>
-<text x="332.0" y="504.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">agent policy may auto-deny</text>
-<text x="332.0" y="519.4" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">(verdict BLOCKED) or</text>
-<text x="332.0" y="534.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">auto-approve</text>
-<rect x="592.0" y="428.0" width="250.0" height="140.0" rx="10" ry="10" fill="#713f12" stroke="#fbbf24" stroke-width="1.6" opacity="1.0"/>
-<text x="604.0" y="454.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">Human approval</text>
-<text x="604.0" y="474.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">ticket held for a reviewer</text>
-<text x="604.0" y="489.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">(dashboard / MCP / CLI);</text>
-<text x="604.0" y="504.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">auto-runs when</text>
-<text x="604.0" y="519.4" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">AISRF_REQUIRE_APPROVAL_FOR_</text>
-<text x="604.0" y="534.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">REDTEAM_PROBES=false</text>
-<rect x="864.0" y="428.0" width="250.0" height="140.0" rx="10" ry="10" fill="#4c1d95" stroke="#a78bfa" stroke-width="1.6" opacity="1.0"/>
-<text x="876.0" y="454.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">Target model</text>
-<text x="876.0" y="474.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">forwarder swaps in the</text>
-<text x="876.0" y="489.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">upstream key, canary</text>
-<text x="876.0" y="504.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">injected in the system</text>
-<text x="876.0" y="519.4" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">prompt, per-probe timeout</text>
-<text x="876.0" y="534.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">AISRF_REDTEAM_PROBE_TIMEOUT</text>
-<rect x="1136.0" y="428.0" width="250.0" height="140.0" rx="10" ry="10" fill="#134e4a" stroke="#2dd4bf" stroke-width="1.6" opacity="1.0"/>
-<text x="1148.0" y="454.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">Evaluators</text>
-<text x="1148.0" y="474.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">refusal detector,</text>
-<text x="1148.0" y="489.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">canary leak (strongest),</text>
-<text x="1148.0" y="504.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">success_indicators regexes,</text>
-<text x="1148.0" y="519.4" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">harmful / guardrail findings,</text>
-<text x="1148.0" y="534.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">optional LLM judge</text>
-<rect x="1408.0" y="428.0" width="250.0" height="140.0" rx="10" ry="10" fill="#14532d" stroke="#4ade80" stroke-width="1.6" opacity="1.0"/>
-<text x="1420.0" y="454.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">Verdicts</text>
-<text x="1420.0" y="474.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">VULNERABLE  RESISTED</text>
-<text x="1420.0" y="489.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">BLOCKED  ERROR</text>
-<text x="1420.0" y="504.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">INCONCLUSIVE</text>
-<text x="1420.0" y="519.4" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">+ confidence + evidence</text>
-<text x="1420.0" y="534.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">+ ticket_id, latency_ms</text>
-<path d="M 298.0 498.0 L 320.0 498.0" fill="none" stroke="#2dd4bf" stroke-width="1.8" marker-end="url(#arw2dd4bf)"/>
-<path d="M 570.0 498.0 L 592.0 498.0" fill="none" stroke="#2dd4bf" stroke-width="1.8" marker-end="url(#arw2dd4bf)"/>
-<path d="M 842.0 498.0 L 864.0 498.0" fill="none" stroke="#2dd4bf" stroke-width="1.8" marker-end="url(#arw2dd4bf)"/>
-<path d="M 1114.0 498.0 L 1136.0 498.0" fill="none" stroke="#2dd4bf" stroke-width="1.8" marker-end="url(#arw2dd4bf)"/>
-<path d="M 1386.0 498.0 L 1408.0 498.0" fill="none" stroke="#2dd4bf" stroke-width="1.8" marker-end="url(#arw2dd4bf)"/>
+<rect x="280.0" y="428.0" width="210.0" height="150.0" rx="10" ry="10" fill="#134e4a" stroke="#2dd4bf" stroke-width="1.6" opacity="1.0"/>
+<text x="292.0" y="454.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">Analyzers + policy</text>
+<text x="292.0" y="474.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">typesafe_guard + 9 analyzers</text>
+<text x="292.0" y="489.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">and guardrail integrations;</text>
+<text x="292.0" y="504.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">typesafe.auto_deny / auto_</text>
+<text x="292.0" y="519.4" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">approve or the agent policy</text>
+<text x="292.0" y="534.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">may auto-deny (verdict</text>
+<text x="292.0" y="549.1" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">BLOCKED) or auto-approve</text>
+<rect x="512.0" y="428.0" width="210.0" height="150.0" rx="10" ry="10" fill="#713f12" stroke="#fbbf24" stroke-width="1.6" opacity="1.0"/>
+<text x="524.0" y="454.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">Human approval</text>
+<text x="524.0" y="474.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">ticket held for a reviewer</text>
+<text x="524.0" y="489.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">(dashboard / MCP / CLI);</text>
+<text x="524.0" y="504.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">auto-runs when</text>
+<text x="524.0" y="519.4" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">AISRF_REQUIRE_APPROVAL_FOR_</text>
+<text x="524.0" y="534.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">REDTEAM_PROBES=false</text>
+<rect x="744.0" y="428.0" width="210.0" height="150.0" rx="10" ry="10" fill="#4c1d95" stroke="#a78bfa" stroke-width="1.6" opacity="1.0"/>
+<text x="756.0" y="454.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">Target model</text>
+<text x="756.0" y="474.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">forwarder swaps in the</text>
+<text x="756.0" y="489.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">upstream key, canary</text>
+<text x="756.0" y="504.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">injected in the system</text>
+<text x="756.0" y="519.4" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">prompt, per-probe timeout</text>
+<text x="756.0" y="534.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">AISRF_REDTEAM_PROBE_TIMEOUT</text>
+<rect x="976.0" y="428.0" width="210.0" height="150.0" rx="10" ry="10" fill="#134e4a" stroke="#2dd4bf" stroke-width="1.6" opacity="1.0"/>
+<text x="988.0" y="454.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">Heuristic evaluators</text>
+<text x="988.0" y="474.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">refusal detector,</text>
+<text x="988.0" y="489.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">canary leak (strongest),</text>
+<text x="988.0" y="504.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">success_indicators regexes,</text>
+<text x="988.0" y="519.4" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">harmful / guardrail findings</text>
+<text x="988.0" y="534.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">-&gt; heuristic verdict</text>
+<text x="988.0" y="549.1" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">+ confidence</text>
+<rect x="1208.0" y="428.0" width="210.0" height="150.0" rx="10" ry="10" fill="#1e293b" stroke="#94a3b8" stroke-width="1.6" opacity="1.0"/>
+<text x="1220.0" y="454.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">TypeSafe evaluator</text>
+<text x="1220.0" y="474.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">one call: refused, complied,</text>
+<text x="1220.0" y="489.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">followed injection, leaked</text>
+<text x="1220.0" y="504.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">canary / prompt, harmful,</text>
+<text x="1220.0" y="519.4" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">safe answer + outcome choice;</text>
+<text x="1220.0" y="534.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">overrides heuristic verdict</text>
+<text x="1220.0" y="549.1" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">when confidence &gt;= 0.8;</text>
+<text x="1220.0" y="564.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">not for BLOCKED, ERROR, canary</text>
+<rect x="1440.0" y="428.0" width="210.0" height="150.0" rx="10" ry="10" fill="#14532d" stroke="#4ade80" stroke-width="1.6" opacity="1.0"/>
+<text x="1452.0" y="454.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">Verdicts</text>
+<text x="1452.0" y="474.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">VULNERABLE  RESISTED</text>
+<text x="1452.0" y="489.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">BLOCKED  ERROR</text>
+<text x="1452.0" y="504.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">INCONCLUSIVE</text>
+<text x="1452.0" y="519.4" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">+ confidence + evidence</text>
+<text x="1452.0" y="534.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">(typesafe_verdict: applied?)</text>
+<text x="1452.0" y="549.1" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">+ ticket_id, latency_ms</text>
+<path d="M 258.0 503.0 L 280.0 503.0" fill="none" stroke="#2dd4bf" stroke-width="1.8" marker-end="url(#arw2dd4bf)"/>
+<path d="M 490.0 503.0 L 512.0 503.0" fill="none" stroke="#2dd4bf" stroke-width="1.8" marker-end="url(#arw2dd4bf)"/>
+<path d="M 722.0 503.0 L 744.0 503.0" fill="none" stroke="#2dd4bf" stroke-width="1.8" marker-end="url(#arw2dd4bf)"/>
+<path d="M 954.0 503.0 L 976.0 503.0" fill="none" stroke="#2dd4bf" stroke-width="1.8" marker-end="url(#arw2dd4bf)"/>
+<path d="M 1186.0 503.0 L 1208.0 503.0" fill="none" stroke="#2dd4bf" stroke-width="1.8" marker-end="url(#arw2dd4bf)"/>
+<path d="M 1418.0 503.0 L 1440.0 503.0" fill="none" stroke="#2dd4bf" stroke-width="1.8" marker-end="url(#arw2dd4bf)"/>
 <path d="M 1492.0 320.0 L 1492.0 370.0" fill="none" stroke="#fb923c" stroke-width="1.8" marker-end="url(#arwfb923c)"/>
-<path d="M 173.0 340.0 L 173.0 370.0" fill="none" stroke="#fb923c" stroke-width="1.8" marker-end="url(#arwfb923c)"/>
-<path d="M 1492 355 L 173.0 355" fill="none" stroke="#fb923c" stroke-width="1.8"/>
+<path d="M 153.0 340.0 L 153.0 370.0" fill="none" stroke="#fb923c" stroke-width="1.8" marker-end="url(#arwfb923c)"/>
+<path d="M 1492 355 L 153.0 355" fill="none" stroke="#fb923c" stroke-width="1.8"/>
 <rect x="627.1" y="347.0" width="465.8" height="18.3" rx="4" ry="4" fill="#0f172a" stroke="#0f172a" stroke-width="0" opacity="0.92"/>
 <text x="860.0" y="359.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#e5e7eb" text-anchor="middle" font-weight="normal" opacity="1.0">start(): one submit() per probe entry, AISRF_REDTEAM_CONCURRENCY at a time</text>
 <rect x="32.0" y="630.0" width="1010.0" height="262.0" rx="14" ry="14" fill="#162036" stroke="#4ade80" stroke-width="1.5" opacity="1.0"/>
@@ -130,9 +143,9 @@
 <text x="700.0" y="794.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">MCP generate_report</text>
 <path d="M 348.0 756.0 L 368.0 756.0" fill="none" stroke="#4ade80" stroke-width="1.8" marker-end="url(#arw4ade80)"/>
 <path d="M 668.0 756.0 L 688.0 756.0" fill="none" stroke="#4ade80" stroke-width="1.8" marker-end="url(#arw4ade80)"/>
-<path d="M 1533.0 568.0 L 1533.0 612.0 L 198.0 612.0 L 198.0 630.0" fill="none" stroke="#4ade80" stroke-width="1.8" marker-end="url(#arw4ade80)"/>
-<rect x="809.7" y="591.0" width="137.7" height="19.6" rx="4" ry="4" fill="#0f172a" stroke="#0f172a" stroke-width="0" opacity="0.92"/>
-<text x="878.5" y="604.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#e5e7eb" text-anchor="middle" font-weight="normal" opacity="1.0">verdicts aggregated</text>
+<path d="M 1545.0 578.0 L 1545.0 606.0 L 198.0 606.0 L 198.0 630.0" fill="none" stroke="#4ade80" stroke-width="1.8" marker-end="url(#arw4ade80)"/>
+<rect x="804.7" y="585.0" width="137.7" height="19.6" rx="4" ry="4" fill="#0f172a" stroke="#0f172a" stroke-width="0" opacity="0.92"/>
+<text x="873.5" y="598.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#e5e7eb" text-anchor="middle" font-weight="normal" opacity="1.0">verdicts aggregated</text>
 <rect x="1070.0" y="630.0" width="598.0" height="262.0" rx="14" ry="14" fill="#162036" stroke="#a78bfa" stroke-width="1.5" opacity="1.0"/>
 <text x="1086.0" y="656.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="16" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">External engines through the same gateway</text>
 <text x="1086.0" y="674.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#a3adbd" text-anchor="start" font-weight="normal" opacity="1.0">short-lived scan tokens (scn_, TTL, revocable, bound to a campaign) let a scanner act as the agent</text>
@@ -155,20 +168,22 @@
 <text x="1086.0" y="876.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#a3adbd" text-anchor="start" font-weight="normal" opacity="1.0">Scanner base_url -&gt; gw /v1 or /proxy + token: every request is a ticket (source=redteam, campaign_id),</text>
 <text x="1086.0" y="890.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#a3adbd" text-anchor="start" font-weight="normal" opacity="1.0">analysed, policy-checked, human-approved and response-scanned; findings share the taxonomy in reports.</text>
 <path d="M 1370.0 630.0 L 1370.0 600.0" fill="none" stroke="#a78bfa" stroke-width="1.8" marker-end="url(#arwa78bfa)"/>
-<rect x="1377.0" y="605.0" width="176.3" height="18.3" rx="4" ry="4" fill="#0f172a" stroke="#0f172a" stroke-width="0" opacity="0.92"/>
-<text x="1382.0" y="617.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">scanner traffic joins row 2</text>
-<rect x="32.0" y="916.0" width="1040.0" height="52.0" rx="10" ry="10" fill="#162036" stroke="#334155" stroke-width="1.5" opacity="1.0"/>
+<rect x="1186.7" y="612.0" width="176.3" height="18.3" rx="4" ry="4" fill="#0f172a" stroke="#0f172a" stroke-width="0" opacity="0.92"/>
+<text x="1358.0" y="624.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#e5e7eb" text-anchor="end" font-weight="normal" opacity="1.0">scanner traffic joins row 2</text>
+<rect x="32.0" y="916.0" width="1280.0" height="52.0" rx="10" ry="10" fill="#162036" stroke="#334155" stroke-width="1.5" opacity="1.0"/>
 <text x="44.0" y="935.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#a3adbd" text-anchor="start" font-weight="bold" opacity="1.0">Legend</text>
 <rect x="46.0" y="946.0" width="22.0" height="14.0" rx="4" ry="4" fill="#7c2d12" stroke="#fb923c" stroke-width="1.2" opacity="1.0"/>
 <text x="76.0" y="957.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">campaign setup</text>
-<rect x="216.0" y="946.0" width="22.0" height="14.0" rx="4" ry="4" fill="#134e4a" stroke="#2dd4bf" stroke-width="1.2" opacity="1.0"/>
-<text x="246.0" y="957.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">gateway pipeline</text>
-<rect x="386.0" y="946.0" width="22.0" height="14.0" rx="4" ry="4" fill="#713f12" stroke="#fbbf24" stroke-width="1.2" opacity="1.0"/>
-<text x="416.0" y="957.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">human decision</text>
-<rect x="556.0" y="946.0" width="22.0" height="14.0" rx="4" ry="4" fill="#4c1d95" stroke="#a78bfa" stroke-width="1.2" opacity="1.0"/>
-<text x="586.0" y="957.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">target / external engine</text>
-<rect x="726.0" y="946.0" width="22.0" height="14.0" rx="4" ry="4" fill="#14532d" stroke="#4ade80" stroke-width="1.2" opacity="1.0"/>
-<text x="756.0" y="957.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">results</text>
-<rect x="896.0" y="946.0" width="22.0" height="14.0" rx="4" ry="4" fill="#1f2937" stroke="#9ca3af" stroke-width="1.2" opacity="1.0"/>
-<text x="926.0" y="957.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">persistence / reports</text>
+<rect x="226.0" y="946.0" width="22.0" height="14.0" rx="4" ry="4" fill="#134e4a" stroke="#2dd4bf" stroke-width="1.2" opacity="1.0"/>
+<text x="256.0" y="957.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">gateway pipeline</text>
+<rect x="406.0" y="946.0" width="22.0" height="14.0" rx="4" ry="4" fill="#713f12" stroke="#fbbf24" stroke-width="1.2" opacity="1.0"/>
+<text x="436.0" y="957.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">human decision</text>
+<rect x="586.0" y="946.0" width="22.0" height="14.0" rx="4" ry="4" fill="#4c1d95" stroke="#a78bfa" stroke-width="1.2" opacity="1.0"/>
+<text x="616.0" y="957.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">target / external engine</text>
+<rect x="766.0" y="946.0" width="22.0" height="14.0" rx="4" ry="4" fill="#1e293b" stroke="#94a3b8" stroke-width="1.2" opacity="1.0"/>
+<text x="796.0" y="957.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">TypeSafe evaluator (Jev)</text>
+<rect x="946.0" y="946.0" width="22.0" height="14.0" rx="4" ry="4" fill="#14532d" stroke="#4ade80" stroke-width="1.2" opacity="1.0"/>
+<text x="976.0" y="957.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">results</text>
+<rect x="1126.0" y="946.0" width="22.0" height="14.0" rx="4" ry="4" fill="#1f2937" stroke="#9ca3af" stroke-width="1.2" opacity="1.0"/>
+<text x="1156.0" y="957.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">persistence / reports</text>
 </svg>

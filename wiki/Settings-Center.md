@@ -111,3 +111,67 @@ Reference material rendered from `GET /api/settings/taxonomy`: the OWASP Top 10 
 Every save and reset writes an audit entry (`settings.update` or `settings.reset` with the namespace and keys, `settings.import` for imports) and publishes `settings.updated` on the `settings` broadcaster channel. The status line at the top of the page reports the number of core settings and namespaces loaded from the schema endpoint.
 
 Related: [[Configuration-Reference]], [[Dashboard-Guide]], [[Security-Model]].
+
+## Screenshots
+
+One capture per section, taken from the demo instance.
+
+### General
+
+![general](https://raw.githubusercontent.com/keyuraghao/aisrf/main/docs/images/screenshots/settings.png)
+
+### Gateway
+
+![gateway](https://raw.githubusercontent.com/keyuraghao/aisrf/main/docs/images/screenshots/settings-gateway.png)
+
+### Security
+
+![security](https://raw.githubusercontent.com/keyuraghao/aisrf/main/docs/images/screenshots/settings-security.png)
+
+### Notifications
+
+![notifications](https://raw.githubusercontent.com/keyuraghao/aisrf/main/docs/images/screenshots/settings-notifications.png)
+
+### Analysis
+
+![analysis](https://raw.githubusercontent.com/keyuraghao/aisrf/main/docs/images/screenshots/settings-analysis.png)
+
+### Redteam
+
+![redteam](https://raw.githubusercontent.com/keyuraghao/aisrf/main/docs/images/screenshots/settings-redteam.png)
+
+### Advanced
+
+![advanced](https://raw.githubusercontent.com/keyuraghao/aisrf/main/docs/images/screenshots/settings-advanced.png)
+
+### Ui
+
+![ui](https://raw.githubusercontent.com/keyuraghao/aisrf/main/docs/images/screenshots/settings-ui.png)
+
+### Policy
+
+![policy](https://raw.githubusercontent.com/keyuraghao/aisrf/main/docs/images/screenshots/settings-policy.png)
+
+### Rules
+
+![rules](https://raw.githubusercontent.com/keyuraghao/aisrf/main/docs/images/screenshots/settings-rules.png)
+
+### Analyzers
+
+![analyzers](https://raw.githubusercontent.com/keyuraghao/aisrf/main/docs/images/screenshots/settings-analyzers.png)
+
+### Integrations
+
+![integrations](https://raw.githubusercontent.com/keyuraghao/aisrf/main/docs/images/screenshots/settings-integrations.png)
+
+### Reviewers
+
+![reviewers](https://raw.githubusercontent.com/keyuraghao/aisrf/main/docs/images/screenshots/settings-reviewers.png)
+
+### Export
+
+![export](https://raw.githubusercontent.com/keyuraghao/aisrf/main/docs/images/screenshots/settings-export.png)
+
+### About
+
+![about](https://raw.githubusercontent.com/keyuraghao/aisrf/main/docs/images/screenshots/settings-about.png)

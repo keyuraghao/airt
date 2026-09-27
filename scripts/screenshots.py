@@ -34,7 +34,21 @@ PAGES = [
     ("codereview", "/codereview", 1600, 1000),
     ("reports", "/reports", 1600, 900),
     ("audit", "/audit", 1600, 900),
-    ("settings", "/settings", 1600, 1200),
+    ("settings", "/settings#general", 1600, 1200),
+    ("settings-gateway", "/settings#gateway", 1600, 1400),
+    ("settings-security", "/settings#security", 1600, 1400),
+    ("settings-notifications", "/settings#notifications", 1600, 1400),
+    ("settings-analysis", "/settings#analysis", 1600, 1400),
+    ("settings-redteam", "/settings#redteam", 1600, 1400),
+    ("settings-advanced", "/settings#advanced", 1600, 1400),
+    ("settings-ui", "/settings#ui", 1600, 1400),
+    ("settings-policy", "/settings#policy", 1600, 1400),
+    ("settings-rules", "/settings#rules", 1600, 1400),
+    ("settings-analyzers", "/settings#analyzers", 1600, 1400),
+    ("settings-integrations", "/settings#integrations", 1600, 1400),
+    ("settings-reviewers", "/settings#reviewers", 1600, 1400),
+    ("settings-export", "/settings#export", 1600, 1400),
+    ("settings-about", "/settings#about", 1600, 1400),
 ]
 
 DEMO_PROMPTS = [
@@ -86,6 +100,17 @@ async def seed(base: str, token: str, upstream: str) -> dict[str, str]:
                     break
             except httpx.HTTPError:
                 await asyncio.sleep(0.25)
+        if os.environ.get("TYPESAFE_API_KEY"):
+            current = (await c.get("/api/settings/ns/integrations", headers=h)).json()["value"]
+            ts = {**current.get("typesafe", {}), "enabled": True, "api_key": ""}
+            await c.put("/api/settings/ns/integrations", headers=h, json={"typesafe": ts})
+            print("typesafe:", (await c.get("/api/settings/typesafe/status", headers=h)).json())
+        rules = [
+            {"id": "r-codename", "name": "Internal codename", "pattern": "project\\s+bluebird", "category": "policy", "severity": "HIGH", "scope": "request", "action": "flag", "enabled": True},
+            {"id": "r-wire", "name": "Wire transfer request", "pattern": "wire\\s+transfer", "category": "tool_abuse", "severity": "CRITICAL", "scope": "request", "action": "deny", "enabled": True},
+        ]
+        await c.put("/api/settings/ns/rules", headers=h, json={"custom": rules})
+        await c.put("/api/settings/ns/policy", headers=h, json={"global_auto_deny_patterns": ["drop\\s+table"]})
         agents = {}
         for name, provider, _model_hint in (("support-copilot", "openai", "gpt-4o-mini"), ("research-agent", "anthropic", "claude-3-5-sonnet"), ("billing-bot", "openai", "gpt-4o")):
             r = await c.post("/api/agents", headers=h, json={"name": name, "description": f"Demo {name} routed through AISRF", "owner": "platform-team", "tags": ["demo"], "upstream_provider": provider, "upstream_base_url": upstream + "/v1", "upstream_api_key": "sk-demo-upstream", "require_approval": True, "auto_deny_at_risk": 95, "inject_canary": name == "research-agent"})
@@ -153,6 +178,11 @@ def main() -> None:
     up_port, gw_port = free_port(), free_port()
     server = ThreadingHTTPServer(("127.0.0.1", up_port), FakeUpstream)
     threading.Thread(target=server.serve_forever, daemon=True).start()
+    env_file = ROOT / ".env"
+    if env_file.exists():
+        for line in env_file.read_text().splitlines():
+            if line.startswith("TYPESAFE_API_KEY=") and "TYPESAFE_API_KEY" not in os.environ:
+                os.environ["TYPESAFE_API_KEY"] = line.split("=", 1)[1].strip()
     env = {**os.environ, "AISRF_DATABASE_URL": f"sqlite+aiosqlite:///{tmp}/demo.db", "AISRF_DATA_DIR": str(tmp / "data"), "AISRF_LOG_DIR": str(tmp / "logs"), "AISRF_ADMIN_API_TOKEN": "demo-token", "AISRF_LOG_LEVEL": "WARNING", "AISRF_PORT": str(gw_port), "AISRF_APPROVAL_TIMEOUT_SECONDS": "3600"}
     import subprocess
 

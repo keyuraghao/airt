@@ -1,31 +1,6 @@
 (function () {
   "use strict";
   var A = window.AISRF;
-  A.snippets = function (key, provider) {
-    var origin = window.location.origin;
-    var k = key || "<AISRF agent key>";
-    return {
-      "OpenAI SDK": "from openai import OpenAI\nclient = OpenAI(base_url=\"" + origin + "/v1\", api_key=\"" + k + "\")\nresp = client.chat.completions.create(model=\"gpt-4o-mini\", messages=[{\"role\": \"user\", \"content\": \"hello\"}])\nprint(resp.choices[0].message.content)",
-      "Anthropic SDK": "import anthropic\nclient = anthropic.Anthropic(base_url=\"" + origin + "\", api_key=\"" + k + "\")\nmsg = client.messages.create(model=\"claude-sonnet-4-5\", max_tokens=256, messages=[{\"role\": \"user\", \"content\": \"hello\"}])\nprint(msg.content[0].text)",
-      "curl": "curl " + origin + "/v1/chat/completions \\\n  -H \"Authorization: Bearer " + k + "\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"model\": \"gpt-4o-mini\", \"messages\": [{\"role\": \"user\", \"content\": \"hello\"}]}'",
-      "Any HTTP client": "POST " + origin + "/proxy/<upstream path>\nX-AISRF-Key: " + k + "\nX-AISRF-Async: 1   (optional: returns 202 + ticket id, poll " + origin + "/gateway/tickets/{id})",
-      "Environment": "export OPENAI_BASE_URL=" + origin + "/v1\nexport OPENAI_API_KEY=" + k + "\nexport ANTHROPIC_BASE_URL=" + origin + "\nexport ANTHROPIC_API_KEY=" + k
-    };
-  };
-  A.snippetPanel = function (key) {
-    var snippets = A.snippets(key);
-    var names = Object.keys(snippets);
-    var wrap = A.el("div");
-    var tabs = A.el("div", { class: "snippet-tabs flex wrap" });
-    var pre = A.el("pre", { text: snippets[names[0]] });
-    names.forEach(function (n, i) {
-      tabs.appendChild(A.el("button", { type: "button", class: "btn xs" + (i === 0 ? " active" : ""), text: n, onclick: function (e) { A.$$("button", tabs).forEach(function (b) { b.classList.remove("active"); }); e.target.classList.add("active"); pre.textContent = snippets[n]; } }));
-    });
-    tabs.appendChild(A.el("button", { type: "button", class: "btn xs ghost", text: "Copy", onclick: function () { A.copy(pre.textContent); } }));
-    wrap.appendChild(tabs);
-    wrap.appendChild(pre);
-    return wrap;
-  };
   A.showKeyModal = function (agent, key, title) {
     var input = A.el("input", { type: "text", readonly: true, value: key, class: "mono", style: "width:100%", onclick: function (e) { e.target.select(); } });
     var body = A.el("div", { class: "stack" }, [

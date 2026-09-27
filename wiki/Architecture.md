@@ -127,3 +127,9 @@ The database URL is `AISRF_DATABASE_URL` (`sqlite+aiosqlite:///./data/aisrf.db` 
 | `sdk/node/` | The `aisrf-intercept` Node package |
 
 Related pages: [[Core-Concepts]], [[Gateway-Endpoints-and-Headers]], [[Logging-Metrics-and-Audit]], [[Development-Guide]].
+
+## TypeSafe decision layer
+
+TypeSafe (model Jev) is wired in as a confidence-gated decision layer rather than a chat provider. One call per request evaluates typed questions in parallel (about 100 ms, cached); the verdict and confidence feed the policy engine (rules `typesafe.auto_deny` and `typesafe.auto_approve`), gate the optional LLM judge (phase 2 runs only when the verdict is uncertain), grade red-team probe outcomes and triage code review findings. See [[TypeSafe-Integration]] for settings and thresholds.
+
+![TypeSafe decision layer](https://raw.githubusercontent.com/keyuraghao/aisrf/main/docs/images/typesafe-decision-layer.png)

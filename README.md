@@ -36,6 +36,16 @@ Agentic systems issue thousands of model calls nobody reads. Prompt injection, d
 | --- | --- |
 | ![Agent](docs/images/screenshots/agent-detail.png) | ![Settings](docs/images/screenshots/settings.png) |
 
+Every setting is editable live. The settings center has fifteen sections; a few of them:
+
+| Integrations (TypeSafe, LLM Guard, NeMo, Lakera, scanners) | Custom detection rules |
+| --- | --- |
+| ![Integrations](docs/images/screenshots/settings-integrations.png) | ![Rules](docs/images/screenshots/settings-rules.png) |
+
+| Analyzers | Policy |
+| --- | --- |
+| ![Analyzers](docs/images/screenshots/settings-analyzers.png) | ![Policy](docs/images/screenshots/settings-policy.png) |
+
 ## Architecture
 
 ![Architecture](docs/images/architecture.png)
@@ -43,6 +53,10 @@ Agentic systems issue thousands of model calls nobody reads. Prompt injection, d
 Every request follows the same lifecycle: authenticate the agent key, normalize the body (OpenAI, Anthropic, Gemini, Ollama, Cohere or any JSON), run the analyzers and guardrails, apply policy, park the request as a PENDING ticket until a reviewer decides, inject a canary into the system prompt, forward with the agent's encrypted upstream credential, scan the response, then relay it or withhold it.
 
 ![Request lifecycle](docs/images/request-lifecycle.png)
+
+The TypeSafe decision layer (request and response guard, confidence-gated routing, red-team evaluator, code review triage, savings model):
+
+![TypeSafe decision layer](docs/images/typesafe-decision-layer.png)
 
 More diagrams in [docs/DIAGRAMS.md](docs/DIAGRAMS.md): ticket state machine, red-team flow, deployment topology and the OWASP taxonomy matrix.
 
