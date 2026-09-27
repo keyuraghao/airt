@@ -135,7 +135,7 @@ Extras defined in `pyproject.toml`:
 | `scanners` | `garak>=0.10`, `pyrit>=0.5` | garak and PyRIT engines (promptfoo is a Node binary, installed separately) |
 | `codereview` | `semgrep>=1.100`, `bandit>=1.7` | semgrep and bandit engines for source code review |
 | `desktop` | `pywebview>=5` | native window for `aisrf desktop` (Linux also needs GTK or Qt bindings) |
-| `all` | `postgres`, `mitm`, `guardrails`, `scanners`, `codereview` combined (not `dev`, not `desktop`) | everything server side |
+| `all` (everything except `scanners`) | `postgres`, `mitm`, `guardrails`, `scanners`, `codereview` combined (not `dev`, not `desktop`) | everything server side |
 
 Note that `semgrep` pins `mcp==1.29.0` while the core allows `mcp>=1.10`; AISRF supports both the 1.x and the 2.x module layout (see [[Troubleshooting]]). The `guardrails` and `scanners` extras pull multi-gigabyte ML dependencies (torch, transformers); install them only where you run those engines.
 

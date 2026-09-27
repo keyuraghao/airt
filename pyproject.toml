@@ -40,7 +40,7 @@ guardrails = ["llm-guard>=0.3,<0.4", "nemoguardrails>=0.24,<0.26", "rebuff>=0.0.
 scanners = ["garak>=0.17,<0.18", "pyrit>=0.13,<1"]
 codereview = ["semgrep>=1.100", "bandit>=1.7"]
 desktop = ["pywebview>=5"]
-all = ["asyncpg>=0.29", "mitmproxy>=10", "llm-guard>=0.3,<0.4", "nemoguardrails>=0.24,<0.26", "rebuff>=0.0.5", "garak>=0.17,<0.18", "pyrit>=0.13,<1", "semgrep>=1.100", "bandit>=1.7"]
+all = ["asyncpg>=0.29", "mitmproxy>=10", "llm-guard>=0.3,<0.4", "nemoguardrails>=0.24,<0.26", "rebuff>=0.0.5", "semgrep>=1.100", "bandit>=1.7"]
 dev = ["pytest>=8", "pytest-asyncio>=0.23", "ruff>=0.5", "asgi-lifespan>=2"]
 
 [project.scripts]

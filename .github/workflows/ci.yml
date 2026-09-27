@@ -136,14 +136,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
-      - name: Create venv and install everything
+      - name: Guardrails and code review environment
         run: |
           uv venv .venv --python 3.12
-          uv pip install --python .venv/bin/python -e ".[dev,all]"
-      - name: Scanner and guardrail tests
+          uv pip install --python .venv/bin/python -e ".[dev,guardrails,codereview]"
+      - name: Guardrail and code review tests
         env:
           AISRF_SECRET_KEY: ci-only-secret-key-not-for-production-use
-        run: .venv/bin/python -m pytest tests/test_scanners.py tests/test_guardrails.py tests/test_codereview.py -q
+        run: .venv/bin/python -m pytest tests/test_guardrails.py tests/test_codereview.py -q
+      - name: Scanner environment (garak and PyRIT pin dependencies that conflict with LLM Guard, so they get their own venv)
+        run: |
+          uv venv .venv-scanners --python 3.12
+          uv pip install --python .venv-scanners/bin/python -e ".[dev,scanners]"
+      - name: Scanner tests
+        env:
+          AISRF_SECRET_KEY: ci-only-secret-key-not-for-production-use
+        run: .venv-scanners/bin/python -m pytest tests/test_scanners.py -q
 
   node:
     name: node sdk self-test

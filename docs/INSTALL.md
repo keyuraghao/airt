@@ -24,6 +24,9 @@ Release assets (GitHub Releases page): `aisrf-<version>-linux-x86_64.tar.gz`,
 `aisrf-<version>-windows-x86_64.zip`, one
 `SHA256SUMS-<os>-<arch>.txt` per archive, plus the wheel, sdist, SBOM and image digest.
 
+
+Note: garak pins newer torch, transformers and nltk than LLM Guard accepts, so `scanners` cannot be installed into the same environment as `guardrails`. Install `aisrf[scanners]` into its own virtual environment or container (the CI heavy job does exactly that); the `all` extra therefore excludes `scanners`.
+
 ## Self-contained binaries
 
 The binaries are PyInstaller "onedir" builds: a folder `aisrf/` with the `aisrf` executable and an
@@ -115,7 +118,7 @@ uv venv .venv && uv pip install --python .venv/bin/python "git+https://github.co
 aisrf init-db && aisrf serve
 ```
 
-Extras: `postgres`, `mitm`, `guardrails`, `scanners`, `codereview`, `desktop`, `all`, `dev`.
+Extras: `postgres`, `mitm`, `guardrails`, `scanners`, `codereview`, `desktop`, `all` (everything except `scanners`), `dev`.
 State goes to `./data` and `./logs` unless `AISRF_HOME` or `AISRF_DATA_DIR` / `AISRF_LOG_DIR` /
 `AISRF_DATABASE_URL` are set. A wheel is attached to every release; PyPI publishing is not
 enabled yet (`docs/RELEASING.md`).
