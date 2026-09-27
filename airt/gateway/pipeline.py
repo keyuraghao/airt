@@ -3,6 +3,7 @@
 Same steps as an HTTP call through the gateway: ticket, analysis, policy, human hold, forward, response analysis.
 Non-streaming only.
 """
+
 from __future__ import annotations
 
 import json
@@ -77,11 +78,24 @@ async def submit(
                 canary = None
         upstream_url = forwarder.build_upstream_url(agent, path)
         ticket = await tickets.create_ticket(
-            session, agent, method=method, path=path, upstream_url=upstream_url, request_headers=redact_headers(inbound), request_body=raw.decode(),
-            request_json=body if isinstance(body, dict) else None, normalized=normalized, source=source, correlation_id=correlation_id, campaign_id=campaign_id, probe_id=probe_id,
+            session,
+            agent,
+            method=method,
+            path=path,
+            upstream_url=upstream_url,
+            request_headers=redact_headers(inbound),
+            request_body=raw.decode(),
+            request_json=body if isinstance(body, dict) else None,
+            normalized=normalized,
+            source=source,
+            correlation_id=correlation_id,
+            campaign_id=campaign_id,
+            probe_id=probe_id,
         )
         await agents.touch_agent(session, agent.id)
-        analysis = await analyze_request(normalized, {"agent": agents.agent_to_dict(agent), "path": path, "headers": inbound})
+        analysis = await analyze_request(
+            normalized, {"agent": agents.agent_to_dict(agent), "path": path, "headers": inbound}
+        )
         await tickets.set_analysis(session, ticket, analysis.to_dict())
         decision = policy.evaluate(agent, normalized, path, ticket.risk_score, ticket.findings)
         await tickets.apply_policy(session, ticket, decision.to_dict())
@@ -94,7 +108,9 @@ async def submit(
         note = ticket.decision_note
 
     if status == TicketStatus.DENIED.value:
-        return SubmitResult(ticket_id, status, risk_score=risk, findings=findings, decided_by="policy", decision_note=note)
+        return SubmitResult(
+            ticket_id, status, risk_score=risk, findings=findings, decided_by="policy", decision_note=note
+        )
 
     if status == TicketStatus.PENDING.value:
         final = await hold_registry.wait(ticket_id, wait_timeout)
@@ -102,9 +118,22 @@ async def submit(
             ticket = await session.get(Ticket, ticket_id)
             if final == TicketStatus.EXPIRED.value or ticket.status == TicketStatus.PENDING.value:
                 await tickets.mark_expired(session, ticket)
-                return SubmitResult(ticket_id, TicketStatus.EXPIRED.value, risk_score=risk, findings=findings, decided_by="timeout")
+                return SubmitResult(
+                    ticket_id,
+                    TicketStatus.EXPIRED.value,
+                    risk_score=risk,
+                    findings=findings,
+                    decided_by="timeout",
+                )
             if ticket.status == TicketStatus.DENIED.value:
-                return SubmitResult(ticket_id, ticket.status, risk_score=risk, findings=findings, decided_by=ticket.decided_by, decision_note=ticket.decision_note)
+                return SubmitResult(
+                    ticket_id,
+                    ticket.status,
+                    risk_score=risk,
+                    findings=findings,
+                    decided_by=ticket.decided_by,
+                    decision_note=ticket.decision_note,
+                )
             decided_by, note = ticket.decided_by, ticket.decision_note
     else:
         decided_by = "policy"
@@ -126,21 +155,56 @@ async def submit(
             ticket = await session.get(Ticket, ticket_id)
             await tickets.mark_failed(session, ticket, msg)
         metrics.inc("gateway_upstream_errors_total")
-        return SubmitResult(ticket_id, TicketStatus.FAILED.value, error=msg, risk_score=risk, findings=findings, decided_by=decided_by, decision_note=note)
+        return SubmitResult(
+            ticket_id,
+            TicketStatus.FAILED.value,
+            error=msg,
+            risk_score=risk,
+            findings=findings,
+            decided_by=decided_by,
+            decision_note=note,
+        )
     latency = round((time.perf_counter() - started) * 1000, 1)
     text = extract_response_text(raw_resp, normalized.get("endpoint", ""))
     response_findings: list[dict[str, Any]] = []
     if text:
         try:
-            res = await analyze_response(normalized, text, {"agent_id": agent_id, "canaries": [canary] if canary else []})
+            res = await analyze_response(
+                normalized, text, {"agent_id": agent_id, "canaries": [canary] if canary else []}
+            )
             response_findings = [f.to_dict() for f in res.findings]
         except Exception as exc:
             log.warning("response.analysis.failed", ticket_id=ticket_id, error=str(exc))
-        if canary_mod.leaked(text, canary) and not any(f.get("category") == "canary_leak" for f in response_findings):
-            response_findings.insert(0, {"analyzer": "canary", "category": "canary_leak", "severity": "CRITICAL", "title": "Canary token leaked in response", "description": "The secret canary injected into the system prompt appears in the model output.", "evidence": canary, "location": "response", "confidence": 1.0, "tags": ["rebuff"], "metadata": {}})
+        if canary_mod.leaked(text, canary) and not any(
+            f.get("category") == "canary_leak" for f in response_findings
+        ):
+            response_findings.insert(
+                0,
+                {
+                    "analyzer": "canary",
+                    "category": "canary_leak",
+                    "severity": "CRITICAL",
+                    "title": "Canary token leaked in response",
+                    "description": "The secret canary injected into the system prompt appears in the model output.",
+                    "evidence": canary,
+                    "location": "response",
+                    "confidence": 1.0,
+                    "tags": ["rebuff"],
+                    "metadata": {},
+                },
+            )
     async with session_scope() as session:
         ticket = await session.get(Ticket, ticket_id)
-        await tickets.mark_completed(session, ticket, status_code=status_code, headers=resp_headers, body=raw_resp.decode("utf-8", "replace"), latency_ms=latency, response_findings=response_findings, response_preview=text[:500])
+        await tickets.mark_completed(
+            session,
+            ticket,
+            status_code=status_code,
+            headers=resp_headers,
+            body=raw_resp.decode("utf-8", "replace"),
+            latency_ms=latency,
+            response_findings=response_findings,
+            response_preview=text[:500],
+        )
         final_status = ticket.status
     metrics.inc("gateway_upstream_responses_total", labels={"status": str(status_code)})
     metrics.observe("gateway_upstream_latency_ms", latency)
@@ -148,4 +212,16 @@ async def submit(
         rj = json.loads(raw_resp)
     except Exception:
         rj = None
-    return SubmitResult(ticket_id, final_status, http_status=status_code, response_text=text, response_json=rj, latency_ms=latency, risk_score=risk, findings=findings, response_findings=response_findings, decided_by=decided_by, decision_note=note)
+    return SubmitResult(
+        ticket_id,
+        final_status,
+        http_status=status_code,
+        response_text=text,
+        response_json=rj,
+        latency_ms=latency,
+        risk_score=risk,
+        findings=findings,
+        response_findings=response_findings,
+        decided_by=decided_by,
+        decision_note=note,
+    )

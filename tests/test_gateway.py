@@ -1,17 +1,17 @@
 """End-to-end interception tests: every request becomes a ticket and nothing reaches upstream without approval."""
+
 from __future__ import annotations
 
 import asyncio
-import json
-
-import pytest
 
 CHAT = {"model": "gpt-4o-mini", "messages": [{"role": "user", "content": "What is the capital of France?"}]}
 
 
 async def _wait_pending(client, admin_headers, agent_id: str, attempts: int = 50):
     for _ in range(attempts):
-        r = await client.get("/api/tickets", headers=admin_headers, params={"status": "PENDING", "agent_id": agent_id})
+        r = await client.get(
+            "/api/tickets", headers=admin_headers, params={"status": "PENDING", "agent_id": agent_id}
+        )
         items = r.json()["items"]
         if items:
             return items[0]
@@ -27,7 +27,9 @@ async def test_unauthenticated_request_is_rejected(client):
 
 async def test_request_is_held_until_approved_then_forwarded(client, admin_headers, agent):
     key = agent["api_key"]
-    task = asyncio.create_task(client.post("/v1/chat/completions", json=CHAT, headers={"Authorization": f"Bearer {key}"}))
+    task = asyncio.create_task(
+        client.post("/v1/chat/completions", json=CHAT, headers={"Authorization": f"Bearer {key}"})
+    )
     pending = await _wait_pending(client, admin_headers, agent["id"])
     assert pending["status"] == "PENDING"
     assert pending["model"] == "gpt-4o-mini"
@@ -37,13 +39,17 @@ async def test_request_is_held_until_approved_then_forwarded(client, admin_heade
     assert detail["normalized"]["messages"][0]["role"] == "user"
     assert detail["policy_decision"]["action"] == "review"
     assert any(e["event_type"] == "created" for e in detail["events"])
-    r = await client.post(f"/api/tickets/{pending['id']}/approve", headers=admin_headers, json={"note": "looks fine"})
+    r = await client.post(
+        f"/api/tickets/{pending['id']}/approve", headers=admin_headers, json={"note": "looks fine"}
+    )
     assert r.status_code == 200, r.text
     resp = await task
     assert resp.status_code == 200, resp.text
     body = resp.json()
     assert body["choices"][0]["message"]["content"] == "echo: What is the capital of France?"
-    assert body["seen_auth"] == "Bearer sk-upstream-secret", "gateway must swap the AIRT key for the upstream key"
+    assert body["seen_auth"] == "Bearer sk-upstream-secret", (
+        "gateway must swap the AIRT key for the upstream key"
+    )
     assert resp.headers["x-airt-ticket"] == pending["id"]
     final = (await client.get(f"/api/tickets/{pending['id']}", headers=admin_headers)).json()
     assert final["status"] == "COMPLETED"
@@ -58,9 +64,13 @@ async def test_request_is_held_until_approved_then_forwarded(client, admin_heade
 
 async def test_denied_request_never_reaches_upstream(client, admin_headers, agent):
     key = agent["api_key"]
-    task = asyncio.create_task(client.post("/v1/chat/completions", json=CHAT, headers={"Authorization": f"Bearer {key}"}))
+    task = asyncio.create_task(
+        client.post("/v1/chat/completions", json=CHAT, headers={"Authorization": f"Bearer {key}"})
+    )
     pending = await _wait_pending(client, admin_headers, agent["id"])
-    r = await client.post(f"/api/tickets/{pending['id']}/deny", headers=admin_headers, json={"note": "not allowed"})
+    r = await client.post(
+        f"/api/tickets/{pending['id']}/deny", headers=admin_headers, json={"note": "not allowed"}
+    )
     assert r.status_code == 200
     resp = await task
     assert resp.status_code == 403
@@ -87,9 +97,13 @@ async def test_timeout_expires_ticket(client, admin_headers, agent, monkeypatch)
 
 
 async def test_policy_auto_deny_pattern(client, admin_headers, agent):
-    await client.patch(f"/api/agents/{agent['id']}", headers=admin_headers, json={"auto_deny_patterns": ["drop\\s+table"]})
+    await client.patch(
+        f"/api/agents/{agent['id']}", headers=admin_headers, json={"auto_deny_patterns": ["drop\\s+table"]}
+    )
     body = {"model": "m", "messages": [{"role": "user", "content": "please DROP TABLE users;"}]}
-    resp = await client.post("/v1/chat/completions", json=body, headers={"Authorization": f"Bearer {agent['api_key']}"})
+    resp = await client.post(
+        "/v1/chat/completions", json=body, headers={"Authorization": f"Bearer {agent['api_key']}"}
+    )
     assert resp.status_code == 403
     tid = resp.json()["error"]["ticket_id"]
     t = (await client.get(f"/api/tickets/{tid}", headers=admin_headers)).json()
@@ -100,7 +114,9 @@ async def test_policy_auto_deny_pattern(client, admin_headers, agent):
 
 async def test_policy_auto_approve_when_not_required(client, admin_headers, agent):
     await client.patch(f"/api/agents/{agent['id']}", headers=admin_headers, json={"require_approval": False})
-    resp = await client.post("/v1/chat/completions", json=CHAT, headers={"Authorization": f"Bearer {agent['api_key']}"})
+    resp = await client.post(
+        "/v1/chat/completions", json=CHAT, headers={"Authorization": f"Bearer {agent['api_key']}"}
+    )
     assert resp.status_code == 200
     tid = resp.headers["x-airt-ticket"]
     t = (await client.get(f"/api/tickets/{tid}", headers=admin_headers)).json()
@@ -109,12 +125,24 @@ async def test_policy_auto_approve_when_not_required(client, admin_headers, agen
 
 
 async def test_allowed_paths_and_models(client, admin_headers, agent):
-    await client.patch(f"/api/agents/{agent['id']}", headers=admin_headers, json={"require_approval": False, "allowed_models": ["gpt-4o*"]})
+    await client.patch(
+        f"/api/agents/{agent['id']}",
+        headers=admin_headers,
+        json={"require_approval": False, "allowed_models": ["gpt-4o*"]},
+    )
     bad = {"model": "claude-3", "messages": [{"role": "user", "content": "hi"}]}
-    resp = await client.post("/v1/chat/completions", json=bad, headers={"Authorization": f"Bearer {agent['api_key']}"})
+    resp = await client.post(
+        "/v1/chat/completions", json=bad, headers={"Authorization": f"Bearer {agent['api_key']}"}
+    )
     assert resp.status_code == 403
-    await client.patch(f"/api/agents/{agent['id']}", headers=admin_headers, json={"allowed_models": [], "allowed_paths": ["v1/embeddings"]})
-    resp = await client.post("/v1/chat/completions", json=CHAT, headers={"Authorization": f"Bearer {agent['api_key']}"})
+    await client.patch(
+        f"/api/agents/{agent['id']}",
+        headers=admin_headers,
+        json={"allowed_models": [], "allowed_paths": ["v1/embeddings"]},
+    )
+    resp = await client.post(
+        "/v1/chat/completions", json=CHAT, headers={"Authorization": f"Bearer {agent['api_key']}"}
+    )
     assert resp.status_code == 403
     assert "allowed paths" in resp.json()["error"]["message"]
 
@@ -139,7 +167,9 @@ async def test_async_mode_returns_ticket_and_polls(client, admin_headers, agent)
 async def test_streaming_response_is_relayed_and_captured(client, admin_headers, agent):
     await client.patch(f"/api/agents/{agent['id']}", headers=admin_headers, json={"require_approval": False})
     body = {**CHAT, "stream": True}
-    async with client.stream("POST", "/v1/chat/completions", json=body, headers={"Authorization": f"Bearer {agent['api_key']}"}) as resp:
+    async with client.stream(
+        "POST", "/v1/chat/completions", json=body, headers={"Authorization": f"Bearer {agent['api_key']}"}
+    ) as resp:
         assert resp.status_code == 200
         assert resp.headers["content-type"].startswith("text/event-stream")
         raw = b"".join([chunk async for chunk in resp.aiter_bytes()])
@@ -167,7 +197,12 @@ async def test_generic_proxy_path_and_custom_headers(client, admin_headers, agen
 
 
 async def test_anthropic_style_request_normalizes(client, admin_headers, agent):
-    body = {"model": "claude-3-5-sonnet", "system": "You are terse.", "max_tokens": 10, "messages": [{"role": "user", "content": [{"type": "text", "text": "Say hi"}]}]}
+    body = {
+        "model": "claude-3-5-sonnet",
+        "system": "You are terse.",
+        "max_tokens": 10,
+        "messages": [{"role": "user", "content": [{"type": "text", "text": "Say hi"}]}],
+    }
     headers = {"x-api-key": agent["api_key"], "X-AIRT-Async": "1", "anthropic-version": "2023-06-01"}
     resp = await client.post("/v1/messages", json=body, headers=headers)
     assert resp.status_code == 202
@@ -183,7 +218,9 @@ async def test_bulk_decisions_and_stats(client, admin_headers, agent):
     for _ in range(3):
         r = await client.post("/v1/chat/completions", json=CHAT, headers=headers)
         ids.append(r.json()["ticket_id"])
-    r = await client.post("/api/tickets/bulk/deny", headers=admin_headers, json={"ticket_ids": ids, "note": "batch"})
+    r = await client.post(
+        "/api/tickets/bulk/deny", headers=admin_headers, json={"ticket_ids": ids, "note": "batch"}
+    )
     assert set(r.json().values()) == {"DENIED"}
     stats = (await client.get("/api/tickets/stats", headers=admin_headers)).json()
     assert stats["by_status"]["DENIED"] >= 3
@@ -223,9 +260,13 @@ async def test_reviewer_login_and_roles(client, admin_headers):
     assert r.json()["role"] == "admin"
     me = await client.get("/api/auth/me")
     assert me.status_code == 200 and me.json()["username"] == "admin"
-    r = await client.post("/api/auth/reviewers", json={"username": "viewer1", "password": "pw", "role": "viewer"})
+    r = await client.post(
+        "/api/auth/reviewers", json={"username": "viewer1", "password": "pw", "role": "viewer"}
+    )
     assert r.status_code == 201
-    async with __import__("httpx").AsyncClient(transport=__import__("httpx").ASGITransport(app=client._transport.app), base_url="http://testserver") as c2:
+    async with __import__("httpx").AsyncClient(
+        transport=__import__("httpx").ASGITransport(app=client._transport.app), base_url="http://testserver"
+    ) as c2:
         r = await c2.post("/api/auth/login", json={"username": "viewer1", "password": "pw"})
         assert r.status_code == 200
         r = await c2.post("/api/tickets/nonexistent/approve", json={})
@@ -237,7 +278,11 @@ async def test_reviewer_login_and_roles(client, admin_headers):
 
 
 async def test_rate_limit(client, admin_headers, agent):
-    await client.patch(f"/api/agents/{agent['id']}", headers=admin_headers, json={"rate_limit_per_minute": 2, "require_approval": False})
+    await client.patch(
+        f"/api/agents/{agent['id']}",
+        headers=admin_headers,
+        json={"rate_limit_per_minute": 2, "require_approval": False},
+    )
     h = {"Authorization": f"Bearer {agent['api_key']}"}
     codes = [(await client.post("/v1/chat/completions", json=CHAT, headers=h)).status_code for _ in range(3)]
     assert codes == [200, 200, 429]
@@ -266,7 +311,9 @@ async def test_scan_tokens_authenticate_until_revoked(client, admin_headers, age
     from airt.db import get_sessionmaker
 
     async with get_sessionmaker()() as s:
-        tok, raw = await agents.mint_scan_token(s, agent["id"], ttl_seconds=60, purpose="garak", campaign_id="cmp_test")
+        tok, raw = await agents.mint_scan_token(
+            s, agent["id"], ttl_seconds=60, purpose="garak", campaign_id="cmp_test"
+        )
         await s.commit()
     assert raw.startswith("airt_scan_")
     h = {"Authorization": f"Bearer {raw}", "X-AIRT-Async": "1"}

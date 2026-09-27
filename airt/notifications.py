@@ -1,4 +1,5 @@
 """Outbound notifications: pages reviewers on a webhook (Slack incoming webhook or any JSON endpoint) when tickets need attention."""
+
 from __future__ import annotations
 
 import asyncio
@@ -19,14 +20,31 @@ def _is_slack(url: str) -> bool:
 def _slack_payload(item: dict[str, Any], link: str) -> dict[str, Any]:
     t = item.get("ticket", {})
     event = item.get("event", "")
-    verb = {"created": "needs review", "expired": "expired without a decision", "failed": "failed upstream", "decided": f"was {t.get('status', '').lower()} by {item.get('by', '')}", "completed": "completed"}.get(event, event)
+    verb = {
+        "created": "needs review",
+        "expired": "expired without a decision",
+        "failed": "failed upstream",
+        "decided": f"was {t.get('status', '').lower()} by {item.get('by', '')}",
+        "completed": "completed",
+    }.get(event, event)
     text = f"AIRT ticket #{t.get('number')} {verb}: agent {t.get('agent_name') or t.get('agent_id')}, model {t.get('model') or '-'}, risk {t.get('risk_score')} ({t.get('risk_level')})"
     return {
         "text": text,
         "blocks": [
             {"type": "section", "text": {"type": "mrkdwn", "text": f"*{text}*"}},
-            {"type": "section", "text": {"type": "mrkdwn", "text": f"> {(t.get('prompt_preview') or '')[:300]}"}},
-            {"type": "context", "elements": [{"type": "mrkdwn", "text": f"<{link}|Open ticket> | path {t.get('path')} | policy {t.get('policy_action')}"}]},
+            {
+                "type": "section",
+                "text": {"type": "mrkdwn", "text": f"> {(t.get('prompt_preview') or '')[:300]}"},
+            },
+            {
+                "type": "context",
+                "elements": [
+                    {
+                        "type": "mrkdwn",
+                        "text": f"<{link}|Open ticket> | path {t.get('path')} | policy {t.get('policy_action')}",
+                    }
+                ],
+            },
         ],
     }
 
@@ -72,7 +90,17 @@ class Notifier:
                 base = settings.public_url.rstrip("/") or f"http://localhost:{settings.port}"
                 link = f"{base}/tickets/{ticket.get('id')}"
                 for url in settings.notify_webhook_urls:
-                    payload = _slack_payload(item, link) if _is_slack(url) else {"source": "airt", "event": item.get("event"), "ticket": ticket, "link": link, "by": item.get("by")}
+                    payload = (
+                        _slack_payload(item, link)
+                        if _is_slack(url)
+                        else {
+                            "source": "airt",
+                            "event": item.get("event"),
+                            "ticket": ticket,
+                            "link": link,
+                            "by": item.get("by"),
+                        }
+                    )
                     try:
                         r = await self._client.post(url, json=payload)
                         if r.status_code >= 300:

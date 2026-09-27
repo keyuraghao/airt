@@ -1,4 +1,5 @@
 """Runs every registered analyzer over a normalized request (or a response) and aggregates a risk score."""
+
 from __future__ import annotations
 
 import asyncio
@@ -25,7 +26,13 @@ def list_analyzers() -> list[dict[str, Any]]:
     out = []
     for kind, reg in (("request", _REGISTRY), ("response", _RESPONSE_REGISTRY)):
         for name, a in reg.items():
-            out.append({"name": name, "kind": kind, "description": (getattr(a, "description", "") or (a.__doc__ or "")).strip()[:200]})
+            out.append(
+                {
+                    "name": name,
+                    "kind": kind,
+                    "description": (getattr(a, "description", "") or (a.__doc__ or "")).strip()[:200],
+                }
+            )
     return out
 
 
@@ -40,7 +47,9 @@ def _load_builtin() -> None:
     register(CustomRulesRequest())
     register(CustomRulesResponse(), response=True)
     try:
-        from .. import guardrails  # noqa: F401  optional defense integrations (LLM Guard, NeMo, Lakera, Rebuff)
+        from .. import (
+            guardrails,  # noqa: F401  optional defense integrations (LLM Guard, NeMo, Lakera, Rebuff)
+        )
     except Exception as exc:  # pragma: no cover
         log.warning("guardrails.load_failed", error=str(exc))
 
@@ -83,22 +92,43 @@ async def _run(analyzer: Any, normalized: dict[str, Any], context: dict[str, Any
         return []
 
 
-async def analyze_request(normalized: dict[str, Any], context: dict[str, Any] | None = None) -> AnalysisResult:
+async def analyze_request(
+    normalized: dict[str, Any], context: dict[str, Any] | None = None
+) -> AnalysisResult:
     _load_builtin()
     context = context or {}
     start = time.perf_counter()
     results = await asyncio.gather(*(_run(a, normalized, context) for a in _active(_REGISTRY)))
     findings = _apply_overrides([f for group in results for f in group])
-    findings.sort(key=lambda f: ({"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "INFO": 4}[f.severity.value], -f.confidence))
+    findings.sort(
+        key=lambda f: (
+            {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "INFO": 4}[f.severity.value],
+            -f.confidence,
+        )
+    )
     score = score_findings(findings)
-    return AnalysisResult(score=score, level=level_for_score(score), findings=findings, duration_ms=round((time.perf_counter() - start) * 1000, 2), analyzers_run=list(_REGISTRY))
+    return AnalysisResult(
+        score=score,
+        level=level_for_score(score),
+        findings=findings,
+        duration_ms=round((time.perf_counter() - start) * 1000, 2),
+        analyzers_run=list(_REGISTRY),
+    )
 
 
-async def analyze_response(normalized: dict[str, Any], response_text: str, context: dict[str, Any] | None = None) -> AnalysisResult:
+async def analyze_response(
+    normalized: dict[str, Any], response_text: str, context: dict[str, Any] | None = None
+) -> AnalysisResult:
     _load_builtin()
     context = {**(context or {}), "response_text": response_text}
     start = time.perf_counter()
     results = await asyncio.gather(*(_run(a, normalized, context) for a in _active(_RESPONSE_REGISTRY)))
     findings = _apply_overrides([f for group in results for f in group])
     score = score_findings(findings)
-    return AnalysisResult(score=score, level=level_for_score(score), findings=findings, duration_ms=round((time.perf_counter() - start) * 1000, 2), analyzers_run=list(_RESPONSE_REGISTRY))
+    return AnalysisResult(
+        score=score,
+        level=level_for_score(score),
+        findings=findings,
+        duration_ms=round((time.perf_counter() - start) * 1000, 2),
+        analyzers_run=list(_RESPONSE_REGISTRY),
+    )

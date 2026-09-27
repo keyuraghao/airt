@@ -1,4 +1,5 @@
 """Unit tests for request normalization, response extraction, policy and security helpers."""
+
 from __future__ import annotations
 
 import json
@@ -16,8 +17,18 @@ def test_normalize_openai_chat_with_parts_and_tools():
         "tools": [{"type": "function", "function": {"name": "run_shell", "description": "run a command"}}],
         "messages": [
             {"role": "system", "content": "Be helpful"},
-            {"role": "user", "content": [{"type": "text", "text": "hello"}, {"type": "image_url", "image_url": {"url": "x"}}]},
-            {"role": "assistant", "content": None, "tool_calls": [{"function": {"name": "run_shell", "arguments": "{\"cmd\": \"ls\"}"}}]},
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "hello"},
+                    {"type": "image_url", "image_url": {"url": "x"}},
+                ],
+            },
+            {
+                "role": "assistant",
+                "content": None,
+                "tool_calls": [{"function": {"name": "run_shell", "arguments": '{"cmd": "ls"}'}}],
+            },
         ],
     }
     n = normalize("v1/chat/completions", json.dumps(body).encode(), "openai")
@@ -30,11 +41,16 @@ def test_normalize_openai_chat_with_parts_and_tools():
 
 
 def test_normalize_responses_completion_gemini_and_unknown():
-    r = normalize("v1/responses", json.dumps({"model": "o3", "instructions": "sys", "input": "do it"}).encode())
+    r = normalize(
+        "v1/responses", json.dumps({"model": "o3", "instructions": "sys", "input": "do it"}).encode()
+    )
     assert r["endpoint"] == "responses" and r["system"] == "sys" and r["messages"][0]["content"] == "do it"
     c = normalize("v1/completions", json.dumps({"model": "davinci", "prompt": "once upon"}).encode())
     assert c["endpoint"] == "completion" and c["messages"][0]["content"] == "once upon"
-    g = normalize("v1beta/models/gemini:generateContent", json.dumps({"contents": [{"role": "user", "parts": [{"text": "hey"}]}]}).encode())
+    g = normalize(
+        "v1beta/models/gemini:generateContent",
+        json.dumps({"contents": [{"role": "user", "parts": [{"text": "hey"}]}]}).encode(),
+    )
     assert g["messages"][0]["content"] == "hey"
     u = normalize("custom/endpoint", json.dumps({"foo": {"bar": "deep string"}}).encode())
     assert "deep string" in u["prompt_text"]
@@ -47,14 +63,33 @@ def test_extract_response_text_variants():
     assert extract_response_text(openai) == "hi there"
     anthropic = json.dumps({"content": [{"type": "text", "text": "yo"}]}).encode()
     assert extract_response_text(anthropic) == "yo"
-    sse = b"data: " + json.dumps({"choices": [{"delta": {"content": "a"}}]}).encode() + b"\n\ndata: " + json.dumps({"choices": [{"delta": {"content": "b"}}]}).encode() + b"\n\ndata: [DONE]\n\n"
+    sse = (
+        b"data: "
+        + json.dumps({"choices": [{"delta": {"content": "a"}}]}).encode()
+        + b"\n\ndata: "
+        + json.dumps({"choices": [{"delta": {"content": "b"}}]}).encode()
+        + b"\n\ndata: [DONE]\n\n"
+    )
     assert extract_response_text(sse) == "ab"
-    anth_sse = b"data: " + json.dumps({"type": "content_block_delta", "delta": {"text": "z"}}).encode() + b"\n\n"
+    anth_sse = (
+        b"data: " + json.dumps({"type": "content_block_delta", "delta": {"text": "z"}}).encode() + b"\n\n"
+    )
     assert extract_response_text(anth_sse) == "z"
 
 
 def _agent(**kw) -> Agent:
-    base = dict(name="a", api_key_hash="h", api_key_prefix="p", is_active=True, require_approval=True, auto_approve_below_risk=0, auto_deny_at_risk=90, auto_deny_patterns=[], allowed_paths=[], allowed_models=[])
+    base = dict(
+        name="a",
+        api_key_hash="h",
+        api_key_prefix="p",
+        is_active=True,
+        require_approval=True,
+        auto_approve_below_risk=0,
+        auto_deny_at_risk=90,
+        auto_deny_patterns=[],
+        allowed_paths=[],
+        allowed_models=[],
+    )
     base.update(kw)
     return Agent(**base)
 

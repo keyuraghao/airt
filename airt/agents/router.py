@@ -1,4 +1,5 @@
 """Admin REST API for agents (registered clients) and their activity logs."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -57,22 +58,39 @@ class AgentPatch(BaseModel):
 
 
 @router.get("")
-async def list_agents(include_inactive: bool = True, _: Principal = Depends(current_principal), session: AsyncSession = Depends(get_session)) -> list[dict[str, Any]]:
+async def list_agents(
+    include_inactive: bool = True,
+    _: Principal = Depends(current_principal),
+    session: AsyncSession = Depends(get_session),
+) -> list[dict[str, Any]]:
     return [agents.agent_to_dict(a) for a in await agents.list_agents(session, include_inactive)]
 
 
 @router.post("", status_code=201)
-async def create_agent(payload: AgentIn, p: Principal = Depends(require_role("admin")), session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
+async def create_agent(
+    payload: AgentIn,
+    p: Principal = Depends(require_role("admin")),
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, Any]:
     if await agents.get_agent_by_name(session, payload.name):
         raise HTTPException(409, "an agent with this name already exists")
     agent, raw_key = await agents.create_agent(session, **payload.model_dump())
-    await audit.record(session, p.username, "agent.create", "agent", agent.id, {"name": agent.name, "provider": agent.upstream_provider})
+    await audit.record(
+        session,
+        p.username,
+        "agent.create",
+        "agent",
+        agent.id,
+        {"name": agent.name, "provider": agent.upstream_provider},
+    )
     await session.commit()
     return {**agents.agent_to_dict(agent), "api_key": raw_key}
 
 
 @router.get("/{agent_id}")
-async def get_agent(agent_id: str, _: Principal = Depends(current_principal), session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
+async def get_agent(
+    agent_id: str, _: Principal = Depends(current_principal), session: AsyncSession = Depends(get_session)
+) -> dict[str, Any]:
     a = await agents.get_agent(session, agent_id) or await agents.get_agent_by_name(session, agent_id)
     if a is None:
         raise HTTPException(404, "agent not found")
@@ -80,19 +98,33 @@ async def get_agent(agent_id: str, _: Principal = Depends(current_principal), se
 
 
 @router.patch("/{agent_id}")
-async def patch_agent(agent_id: str, payload: AgentPatch, p: Principal = Depends(require_role("admin")), session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
+async def patch_agent(
+    agent_id: str,
+    payload: AgentPatch,
+    p: Principal = Depends(require_role("admin")),
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, Any]:
     a = await agents.get_agent(session, agent_id)
     if a is None:
         raise HTTPException(404, "agent not found")
     changes = payload.model_dump(exclude_none=True)
     await agents.update_agent(session, a, changes)
-    await audit.record(session, p.username, "agent.update", "agent", a.id, {k: ("[secret]" if k == "upstream_api_key" else v) for k, v in changes.items()})
+    await audit.record(
+        session,
+        p.username,
+        "agent.update",
+        "agent",
+        a.id,
+        {k: ("[secret]" if k == "upstream_api_key" else v) for k, v in changes.items()},
+    )
     await session.commit()
     return agents.agent_to_dict(a)
 
 
 @router.post("/{agent_id}/rotate-key")
-async def rotate_key(agent_id: str, p: Principal = Depends(require_role("admin")), session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
+async def rotate_key(
+    agent_id: str, p: Principal = Depends(require_role("admin")), session: AsyncSession = Depends(get_session)
+) -> dict[str, Any]:
     a = await agents.get_agent(session, agent_id)
     if a is None:
         raise HTTPException(404, "agent not found")
@@ -103,7 +135,9 @@ async def rotate_key(agent_id: str, p: Principal = Depends(require_role("admin")
 
 
 @router.delete("/{agent_id}")
-async def disable_agent(agent_id: str, p: Principal = Depends(require_role("admin")), session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
+async def disable_agent(
+    agent_id: str, p: Principal = Depends(require_role("admin")), session: AsyncSession = Depends(get_session)
+) -> dict[str, Any]:
     a = await agents.get_agent(session, agent_id)
     if a is None:
         raise HTTPException(404, "agent not found")
@@ -114,10 +148,24 @@ async def disable_agent(agent_id: str, p: Principal = Depends(require_role("admi
 
 
 @router.get("/{agent_id}/events")
-async def agent_events(agent_id: str, limit: int = Query(200, le=2000), offset: int = 0, level: str | None = None, _: Principal = Depends(current_principal), session: AsyncSession = Depends(get_session)) -> list[dict[str, Any]]:
-    return [agents.event_to_dict(e) for e in await agents.list_agent_events(session, agent_id=agent_id, limit=limit, offset=offset, level=level)]
+async def agent_events(
+    agent_id: str,
+    limit: int = Query(200, le=2000),
+    offset: int = 0,
+    level: str | None = None,
+    _: Principal = Depends(current_principal),
+    session: AsyncSession = Depends(get_session),
+) -> list[dict[str, Any]]:
+    return [
+        agents.event_to_dict(e)
+        for e in await agents.list_agent_events(
+            session, agent_id=agent_id, limit=limit, offset=offset, level=level
+        )
+    ]
 
 
 @router.get("/{agent_id}/stats")
-async def agent_stats(agent_id: str, _: Principal = Depends(current_principal), session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
+async def agent_stats(
+    agent_id: str, _: Principal = Depends(current_principal), session: AsyncSession = Depends(get_session)
+) -> dict[str, Any]:
     return await agents.agent_stats(session, agent_id)

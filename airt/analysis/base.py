@@ -1,4 +1,5 @@
 """Shared analysis types. Analyzers are pure, synchronous or async callables that inspect a normalized request."""
+
 from __future__ import annotations
 
 import enum
@@ -14,19 +15,25 @@ class Severity(str, enum.Enum):
     CRITICAL = "CRITICAL"
 
 
-SEVERITY_WEIGHT = {Severity.INFO: 0, Severity.LOW: 10, Severity.MEDIUM: 30, Severity.HIGH: 60, Severity.CRITICAL: 90}
+SEVERITY_WEIGHT = {
+    Severity.INFO: 0,
+    Severity.LOW: 10,
+    Severity.MEDIUM: 30,
+    Severity.HIGH: 60,
+    Severity.CRITICAL: 90,
+}
 
 
 @dataclass
 class Finding:
     analyzer: str
-    category: str            # prompt_injection | jailbreak | pii | secrets | tool_abuse | data_exfil | harmful_content | policy | anomaly ...
+    category: str  # prompt_injection | jailbreak | pii | secrets | tool_abuse | data_exfil | harmful_content | policy | anomaly ...
     severity: Severity
     title: str
     description: str = ""
-    evidence: str = ""        # short snippet that triggered the finding
-    location: str = ""        # e.g. "messages[3].content" or "system"
-    confidence: float = 0.7   # 0..1
+    evidence: str = ""  # short snippet that triggered the finding
+    location: str = ""  # e.g. "messages[3].content" or "system"
+    confidence: float = 0.7  # 0..1
     tags: list[str] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)
 
@@ -80,8 +87,10 @@ def score_findings(findings: list[Finding]) -> int:
     """Highest weighted finding dominates; additional findings add diminishing increments. Capped at 100."""
     if not findings:
         return 0
-    weighted = sorted((SEVERITY_WEIGHT[f.severity] * max(0.2, min(1.0, f.confidence)) for f in findings), reverse=True)
+    weighted = sorted(
+        (SEVERITY_WEIGHT[f.severity] * max(0.2, min(1.0, f.confidence)) for f in findings), reverse=True
+    )
     score = weighted[0]
     for i, w in enumerate(weighted[1:], start=1):
-        score += w / (2 ** i)
+        score += w / (2**i)
     return int(min(100, round(score)))

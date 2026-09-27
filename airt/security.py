@@ -1,4 +1,5 @@
 """Password hashing, API keys, session tokens and credential encryption (no external auth deps)."""
+
 from __future__ import annotations
 
 import base64
@@ -85,7 +86,16 @@ def decrypt_secret(token: str | None) -> str | None:
 
 
 # --- header redaction -----------------------------------------------------------
-SENSITIVE_HEADERS = {"authorization", "x-api-key", "x-airt-key", "cookie", "set-cookie", "proxy-authorization", "x-goog-api-key", "api-key"}
+SENSITIVE_HEADERS = {
+    "authorization",
+    "x-api-key",
+    "x-airt-key",
+    "cookie",
+    "set-cookie",
+    "proxy-authorization",
+    "x-goog-api-key",
+    "api-key",
+}
 
 
 def redact_headers(headers: dict[str, str]) -> dict[str, str]:

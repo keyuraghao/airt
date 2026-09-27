@@ -3,6 +3,7 @@
 The frontend never holds real provider credentials: the gateway swaps the agent's AIRT
 key for the encrypted upstream key stored on the agent record.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -16,10 +17,28 @@ from ..config import get_settings
 from ..models import Agent
 
 HOP_BY_HOP = {
-    "connection", "keep-alive", "proxy-authenticate", "proxy-authorization", "te", "trailer", "transfer-encoding", "upgrade",
-    "host", "content-length", "accept-encoding",
+    "connection",
+    "keep-alive",
+    "proxy-authenticate",
+    "proxy-authorization",
+    "te",
+    "trailer",
+    "transfer-encoding",
+    "upgrade",
+    "host",
+    "content-length",
+    "accept-encoding",
 }
-STRIP_INBOUND = HOP_BY_HOP | {"authorization", "x-api-key", "x-airt-key", "x-airt-async", "x-airt-agent", "cookie", "x-goog-api-key", "api-key"}
+STRIP_INBOUND = HOP_BY_HOP | {
+    "authorization",
+    "x-api-key",
+    "x-airt-key",
+    "x-airt-async",
+    "x-airt-agent",
+    "cookie",
+    "x-goog-api-key",
+    "api-key",
+}
 
 
 def build_upstream_url(agent: Agent, path: str, query: str = "") -> str:
@@ -39,7 +58,16 @@ def build_upstream_headers(agent: Agent, inbound: dict[str, str]) -> dict[str, s
     key = upstream_api_key(agent)
     provider = (agent.upstream_provider or "custom").lower()
     if key:
-        if provider in ("openai", "ollama", "azure_openai_compat", "groq", "together", "mistral", "deepseek", "openrouter"):
+        if provider in (
+            "openai",
+            "ollama",
+            "azure_openai_compat",
+            "groq",
+            "together",
+            "mistral",
+            "deepseek",
+            "openrouter",
+        ):
             headers["Authorization"] = f"Bearer {key}"
         elif provider == "anthropic":
             headers["x-api-key"] = key
@@ -79,10 +107,22 @@ class UpstreamResponse:
 def make_client() -> httpx.AsyncClient:
     s = get_settings()
     timeout = httpx.Timeout(s.upstream_timeout_seconds, connect=s.upstream_connect_timeout_seconds)
-    return httpx.AsyncClient(timeout=timeout, follow_redirects=False, limits=httpx.Limits(max_connections=200, max_keepalive_connections=50))
+    return httpx.AsyncClient(
+        timeout=timeout,
+        follow_redirects=False,
+        limits=httpx.Limits(max_connections=200, max_keepalive_connections=50),
+    )
 
 
-def build_request(client: httpx.AsyncClient, agent: Agent, method: str, path: str, query: str, inbound_headers: dict[str, str], body: bytes) -> httpx.Request:
+def build_request(
+    client: httpx.AsyncClient,
+    agent: Agent,
+    method: str,
+    path: str,
+    query: str,
+    inbound_headers: dict[str, str],
+    body: bytes,
+) -> httpx.Request:
     url = build_upstream_url(agent, path, query)
     headers = build_upstream_headers(agent, inbound_headers)
     return client.build_request(method, url, headers=headers, content=body if body else None)
@@ -96,5 +136,15 @@ def summarize_error(exc: Exception) -> str:
     return f"{type(exc).__name__}: {exc}"
 
 
-def error_json(ticket_id: str, status: str, message: str, extra: dict[str, Any] | None = None) -> dict[str, Any]:
-    return {"error": {"message": message, "type": "airt_gateway", "code": status.lower(), "ticket_id": ticket_id, **(extra or {})}}
+def error_json(
+    ticket_id: str, status: str, message: str, extra: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    return {
+        "error": {
+            "message": message,
+            "type": "airt_gateway",
+            "code": status.lower(),
+            "ticket_id": ticket_id,
+            **(extra or {}),
+        }
+    }

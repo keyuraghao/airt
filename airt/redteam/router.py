@@ -36,6 +36,27 @@ class CampaignIn(BaseModel):
     auto_start: bool = False
 
 
+class GroupTargetIn(BaseModel):
+    agent_id: str
+    target_model: str = ""
+    label: str | None = None
+
+
+class GroupIn(BaseModel):
+    name: str = Field(min_length=1, max_length=160)
+    targets: list[GroupTargetIn] = Field(min_length=1)
+    categories: list[str] = Field(default_factory=list)
+    techniques: list[str] = Field(default_factory=list)
+    max_probes: int | None = None
+    mutators: list[str] = Field(default_factory=list)
+    system_prompt: str = ""
+    path: str = "v1/chat/completions"
+    concurrency: int | None = None
+    seed: int | None = None
+    extra_body: dict[str, Any] = Field(default_factory=dict)
+    auto_start: bool = False
+
+
 @router.get("/corpus")
 async def get_corpus(_: Principal = Depends(current_principal)) -> dict[str, Any]:
     categories = list_categories()
@@ -67,10 +88,11 @@ async def corpus_probes(
 async def list_campaigns(
     status: str | None = None,
     agent_id: str | None = None,
+    group_id: str | None = None,
     _: Principal = Depends(current_principal),
     session: AsyncSession = Depends(get_session),
 ) -> list[dict[str, Any]]:
-    return await service.list_campaigns(session, status=status, agent_id=agent_id)
+    return await service.list_campaigns(session, status=status, agent_id=agent_id, group_id=group_id)
 
 
 @router.post("/campaigns", status_code=201)
@@ -205,3 +227,86 @@ async def campaign_summary(campaign_id: str, _: Principal = Depends(current_prin
     summary = await service.recompute_summary(session, campaign_id)
     await session.commit()
     return summary or {}
+
+
+# --- comparison groups: the same probe set against several targets --------------
+@router.get("/groups")
+async def list_groups(_: Principal = Depends(current_principal), session: AsyncSession = Depends(get_session)) -> list[dict[str, Any]]:
+    return await service.list_groups(session)
+
+
+@router.post("/groups", status_code=201)
+async def create_group(
+    payload: GroupIn,
+    request: Request,
+    p: Principal = Depends(require_role("reviewer")),
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, Any]:
+    for target in payload.targets:
+        if await agents.get_agent(session, target.agent_id) is None:
+            raise HTTPException(404, f"agent {target.agent_id} not found")
+    campaigns = await campaign_runner.create_group(
+        session,
+        name=payload.name,
+        targets=[t.model_dump() for t in payload.targets],
+        categories=payload.categories,
+        techniques=payload.techniques,
+        max_probes=payload.max_probes,
+        mutators=payload.mutators,
+        system_prompt=payload.system_prompt,
+        path=payload.path,
+        concurrency=payload.concurrency,
+        seed=payload.seed,
+        extra_body=payload.extra_body,
+        created_by=p.username,
+    )
+    group_id = str(campaigns[0].config.get("group_id"))
+    campaign_ids = [c.id for c in campaigns]
+    await audit.record(session, p.username, "redteam.group.create", "campaign_group", group_id, {"campaigns": campaign_ids, "targets": len(campaign_ids)})
+    await session.commit()
+    if payload.auto_start:
+        await campaign_runner.start_group(group_id, request.app.state.http)
+        await audit.record(session, p.username, "redteam.group.start", "campaign_group", group_id)
+        await session.commit()
+    return {"group_id": group_id, "campaigns": await service.list_campaigns(session, group_id=group_id)}
+
+
+async def _group_or_404(session: AsyncSession, group_id: str) -> dict[str, Any]:
+    result = await service.get_group(session, group_id)
+    if result is None:
+        raise HTTPException(404, "group not found")
+    return result
+
+
+@router.get("/groups/{group_id}")
+async def get_group(group_id: str, _: Principal = Depends(current_principal), session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
+    return await _group_or_404(session, group_id)
+
+
+@router.post("/groups/{group_id}/start")
+async def start_group(group_id: str, request: Request, p: Principal = Depends(require_role("reviewer")), session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
+    await _group_or_404(session, group_id)
+    await campaign_runner.start_group(group_id, request.app.state.http)
+    await audit.record(session, p.username, "redteam.group.start", "campaign_group", group_id)
+    await session.commit()
+    return await _group_or_404(session, group_id)
+
+
+@router.post("/groups/{group_id}/cancel")
+async def cancel_group(group_id: str, p: Principal = Depends(require_role("reviewer")), session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
+    await _group_or_404(session, group_id)
+    await campaign_runner.cancel_group(group_id)
+    await audit.record(session, p.username, "redteam.group.cancel", "campaign_group", group_id)
+    await session.commit()
+    return await _group_or_404(session, group_id)
+
+
+@router.delete("/groups/{group_id}")
+async def delete_group(group_id: str, p: Principal = Depends(require_role("reviewer")), session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
+    await campaign_runner.cancel_group(group_id)
+    deleted = await service.delete_group(session, group_id)
+    if not deleted:
+        raise HTTPException(404, "group not found")
+    await audit.record(session, p.username, "redteam.group.delete", "campaign_group", group_id, {"campaigns": deleted})
+    await session.commit()
+    return {"deleted": group_id, "campaigns": deleted}

@@ -1,5 +1,6 @@
 """User-defined detection rules, edited live in Settings > Rules. Each rule is a regex with a category,
 severity, scope (request, response or both) and action (flag or deny)."""
+
 from __future__ import annotations
 
 import re
@@ -22,7 +23,11 @@ def _compile(pattern: str) -> re.Pattern | None:
 
 
 def _rules(scope: str) -> list[dict[str, Any]]:
-    return [r for r in settings_store.get_value("rules", "custom", []) or [] if r.get("enabled", True) and r.get("pattern") and r.get("scope", "request") in (scope, "both")]
+    return [
+        r
+        for r in settings_store.get_value("rules", "custom", []) or []
+        if r.get("enabled", True) and r.get("pattern") and r.get("scope", "request") in (scope, "both")
+    ]
 
 
 def _apply(rules: list[dict[str, Any]], text: str, location: str) -> list[Finding]:
@@ -45,7 +50,7 @@ def _apply(rules: list[dict[str, Any]], text: str, location: str) -> list[Findin
                 severity=sev,
                 title=r.get("name") or f"Custom rule {r.get('id', '')}".strip(),
                 description=r.get("description") or f"Matched custom rule pattern /{r['pattern']}/",
-                evidence=text[max(0, m.start() - 60): m.end() + 60],
+                evidence=text[max(0, m.start() - 60) : m.end() + 60],
                 location=location,
                 confidence=float(r.get("confidence", 0.9)),
                 tags=["custom_rule"],

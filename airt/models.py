@@ -1,4 +1,5 @@
 """ORM models. Everything the platform knows is persisted here."""
+
 from __future__ import annotations
 
 import enum
@@ -20,13 +21,13 @@ def new_id(prefix: str = "") -> str:
 
 
 class TicketStatus(str, enum.Enum):
-    PENDING = "PENDING"          # waiting for a human decision
-    APPROVED = "APPROVED"        # human (or policy) approved, not yet forwarded
-    DENIED = "DENIED"            # blocked; nothing was sent upstream
-    EXPIRED = "EXPIRED"          # no decision before the timeout; nothing was sent upstream
-    FORWARDING = "FORWARDING"    # request in flight to the upstream
-    COMPLETED = "COMPLETED"      # upstream answered and the response was relayed
-    FAILED = "FAILED"            # upstream / network error after approval
+    PENDING = "PENDING"  # waiting for a human decision
+    APPROVED = "APPROVED"  # human (or policy) approved, not yet forwarded
+    DENIED = "DENIED"  # blocked; nothing was sent upstream
+    EXPIRED = "EXPIRED"  # no decision before the timeout; nothing was sent upstream
+    FORWARDING = "FORWARDING"  # request in flight to the upstream
+    COMPLETED = "COMPLETED"  # upstream answered and the response was relayed
+    FAILED = "FAILED"  # upstream / network error after approval
 
 
 class RiskLevel(str, enum.Enum):
@@ -60,20 +61,26 @@ class Agent(Base):
     api_key_hash: Mapped[str] = mapped_column(String(128), unique=True, index=True)
     api_key_prefix: Mapped[str] = mapped_column(String(16))
     # upstream / backend the agent is allowed to reach through the gateway
-    upstream_provider: Mapped[str] = mapped_column(String(30), default="openai")  # openai | anthropic | custom
+    upstream_provider: Mapped[str] = mapped_column(
+        String(30), default="openai"
+    )  # openai | anthropic | custom
     upstream_base_url: Mapped[str] = mapped_column(String(500), default="https://api.openai.com/v1")
     upstream_api_key_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
     upstream_auth_header: Mapped[str] = mapped_column(String(80), default="")  # custom provider header name
     upstream_extra_headers: Mapped[dict] = mapped_column(JSON, default=dict)
     # policy
     require_approval: Mapped[bool] = mapped_column(Boolean, default=True)
-    auto_approve_below_risk: Mapped[int] = mapped_column(Integer, default=0)   # 0 disables auto approval
+    auto_approve_below_risk: Mapped[int] = mapped_column(Integer, default=0)  # 0 disables auto approval
     auto_deny_at_risk: Mapped[int] = mapped_column(Integer, default=90)
-    auto_deny_patterns: Mapped[list] = mapped_column(JSON, default=list)      # regexes matched against prompt text
-    allowed_paths: Mapped[list] = mapped_column(JSON, default=list)           # glob patterns; empty = all
-    allowed_models: Mapped[list] = mapped_column(JSON, default=list)          # empty = all
-    rate_limit_per_minute: Mapped[int] = mapped_column(Integer, default=0)    # 0 = unlimited
-    inject_canary: Mapped[bool] = mapped_column(Boolean, default=False)       # Rebuff style canary word in every system prompt
+    auto_deny_patterns: Mapped[list] = mapped_column(
+        JSON, default=list
+    )  # regexes matched against prompt text
+    allowed_paths: Mapped[list] = mapped_column(JSON, default=list)  # glob patterns; empty = all
+    allowed_models: Mapped[list] = mapped_column(JSON, default=list)  # empty = all
+    rate_limit_per_minute: Mapped[int] = mapped_column(Integer, default=0)  # 0 = unlimited
+    inject_canary: Mapped[bool] = mapped_column(
+        Boolean, default=False
+    )  # Rebuff style canary word in every system prompt
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     # stats
     request_count: Mapped[int] = mapped_column(Integer, default=0)
@@ -115,10 +122,10 @@ class Ticket(Base):
     method: Mapped[str] = mapped_column(String(10))
     path: Mapped[str] = mapped_column(String(500))
     upstream_url: Mapped[str] = mapped_column(String(800), default="")
-    request_headers: Mapped[dict] = mapped_column(JSON, default=dict)   # redacted
-    request_body: Mapped[str] = mapped_column(Text, default="")        # raw (truncated)
+    request_headers: Mapped[dict] = mapped_column(JSON, default=dict)  # redacted
+    request_body: Mapped[str] = mapped_column(Text, default="")  # raw (truncated)
     request_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
-    normalized: Mapped[dict] = mapped_column(JSON, default=dict)        # provider/model/messages/tools/stream
+    normalized: Mapped[dict] = mapped_column(JSON, default=dict)  # provider/model/messages/tools/stream
     prompt_preview: Mapped[str] = mapped_column(String(500), default="")
     model: Mapped[str] = mapped_column(String(120), default="", index=True)
     is_stream: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -150,7 +157,9 @@ class Ticket(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
 
     agent: Mapped[Agent] = relationship(back_populates="tickets", lazy="joined")
-    events: Mapped[list[TicketEvent]] = relationship(back_populates="ticket", lazy="noload", cascade="all, delete-orphan")
+    events: Mapped[list[TicketEvent]] = relationship(
+        back_populates="ticket", lazy="noload", cascade="all, delete-orphan"
+    )
 
 
 Index("ix_tickets_agent_status", Ticket.agent_id, Ticket.status)
@@ -215,8 +224,10 @@ class Campaign(Base):
     agent_id: Mapped[str] = mapped_column(ForeignKey("agents.id"), index=True)
     target_model: Mapped[str] = mapped_column(String(120), default="")
     status: Mapped[str] = mapped_column(String(20), default=CampaignStatus.CREATED.value, index=True)
-    config: Mapped[dict] = mapped_column(JSON, default=dict)      # categories, techniques, sampling, system prompt...
-    summary: Mapped[dict] = mapped_column(JSON, default=dict)     # aggregated results
+    config: Mapped[dict] = mapped_column(
+        JSON, default=dict
+    )  # categories, techniques, sampling, system prompt...
+    summary: Mapped[dict] = mapped_column(JSON, default=dict)  # aggregated results
     total_probes: Mapped[int] = mapped_column(Integer, default=0)
     completed_probes: Mapped[int] = mapped_column(Integer, default=0)
     created_by: Mapped[str] = mapped_column(String(80), default="")
@@ -237,7 +248,9 @@ class ProbeResult(Base):
     prompt: Mapped[str] = mapped_column(Text)
     messages: Mapped[list] = mapped_column(JSON, default=list)
     response: Mapped[str] = mapped_column(Text, default="")
-    verdict: Mapped[str] = mapped_column(String(20), default="PENDING")  # VULNERABLE | RESISTED | BLOCKED | ERROR | PENDING | INCONCLUSIVE
+    verdict: Mapped[str] = mapped_column(
+        String(20), default="PENDING"
+    )  # VULNERABLE | RESISTED | BLOCKED | ERROR | PENDING | INCONCLUSIVE
     confidence: Mapped[float] = mapped_column(Float, default=0.0)
     evidence: Mapped[dict] = mapped_column(JSON, default=dict)
     ticket_id: Mapped[str | None] = mapped_column(String(40), nullable=True)

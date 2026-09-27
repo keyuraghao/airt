@@ -1,4 +1,5 @@
 """Policy engine: decides whether an intercepted request is auto-denied, auto-approved or needs a human."""
+
 from __future__ import annotations
 
 import fnmatch
@@ -20,7 +21,9 @@ class PolicyDecision:
         return {"action": self.action, "reasons": self.reasons, "matched_rules": self.matched_rules}
 
 
-def evaluate(agent: Agent, normalized: dict[str, Any], path: str, risk_score: int, findings: list[dict[str, Any]]) -> PolicyDecision:
+def evaluate(
+    agent: Agent, normalized: dict[str, Any], path: str, risk_score: int, findings: list[dict[str, Any]]
+) -> PolicyDecision:
     reasons: list[str] = []
     rules: list[str] = []
 
@@ -30,17 +33,32 @@ def evaluate(agent: Agent, normalized: dict[str, Any], path: str, risk_score: in
     global_pol = settings_store.get_namespace("policy")
     g_paths = global_pol.get("global_allowed_paths") or []
     if g_paths and not any(fnmatch.fnmatch(path, pat) or fnmatch.fnmatch("/" + path, pat) for pat in g_paths):
-        return PolicyDecision("deny", [f"path '{path}' is not in the global allowed paths"], ["policy.global_allowed_paths"])
+        return PolicyDecision(
+            "deny", [f"path '{path}' is not in the global allowed paths"], ["policy.global_allowed_paths"]
+        )
 
-    if agent.allowed_paths and not any(fnmatch.fnmatch(path, pat) or fnmatch.fnmatch("/" + path, pat) for pat in agent.allowed_paths):
-        return PolicyDecision("deny", [f"path '{path}' is not in the agent's allowed paths"], ["agent.allowed_paths"])
+    if agent.allowed_paths and not any(
+        fnmatch.fnmatch(path, pat) or fnmatch.fnmatch("/" + path, pat) for pat in agent.allowed_paths
+    ):
+        return PolicyDecision(
+            "deny", [f"path '{path}' is not in the agent's allowed paths"], ["agent.allowed_paths"]
+        )
 
     model = normalized.get("model") or ""
-    if agent.allowed_models and model and not any(fnmatch.fnmatch(model, pat) for pat in agent.allowed_models):
-        return PolicyDecision("deny", [f"model '{model}' is not in the agent's allowed models"], ["agent.allowed_models"])
+    if (
+        agent.allowed_models
+        and model
+        and not any(fnmatch.fnmatch(model, pat) for pat in agent.allowed_models)
+    ):
+        return PolicyDecision(
+            "deny", [f"model '{model}' is not in the agent's allowed models"], ["agent.allowed_models"]
+        )
 
     text = normalized.get("prompt_text") or ""
-    for source, patterns in (("agent.auto_deny_patterns", agent.auto_deny_patterns or []), ("policy.global_auto_deny_patterns", global_pol.get("global_auto_deny_patterns") or [])):
+    for source, patterns in (
+        ("agent.auto_deny_patterns", agent.auto_deny_patterns or []),
+        ("policy.global_auto_deny_patterns", global_pol.get("global_auto_deny_patterns") or []),
+    ):
         for pat in patterns:
             try:
                 if re.search(pat, text, re.IGNORECASE | re.DOTALL):
@@ -55,17 +73,31 @@ def evaluate(agent: Agent, normalized: dict[str, Any], path: str, risk_score: in
         return PolicyDecision("deny", reasons, rules)
 
     if agent.auto_deny_at_risk and risk_score >= agent.auto_deny_at_risk:
-        return PolicyDecision("deny", [f"risk score {risk_score} >= auto-deny threshold {agent.auto_deny_at_risk}"], ["agent.auto_deny_at_risk"])
+        return PolicyDecision(
+            "deny",
+            [f"risk score {risk_score} >= auto-deny threshold {agent.auto_deny_at_risk}"],
+            ["agent.auto_deny_at_risk"],
+        )
 
-    if any(f.get("severity") == "CRITICAL" and f.get("category") in ("secrets", "data_exfil") for f in findings):
+    if any(
+        f.get("severity") == "CRITICAL" and f.get("category") in ("secrets", "data_exfil") for f in findings
+    ):
         reasons.append("critical secret/exfiltration finding requires human review")
         rules.append("finding.critical")
         return PolicyDecision("review", reasons, rules)
 
     if not agent.require_approval:
-        return PolicyDecision("approve", ["agent policy does not require approval"], ["agent.require_approval=false"])
+        return PolicyDecision(
+            "approve", ["agent policy does not require approval"], ["agent.require_approval=false"]
+        )
 
     if agent.auto_approve_below_risk and risk_score < agent.auto_approve_below_risk:
-        return PolicyDecision("approve", [f"risk score {risk_score} < auto-approve threshold {agent.auto_approve_below_risk}"], ["agent.auto_approve_below_risk"])
+        return PolicyDecision(
+            "approve",
+            [f"risk score {risk_score} < auto-approve threshold {agent.auto_approve_below_risk}"],
+            ["agent.auto_approve_below_risk"],
+        )
 
-    return PolicyDecision("review", ["human approval required by agent policy"], ["agent.require_approval=true"])
+    return PolicyDecision(
+        "review", ["human approval required by agent policy"], ["agent.require_approval=true"]
+    )

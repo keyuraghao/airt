@@ -4,6 +4,7 @@ Fast path: an asyncio.Event resolved in-process the moment a reviewer decides.
 Slow path: periodic DB polling, so decisions made by another worker/process (for
 example the MCP server or a second uvicorn worker) are still picked up.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -54,7 +55,7 @@ class HoldRegistry:
                 try:
                     await asyncio.wait_for(ev.wait(), timeout=min(poll, remaining))
                     return self._results.get(ticket_id, TicketStatus.PENDING.value)
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     status = await self._db_status(ticket_id)
                     if status and status != TicketStatus.PENDING.value:
                         return status

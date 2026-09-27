@@ -2,6 +2,7 @@
 can be changed live from the dashboard or API. Overrides persist in the app_settings table and are
 re-applied at startup, so the precedence is: UI override > environment / .env > code default.
 """
+
 from __future__ import annotations
 
 import copy
@@ -20,11 +21,38 @@ from .models import AppSetting, utcnow
 log = get_logger("airt.settings")
 
 SENSITIVE = re.compile(r"(password|secret|token|api_key|_key$)", re.IGNORECASE)
-LOCKED = {"database_url", "host", "port", "workers", "base_dir", "data_dir", "log_dir", "secret_key", "encryption_key"}
+LOCKED = {
+    "database_url",
+    "host",
+    "port",
+    "workers",
+    "base_dir",
+    "data_dir",
+    "log_dir",
+    "secret_key",
+    "encryption_key",
+}
 GROUPS: dict[str, list[str]] = {
     "Service": ["app_name", "environment", "log_level", "log_json_console", "public_url"],
-    "Gateway": ["approval_timeout_seconds", "hold_poll_interval_seconds", "max_request_body_bytes", "max_stored_response_bytes", "upstream_timeout_seconds", "upstream_connect_timeout_seconds", "default_auto_deny_risk_threshold", "default_auto_approve_risk_threshold", "ticket_retention_days", "require_approval_for_redteam_probes"],
-    "Security": ["admin_username", "admin_password", "admin_api_token", "session_max_age_seconds", "cookie_secure"],
+    "Gateway": [
+        "approval_timeout_seconds",
+        "hold_poll_interval_seconds",
+        "max_request_body_bytes",
+        "max_stored_response_bytes",
+        "upstream_timeout_seconds",
+        "upstream_connect_timeout_seconds",
+        "default_auto_deny_risk_threshold",
+        "default_auto_approve_risk_threshold",
+        "ticket_retention_days",
+        "require_approval_for_redteam_probes",
+    ],
+    "Security": [
+        "admin_username",
+        "admin_password",
+        "admin_api_token",
+        "session_max_age_seconds",
+        "cookie_secure",
+    ],
     "Notifications": ["notify_webhook_urls", "notify_events", "notify_min_risk"],
     "Analysis": ["enable_llm_judge", "judge_provider", "judge_base_url", "judge_api_key", "judge_model"],
     "Red team": ["redteam_concurrency", "redteam_probe_timeout_seconds"],
@@ -33,18 +61,57 @@ GROUPS: dict[str, list[str]] = {
 # Namespaces other than "core" hold arbitrary JSON documents with these defaults.
 NAMESPACE_DEFAULTS: dict[str, dict[str, Any]] = {
     "analyzers": {"disabled": [], "severity_overrides": {}, "confidence_floor": 0.0, "category_weights": {}},
-    "rules": {"custom": []},  # [{id, name, pattern, category, severity, scope: request|response|both, action: flag|deny, enabled}]
+    "rules": {
+        "custom": []
+    },  # [{id, name, pattern, category, severity, scope: request|response|both, action: flag|deny, enabled}]
     "integrations": {
-        "llm_guard": {"enabled": False, "input_scanners": ["PromptInjection", "Secrets", "Toxicity"], "output_scanners": ["Sensitive", "MaliciousURLs"], "threshold": 0.5},
+        "llm_guard": {
+            "enabled": False,
+            "input_scanners": ["PromptInjection", "Secrets", "Toxicity"],
+            "output_scanners": ["Sensitive", "MaliciousURLs"],
+            "threshold": 0.5,
+        },
         "nemo_guardrails": {"enabled": False, "config_path": "", "run_output_rails": False},
-        "lakera": {"enabled": False, "api_key": "", "endpoint": "https://api.lakera.ai/v2/guard", "project_id": ""},
+        "lakera": {
+            "enabled": False,
+            "api_key": "",
+            "endpoint": "https://api.lakera.ai/v2/guard",
+            "project_id": "",
+        },
         "rebuff": {"enabled": True, "heuristic_threshold": 0.75, "use_llm": False, "canary_default": False},
-        "garak": {"enabled": True, "default_probes": ["promptinject", "dan", "encoding", "leakreplay"], "generations": 1},
-        "promptfoo": {"enabled": True, "binary": ".venv/node_modules/.bin/promptfoo", "default_plugins": ["harmful", "pii", "prompt-extraction", "hijacking"], "strategies": ["jailbreak", "base64"]},
-        "pyrit": {"enabled": True, "default_converters": ["Base64Converter", "ROT13Converter"], "scorer": "SelfAskRefusalScorer"},
+        "garak": {
+            "enabled": True,
+            "default_probes": ["promptinject", "dan", "encoding", "leakreplay"],
+            "generations": 1,
+        },
+        "promptfoo": {
+            "enabled": True,
+            "binary": ".venv/node_modules/.bin/promptfoo",
+            "default_plugins": ["harmful", "pii", "prompt-extraction", "hijacking"],
+            "strategies": ["jailbreak", "base64"],
+        },
+        "pyrit": {
+            "enabled": True,
+            "default_converters": ["Base64Converter", "ROT13Converter"],
+            "scorer": "SelfAskRefusalScorer",
+        },
     },
-    "ui": {"theme": "auto", "refresh_seconds": 5, "sound_on_new_ticket": True, "queue_default_status": "PENDING", "ticket_columns": [], "date_format": "relative", "brand_name": "AIRT", "accent_color": ""},
-    "policy": {"global_auto_deny_patterns": [], "global_allowed_paths": [], "block_on_canary_leak": True, "quarantine_on_critical_response_finding": False},
+    "ui": {
+        "theme": "auto",
+        "refresh_seconds": 5,
+        "sound_on_new_ticket": True,
+        "queue_default_status": "PENDING",
+        "ticket_columns": [],
+        "date_format": "relative",
+        "brand_name": "AIRT",
+        "accent_color": "",
+    },
+    "policy": {
+        "global_auto_deny_patterns": [],
+        "global_allowed_paths": [],
+        "block_on_canary_leak": True,
+        "quarantine_on_critical_response_finding": False,
+    },
 }
 _namespace_cache: dict[str, dict[str, Any]] = {}
 
@@ -121,7 +188,9 @@ async def load_overrides(session: AsyncSession) -> int:
                 setattr(s, row.key, coerce(row.key, row.value.get("v")))
                 applied += 1
         else:
-            _namespace_cache.setdefault(row.namespace, copy.deepcopy(NAMESPACE_DEFAULTS.get(row.namespace, {})))
+            _namespace_cache.setdefault(
+                row.namespace, copy.deepcopy(NAMESPACE_DEFAULTS.get(row.namespace, {}))
+            )
             _namespace_cache[row.namespace][row.key] = row.value.get("v")
             applied += 1
     for ns, defaults in NAMESPACE_DEFAULTS.items():
@@ -182,7 +251,9 @@ def get_value(namespace: str, key: str, default: Any = None) -> Any:
     return get_namespace(namespace).get(key, default)
 
 
-async def update_namespace(session: AsyncSession, namespace: str, changes: dict[str, Any], actor: str) -> dict[str, Any]:
+async def update_namespace(
+    session: AsyncSession, namespace: str, changes: dict[str, Any], actor: str
+) -> dict[str, Any]:
     ns = get_namespace(namespace)
     for key, value in changes.items():
         json.dumps(value)  # must be JSON serialisable
@@ -194,7 +265,9 @@ async def update_namespace(session: AsyncSession, namespace: str, changes: dict[
             row.value = {"v": value}
             row.updated_by = actor
     await session.flush()
-    broadcaster.publish("settings", {"event": "settings.updated", "namespace": namespace, "keys": list(changes), "by": actor})
+    broadcaster.publish(
+        "settings", {"event": "settings.updated", "namespace": namespace, "keys": list(changes), "by": actor}
+    )
     log.info("settings.namespace_updated", namespace=namespace, keys=list(changes), by=actor)
     return ns
 
@@ -222,7 +295,9 @@ def export_all(include_secrets: bool = False) -> dict[str, Any]:
 
 async def import_all(session: AsyncSession, payload: dict[str, Any], actor: str) -> dict[str, Any]:
     applied: dict[str, Any] = {"core": {}, "namespaces": {}}
-    core = {k: v for k, v in (payload.get("core") or {}).items() if k in Settings.model_fields and k not in LOCKED}
+    core = {
+        k: v for k, v in (payload.get("core") or {}).items() if k in Settings.model_fields and k not in LOCKED
+    }
     if core:
         applied["core"] = await update_core(session, core, actor)
     for ns, doc in (payload.get("namespaces") or {}).items():

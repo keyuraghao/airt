@@ -1,4 +1,5 @@
 """Shared fixtures: an isolated SQLite database per test, a mocked upstream and an ASGI client with lifespan."""
+
 from __future__ import annotations
 
 import asyncio
@@ -61,14 +62,22 @@ def openai_upstream_handler(request: httpx.Request) -> httpx.Response:
         for word in ("Hello", " from", " upstream"):
             chunks.append("data: " + json.dumps({"choices": [{"delta": {"content": word}}]}) + "\n\n")
         chunks.append("data: [DONE]\n\n")
-        return httpx.Response(200, headers={"content-type": "text/event-stream"}, content="".join(chunks).encode())
+        return httpx.Response(
+            200, headers={"content-type": "text/event-stream"}, content="".join(chunks).encode()
+        )
     return httpx.Response(
         200,
         json={
             "id": "chatcmpl-mock",
             "object": "chat.completion",
             "model": body.get("model", "mock"),
-            "choices": [{"index": 0, "message": {"role": "assistant", "content": f"echo: {last}"}, "finish_reason": "stop"}],
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {"role": "assistant", "content": f"echo: {last}"},
+                    "finish_reason": "stop",
+                }
+            ],
             "usage": {"prompt_tokens": 1, "completion_tokens": 1},
             "seen_auth": auth,
         },
@@ -108,7 +117,13 @@ async def agent(client, admin_headers):
     r = await client.post(
         "/api/agents",
         headers=admin_headers,
-        json={"name": f"test-agent-{os.urandom(3).hex()}", "upstream_provider": "openai", "upstream_base_url": "https://upstream.example/v1", "upstream_api_key": "sk-upstream-secret", "require_approval": True},
+        json={
+            "name": f"test-agent-{os.urandom(3).hex()}",
+            "upstream_provider": "openai",
+            "upstream_base_url": "https://upstream.example/v1",
+            "upstream_api_key": "sk-upstream-secret",
+            "require_approval": True,
+        },
     )
     assert r.status_code == 201, r.text
     return r.json()

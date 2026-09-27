@@ -1,4 +1,5 @@
 """Reviewer authentication: session cookies for the dashboard, bearer tokens for automation (MCP, CI, scripts)."""
+
 from __future__ import annotations
 
 import hmac
@@ -31,13 +32,19 @@ class Principal(BaseModel):
 
 async def ensure_admin(session: AsyncSession) -> None:
     s = get_settings()
-    existing = (await session.execute(select(Reviewer).where(Reviewer.username == s.admin_username))).scalar_one_or_none()
+    existing = (
+        await session.execute(select(Reviewer).where(Reviewer.username == s.admin_username))
+    ).scalar_one_or_none()
     if existing is None:
-        session.add(Reviewer(username=s.admin_username, password_hash=hash_password(s.admin_password), role="admin"))
+        session.add(
+            Reviewer(username=s.admin_username, password_hash=hash_password(s.admin_password), role="admin")
+        )
         await session.commit()
         log.info("auth.admin_created", username=s.admin_username)
     if s.admin_password == "admin":
-        log.warning("auth.default_admin_password", hint="set AIRT_ADMIN_PASSWORD before exposing this service")
+        log.warning(
+            "auth.default_admin_password", hint="set AIRT_ADMIN_PASSWORD before exposing this service"
+        )
 
 
 def _token_principal(request: Request) -> Principal | None:
@@ -54,7 +61,9 @@ def _token_principal(request: Request) -> Principal | None:
     return None
 
 
-async def optional_principal(request: Request, session: AsyncSession = Depends(get_session)) -> Principal | None:
+async def optional_principal(
+    request: Request, session: AsyncSession = Depends(get_session)
+) -> Principal | None:
     p = _token_principal(request)
     if p:
         return p
@@ -89,9 +98,17 @@ class LoginIn(BaseModel):
 
 
 @router.post("/login")
-async def login(payload: LoginIn, response: Response, session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
-    reviewer = (await session.execute(select(Reviewer).where(Reviewer.username == payload.username))).scalar_one_or_none()
-    if reviewer is None or not reviewer.is_active or not verify_password(payload.password, reviewer.password_hash):
+async def login(
+    payload: LoginIn, response: Response, session: AsyncSession = Depends(get_session)
+) -> dict[str, Any]:
+    reviewer = (
+        await session.execute(select(Reviewer).where(Reviewer.username == payload.username))
+    ).scalar_one_or_none()
+    if (
+        reviewer is None
+        or not reviewer.is_active
+        or not verify_password(payload.password, reviewer.password_hash)
+    ):
         await audit.record(session, payload.username, "auth.login_failed", "reviewer", payload.username)
         await session.commit()
         raise HTTPException(status_code=401, detail="invalid credentials")
@@ -99,7 +116,14 @@ async def login(payload: LoginIn, response: Response, session: AsyncSession = De
     await audit.record(session, reviewer.username, "auth.login", "reviewer", reviewer.id)
     await session.commit()
     s = get_settings()
-    response.set_cookie(COOKIE, create_session_token({"id": reviewer.id}), max_age=s.session_max_age_seconds, httponly=True, samesite="lax", secure=s.cookie_secure)
+    response.set_cookie(
+        COOKIE,
+        create_session_token({"id": reviewer.id}),
+        max_age=s.session_max_age_seconds,
+        httponly=True,
+        samesite="lax",
+        secure=s.cookie_secure,
+    )
     return {"id": reviewer.id, "username": reviewer.username, "role": reviewer.role}
 
 
@@ -127,14 +151,29 @@ class PasswordIn(BaseModel):
 @router.get("/reviewers", dependencies=[Depends(require_role("admin"))])
 async def list_reviewers(session: AsyncSession = Depends(get_session)) -> list[dict[str, Any]]:
     rows = (await session.execute(select(Reviewer).order_by(Reviewer.created_at))).scalars()
-    return [{"id": r.id, "username": r.username, "role": r.role, "is_active": r.is_active, "last_login_at": r.last_login_at.isoformat() if r.last_login_at else None} for r in rows]
+    return [
+        {
+            "id": r.id,
+            "username": r.username,
+            "role": r.role,
+            "is_active": r.is_active,
+            "last_login_at": r.last_login_at.isoformat() if r.last_login_at else None,
+        }
+        for r in rows
+    ]
 
 
 @router.post("/reviewers", status_code=201)
-async def create_reviewer(payload: ReviewerIn, p: Principal = Depends(require_role("admin")), session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
+async def create_reviewer(
+    payload: ReviewerIn,
+    p: Principal = Depends(require_role("admin")),
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, Any]:
     if payload.role not in ROLE_RANK:
         raise HTTPException(400, "role must be viewer, reviewer or admin")
-    if (await session.execute(select(Reviewer).where(Reviewer.username == payload.username))).scalar_one_or_none():
+    if (
+        await session.execute(select(Reviewer).where(Reviewer.username == payload.username))
+    ).scalar_one_or_none():
         raise HTTPException(409, "username already exists")
     r = Reviewer(username=payload.username, password_hash=hash_password(payload.password), role=payload.role)
     session.add(r)
@@ -145,7 +184,12 @@ async def create_reviewer(payload: ReviewerIn, p: Principal = Depends(require_ro
 
 
 @router.post("/reviewers/{reviewer_id}/password")
-async def set_password(reviewer_id: str, payload: PasswordIn, p: Principal = Depends(current_principal), session: AsyncSession = Depends(get_session)) -> dict[str, str]:
+async def set_password(
+    reviewer_id: str,
+    payload: PasswordIn,
+    p: Principal = Depends(current_principal),
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, str]:
     if p.role != "admin" and p.id != reviewer_id:
         raise HTTPException(403, "cannot change another user's password")
     r = await session.get(Reviewer, reviewer_id)
@@ -158,7 +202,11 @@ async def set_password(reviewer_id: str, payload: PasswordIn, p: Principal = Dep
 
 
 @router.delete("/reviewers/{reviewer_id}")
-async def deactivate_reviewer(reviewer_id: str, p: Principal = Depends(require_role("admin")), session: AsyncSession = Depends(get_session)) -> dict[str, str]:
+async def deactivate_reviewer(
+    reviewer_id: str,
+    p: Principal = Depends(require_role("admin")),
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, str]:
     r = await session.get(Reviewer, reviewer_id)
     if r is None:
         raise HTTPException(404, "reviewer not found")

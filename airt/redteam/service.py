@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models import Agent, Campaign, ProbeResult
 from .corpus import get_probe
-from .engine import build_summary
+from .engine import build_summary, compare_group, group_campaigns
 
 
 def _progress(campaign: Campaign) -> float:
@@ -27,6 +27,8 @@ def campaign_to_dict(campaign: Campaign, agent_name: str | None = None) -> dict[
         "target_model": campaign.target_model,
         "status": campaign.status,
         "config": campaign.config or {},
+        "group_id": (campaign.config or {}).get("group_id"),
+        "target_label": (campaign.config or {}).get("target_label"),
         "summary": campaign.summary or {},
         "total_probes": campaign.total_probes,
         "completed_probes": campaign.completed_probes,
@@ -69,12 +71,16 @@ async def _agent_names(session: AsyncSession, campaigns: list[Campaign]) -> dict
     return {aid: name for aid, name in rows}
 
 
-async def list_campaigns(session: AsyncSession, *, status: str | None = None, agent_id: str | None = None) -> list[dict[str, Any]]:
+async def list_campaigns(
+    session: AsyncSession, *, status: str | None = None, agent_id: str | None = None, group_id: str | None = None
+) -> list[dict[str, Any]]:
     q = select(Campaign).order_by(Campaign.created_at.desc())
     if status:
         q = q.where(Campaign.status == status.upper())
     if agent_id:
         q = q.where(Campaign.agent_id == agent_id)
+    if group_id:
+        q = q.where(Campaign.config["group_id"].as_string() == group_id)
     campaigns = list((await session.execute(q)).scalars())
     names = await _agent_names(session, campaigns)
     return [campaign_to_dict(c, names.get(c.agent_id)) for c in campaigns]
@@ -136,3 +142,31 @@ async def recompute_summary(session: AsyncSession, campaign_id: str) -> dict[str
     campaign.summary = summary
     await session.flush()
     return summary
+
+
+# --- comparison groups ---------------------------------------------------------
+async def list_groups(session: AsyncSession) -> list[dict[str, Any]]:
+    q = select(Campaign).where(Campaign.config["group_id"].as_string().is_not(None)).order_by(Campaign.created_at.asc())
+    groups: dict[str, dict[str, Any]] = {}
+    for c in (await session.execute(q)).scalars():
+        gid = (c.config or {}).get("group_id")
+        if not gid:
+            continue
+        g = groups.get(gid)
+        if g is None:
+            g = {"group_id": gid, "name": str((c.config or {}).get("group_name") or ""), "campaign_count": 0, "statuses": {}, "created_at": c.created_at.isoformat() if c.created_at else None}
+            groups[gid] = g
+        g["campaign_count"] += 1
+        g["statuses"][c.status] = g["statuses"].get(c.status, 0) + 1
+    return sorted(groups.values(), key=lambda g: g["created_at"] or "", reverse=True)
+
+
+async def get_group(session: AsyncSession, group_id: str) -> dict[str, Any] | None:
+    return await compare_group(session, group_id)
+
+
+async def delete_group(session: AsyncSession, group_id: str) -> list[str]:
+    ids = [c.id for c in await group_campaigns(session, group_id)]
+    for cid in ids:
+        await delete_campaign(session, cid)
+    return ids

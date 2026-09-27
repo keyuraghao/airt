@@ -1,4 +1,5 @@
 """Central configuration. All values can be overridden with AIRT_* environment variables or a .env file."""
+
 from __future__ import annotations
 
 import base64
@@ -11,7 +12,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="AIRT_", env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_prefix="AIRT_", env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
 
     # --- service -----------------------------------------------------------
     app_name: str = "AIRT Gateway"
@@ -31,15 +34,21 @@ class Settings(BaseSettings):
 
     # --- security ----------------------------------------------------------
     secret_key: str = Field(default="change-me-in-production-please-0123456789", min_length=16)
-    encryption_key: str | None = Field(default=None, description="Fernet key for upstream credentials; derived from secret_key when unset")
+    encryption_key: str | None = Field(
+        default=None, description="Fernet key for upstream credentials; derived from secret_key when unset"
+    )
     admin_username: str = "admin"
     admin_password: str = "admin"  # forced rotation is recommended; a warning is logged when left at default
-    admin_api_token: str | None = Field(default=None, description="Static bearer token for programmatic reviewer access")
+    admin_api_token: str | None = Field(
+        default=None, description="Static bearer token for programmatic reviewer access"
+    )
     session_max_age_seconds: int = 12 * 3600
     cookie_secure: bool = False
 
     # --- gateway behaviour ------------------------------------------------
-    approval_timeout_seconds: int = Field(default=300, description="How long a synchronous request waits for a human decision")
+    approval_timeout_seconds: int = Field(
+        default=300, description="How long a synchronous request waits for a human decision"
+    )
     hold_poll_interval_seconds: float = 1.0
     max_request_body_bytes: int = 4 * 1024 * 1024
     max_stored_response_bytes: int = 512 * 1024
@@ -51,10 +60,18 @@ class Settings(BaseSettings):
     require_approval_for_redteam_probes: bool = True
 
     # --- notifications ----------------------------------------------------
-    notify_webhook_urls: list[str] = Field(default_factory=list, description="Webhook URLs (Slack incoming webhooks or generic JSON endpoints) notified on ticket events")
-    notify_events: list[str] = Field(default_factory=lambda: ["created", "expired", "failed"], description="Ticket events that trigger notifications")
+    notify_webhook_urls: list[str] = Field(
+        default_factory=list,
+        description="Webhook URLs (Slack incoming webhooks or generic JSON endpoints) notified on ticket events",
+    )
+    notify_events: list[str] = Field(
+        default_factory=lambda: ["created", "expired", "failed"],
+        description="Ticket events that trigger notifications",
+    )
     notify_min_risk: int = Field(default=0, description="Only notify for tickets at or above this risk score")
-    public_url: str = Field(default="", description="Externally reachable base URL used to build dashboard links in notifications")
+    public_url: str = Field(
+        default="", description="Externally reachable base URL used to build dashboard links in notifications"
+    )
 
     # --- analysis ---------------------------------------------------------
     enable_llm_judge: bool = False

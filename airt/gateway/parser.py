@@ -4,6 +4,7 @@ Supported natively: OpenAI chat/completions/responses/embeddings, Anthropic mess
 Google Gemini generateContent, Ollama chat/generate, Cohere chat. Unknown JSON bodies
 fall back to a generic walk that collects every string value.
 """
+
 from __future__ import annotations
 
 import json
@@ -105,7 +106,9 @@ def normalize(path: str, body_bytes: bytes, provider_hint: str = "") -> dict[str
         for t in body.get("tools") or []:
             if isinstance(t, dict):
                 fn = t.get("function") if isinstance(t.get("function"), dict) else t
-                tools.append({"name": fn.get("name", t.get("type", "tool")), "description": fn.get("description", "")})
+                tools.append(
+                    {"name": fn.get("name", t.get("type", "tool")), "description": fn.get("description", "")}
+                )
         if body.get("tool_choice") is not None:
             extra["tool_choice"] = body["tool_choice"]
         # messages
@@ -118,7 +121,8 @@ def normalize(path: str, body_bytes: bytes, provider_hint: str = "") -> dict[str
                 if m.get("tool_calls"):
                     text += "\n" + "\n".join(
                         f"[tool_call {tc.get('function', {}).get('name')}] {tc.get('function', {}).get('arguments', '')}"
-                        for tc in m["tool_calls"] if isinstance(tc, dict)
+                        for tc in m["tool_calls"]
+                        if isinstance(tc, dict)
                     )
                 if role == "system" or role == "developer":
                     system = (system + "\n" + text).strip()
@@ -127,14 +131,30 @@ def normalize(path: str, body_bytes: bytes, provider_hint: str = "") -> dict[str
             inp = body["input"]
             if isinstance(inp, list) and inp and isinstance(inp[0], dict) and "role" in inp[0]:
                 for m in inp:
-                    messages.append({"role": str(m.get("role", "user")), "content": _text_of(m.get("content"))})
+                    messages.append(
+                        {"role": str(m.get("role", "user")), "content": _text_of(m.get("content"))}
+                    )
             else:
-                messages.append({"role": "user", "content": _text_of(inp) if not isinstance(inp, list) else "\n".join(map(str, inp))})
+                messages.append(
+                    {
+                        "role": "user",
+                        "content": _text_of(inp) if not isinstance(inp, list) else "\n".join(map(str, inp)),
+                    }
+                )
             if body.get("instructions"):
                 system = str(body["instructions"])
         elif "prompt" in body:
             pr = body["prompt"]
-            messages.append({"role": "user", "content": pr if isinstance(pr, str) else "\n".join(map(str, pr)) if isinstance(pr, list) else str(pr)})
+            messages.append(
+                {
+                    "role": "user",
+                    "content": pr
+                    if isinstance(pr, str)
+                    else "\n".join(map(str, pr))
+                    if isinstance(pr, list)
+                    else str(pr),
+                }
+            )
         elif isinstance(body.get("contents"), list):  # Gemini
             for c in body["contents"]:
                 if isinstance(c, dict):
@@ -143,19 +163,32 @@ def normalize(path: str, body_bytes: bytes, provider_hint: str = "") -> dict[str
             messages.append({"role": "user", "content": str(body["message"])})
             for h in body.get("chat_history") or []:
                 if isinstance(h, dict):
-                    messages.insert(-1, {"role": str(h.get("role", "user")).lower(), "content": str(h.get("message", ""))})
+                    messages.insert(
+                        -1, {"role": str(h.get("role", "user")).lower(), "content": str(h.get("message", ""))}
+                    )
         if not messages and not system:
             strings: list[str] = []
             _walk_strings(body, strings)
             if strings:
                 messages.append({"role": "user", "content": "\n".join(strings)})
-        for k in ("temperature", "max_tokens", "max_completion_tokens", "top_p", "n", "user", "metadata", "response_format"):
+        for k in (
+            "temperature",
+            "max_tokens",
+            "max_completion_tokens",
+            "top_p",
+            "n",
+            "user",
+            "metadata",
+            "response_format",
+        ):
             if k in body:
                 extra[k] = body[k]
     elif body_bytes:
         messages.append({"role": "user", "content": body_bytes[:20000].decode("utf-8", "replace")})
 
-    user_texts = [m["content"] for m in messages if m["role"] not in ("system", "developer") and m.get("content")]
+    user_texts = [
+        m["content"] for m in messages if m["role"] not in ("system", "developer") and m.get("content")
+    ]
     last_user = next((m["content"] for m in reversed(messages) if m["role"] == "user"), "")
     prompt_text = "\n\n".join(x for x in [system, *user_texts] if x)
     preview = (last_user or prompt_text or "").strip().replace("\n", " ")
@@ -223,7 +256,9 @@ def extract_response_text(body_bytes: bytes, endpoint: str = "") -> str:
             if msg.get("content"):
                 out.append(_text_of(msg["content"]))
             for tc in msg.get("tool_calls") or []:
-                out.append(f"[tool_call {tc.get('function', {}).get('name')}] {tc.get('function', {}).get('arguments', '')}")
+                out.append(
+                    f"[tool_call {tc.get('function', {}).get('name')}] {tc.get('function', {}).get('arguments', '')}"
+                )
             if ch.get("text"):
                 out.append(ch["text"])
         return "\n".join(out)
@@ -238,7 +273,9 @@ def extract_response_text(body_bytes: bytes, endpoint: str = "") -> str:
     if "output_text" in obj:
         return str(obj["output_text"])
     if "candidates" in obj:  # Gemini
-        return "\n".join(_text_of(c.get("content", {}).get("parts")) for c in obj["candidates"] if isinstance(c, dict))
+        return "\n".join(
+            _text_of(c.get("content", {}).get("parts")) for c in obj["candidates"] if isinstance(c, dict)
+        )
     if "message" in obj and isinstance(obj["message"], dict):  # Ollama
         return str(obj["message"].get("content", ""))
     if "response" in obj and isinstance(obj["response"], str):

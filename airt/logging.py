@@ -9,6 +9,7 @@ In addition every agent-scoped event is published to an in-process broadcaster s
 the dashboard can stream it live, and persisted to the `agent_events` table by the
 AgentLogger (see airt/agents/service.py) for durable, queryable history.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -66,11 +67,15 @@ def configure_logging() -> None:
         else structlog.dev.ConsoleRenderer(colors=sys.stdout.isatty())
     )
     console_formatter = structlog.stdlib.ProcessorFormatter(
-        foreign_pre_chain=shared_processors, processors=[structlog.stdlib.ProcessorFormatter.remove_processors_meta, console_renderer]
+        foreign_pre_chain=shared_processors,
+        processors=[structlog.stdlib.ProcessorFormatter.remove_processors_meta, console_renderer],
     )
     json_formatter = structlog.stdlib.ProcessorFormatter(
         foreign_pre_chain=shared_processors,
-        processors=[structlog.stdlib.ProcessorFormatter.remove_processors_meta, structlog.processors.JSONRenderer()],
+        processors=[
+            structlog.stdlib.ProcessorFormatter.remove_processors_meta,
+            structlog.processors.JSONRenderer(),
+        ],
     )
 
     root = logging.getLogger()
@@ -109,7 +114,9 @@ def agent_file_logger(agent_id: str) -> logging.Logger:
     lg.propagate = False
     lg.setLevel(logging.DEBUG)
     if not lg.handlers:
-        h = logging.handlers.RotatingFileHandler(path, maxBytes=20 * 1024 * 1024, backupCount=5, encoding="utf-8")
+        h = logging.handlers.RotatingFileHandler(
+            path, maxBytes=20 * 1024 * 1024, backupCount=5, encoding="utf-8"
+        )
         h.setFormatter(logging.Formatter("%(message)s"))
         lg.addHandler(h)
     _agent_file_handlers[agent_id] = lg

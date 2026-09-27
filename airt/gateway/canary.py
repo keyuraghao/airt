@@ -5,6 +5,7 @@ system prompt of every forwarded request. If that token ever shows up in the mod
 the system prompt was leaked (or an injection made the model repeat its instructions), which
 the response analyzers report as a CRITICAL canary_leak finding and policy can block.
 """
+
 from __future__ import annotations
 
 import json

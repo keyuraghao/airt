@@ -1,13 +1,43 @@
 """Repository hygiene: the published tree must not contain em dashes or leftover merge markers."""
+
 from __future__ import annotations
 
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-SKIP_DIRS = {".venv", "node_modules", "data", "logs", ".git", "__pycache__", ".pytest_cache", "dist", "build", ".ruff_cache"}
+SKIP_DIRS = {
+    ".venv",
+    "node_modules",
+    "data",
+    "logs",
+    ".git",
+    "__pycache__",
+    ".pytest_cache",
+    "dist",
+    "build",
+    ".ruff_cache",
+}
 EM_DASH = chr(0x2014)
 MERGE_MARKER = "<" * 7
-TEXT_SUFFIXES = {".py", ".md", ".yaml", ".yml", ".toml", ".txt", ".html", ".js", ".ts", ".css", ".json", ".sh", ".cfg", ".ini", ".env", ".example", ".mjs"}
+TEXT_SUFFIXES = {
+    ".py",
+    ".md",
+    ".yaml",
+    ".yml",
+    ".toml",
+    ".txt",
+    ".html",
+    ".js",
+    ".ts",
+    ".css",
+    ".json",
+    ".sh",
+    ".cfg",
+    ".ini",
+    ".env",
+    ".example",
+    ".mjs",
+}
 
 
 def _files():
@@ -34,5 +64,9 @@ def test_no_em_dashes_in_repo():
 
 
 def test_no_merge_markers():
-    offenders = [str(p.relative_to(ROOT)) for p in _files() if p.suffix == ".py" and MERGE_MARKER in p.read_text(encoding="utf-8", errors="ignore")]
+    offenders = [
+        str(p.relative_to(ROOT))
+        for p in _files()
+        if p.suffix == ".py" and MERGE_MARKER in p.read_text(encoding="utf-8", errors="ignore")
+    ]
     assert not offenders

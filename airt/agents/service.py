@@ -1,8 +1,10 @@
 """Agent registry and the per-agent activity logger."""
+
 from __future__ import annotations
 
 import time
 from collections import defaultdict, deque
+from datetime import timedelta
 from typing import Any
 
 from sqlalchemy import desc, func, select, update
@@ -10,8 +12,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..db import session_scope
 from ..logging import agent_file_logger, broadcaster, get_logger, json_dumps
-from datetime import timedelta
-
 from ..models import Agent, AgentEvent, ScanToken, utcnow
 from ..security import api_key_prefix, decrypt_secret, encrypt_secret, generate_api_key, hash_api_key
 
@@ -123,7 +123,9 @@ async def authenticate_api_key(session: AsyncSession, raw_key: str | None) -> Ag
     digest = hash_api_key(raw_key)
     agent = (await session.execute(select(Agent).where(Agent.api_key_hash == digest))).scalar_one_or_none()
     if agent is None and raw_key.startswith(SCAN_TOKEN_PREFIX):
-        tok = (await session.execute(select(ScanToken).where(ScanToken.token_hash == digest))).scalar_one_or_none()
+        tok = (
+            await session.execute(select(ScanToken).where(ScanToken.token_hash == digest))
+        ).scalar_one_or_none()
         if tok is None or tok.revoked:
             return None
         exp = tok.expires_at if tok.expires_at.tzinfo else tok.expires_at.replace(tzinfo=utcnow().tzinfo)
@@ -138,19 +140,42 @@ async def authenticate_api_key(session: AsyncSession, raw_key: str | None) -> Ag
 SCAN_TOKEN_PREFIX = "airt_scan_"
 
 
-async def mint_scan_token(session: AsyncSession, agent_id: str, *, ttl_seconds: int = 3600, purpose: str = "", campaign_id: str | None = None, created_by: str = "system") -> tuple[ScanToken, str]:
+async def mint_scan_token(
+    session: AsyncSession,
+    agent_id: str,
+    *,
+    ttl_seconds: int = 3600,
+    purpose: str = "",
+    campaign_id: str | None = None,
+    created_by: str = "system",
+) -> tuple[ScanToken, str]:
     """Create a short-lived token that external scanners use to send traffic through the gateway as this agent."""
     import secrets as _secrets
 
     raw = SCAN_TOKEN_PREFIX + _secrets.token_urlsafe(32)
-    tok = ScanToken(agent_id=agent_id, token_hash=hash_api_key(raw), purpose=purpose, campaign_id=campaign_id, created_by=created_by, expires_at=utcnow() + timedelta(seconds=ttl_seconds))
+    tok = ScanToken(
+        agent_id=agent_id,
+        token_hash=hash_api_key(raw),
+        purpose=purpose,
+        campaign_id=campaign_id,
+        created_by=created_by,
+        expires_at=utcnow() + timedelta(seconds=ttl_seconds),
+    )
     session.add(tok)
     await session.flush()
-    log.info("agent.scan_token_minted", agent_id=agent_id, purpose=purpose, campaign_id=campaign_id, ttl=ttl_seconds)
+    log.info(
+        "agent.scan_token_minted",
+        agent_id=agent_id,
+        purpose=purpose,
+        campaign_id=campaign_id,
+        ttl=ttl_seconds,
+    )
     return tok, raw
 
 
-async def revoke_scan_tokens(session: AsyncSession, *, campaign_id: str | None = None, agent_id: str | None = None) -> int:
+async def revoke_scan_tokens(
+    session: AsyncSession, *, campaign_id: str | None = None, agent_id: str | None = None
+) -> int:
     q = update(ScanToken).where(ScanToken.revoked.is_(False))
     if campaign_id:
         q = q.where(ScanToken.campaign_id == campaign_id)
@@ -161,7 +186,11 @@ async def revoke_scan_tokens(session: AsyncSession, *, campaign_id: str | None =
 
 
 async def touch_agent(session: AsyncSession, agent_id: str) -> None:
-    await session.execute(update(Agent).where(Agent.id == agent_id).values(request_count=Agent.request_count + 1, last_seen_at=utcnow()))
+    await session.execute(
+        update(Agent)
+        .where(Agent.id == agent_id)
+        .values(request_count=Agent.request_count + 1, last_seen_at=utcnow())
+    )
 
 
 def upstream_api_key(agent: Agent) -> str | None:
@@ -235,10 +264,19 @@ async def log_agent_event(
         "correlation_id": correlation_id,
         **detail,
     }
-    getattr(log, level.lower(), log.info)(f"agent.{event}", **{k: v for k, v in record.items() if k not in {"ts", "level", "event"}})
+    getattr(log, level.lower(), log.info)(
+        f"agent.{event}", **{k: v for k, v in record.items() if k not in {"ts", "level", "event"}}
+    )
     agent_file_logger(agent_id).info(json_dumps(record))
     broadcaster.publish("logs", record)
-    row = AgentEvent(agent_id=agent_id, level=level, event=event, ticket_id=ticket_id, correlation_id=correlation_id, detail=detail)
+    row = AgentEvent(
+        agent_id=agent_id,
+        level=level,
+        event=event,
+        ticket_id=ticket_id,
+        correlation_id=correlation_id,
+        detail=detail,
+    )
     if session is not None:
         session.add(row)
         await session.flush()
@@ -248,7 +286,12 @@ async def log_agent_event(
 
 
 async def list_agent_events(
-    session: AsyncSession, agent_id: str | None = None, ticket_id: str | None = None, limit: int = 200, offset: int = 0, level: str | None = None
+    session: AsyncSession,
+    agent_id: str | None = None,
+    ticket_id: str | None = None,
+    limit: int = 200,
+    offset: int = 0,
+    level: str | None = None,
 ) -> list[AgentEvent]:
     q = select(AgentEvent).order_by(desc(AgentEvent.id))
     if agent_id:
@@ -263,10 +306,22 @@ async def list_agent_events(
 async def agent_stats(session: AsyncSession, agent_id: str) -> dict[str, Any]:
     from ..models import Ticket
 
-    rows = (await session.execute(select(Ticket.status, func.count(Ticket.id)).where(Ticket.agent_id == agent_id).group_by(Ticket.status))).all()
+    rows = (
+        await session.execute(
+            select(Ticket.status, func.count(Ticket.id))
+            .where(Ticket.agent_id == agent_id)
+            .group_by(Ticket.status)
+        )
+    ).all()
     by_status = {status: int(count) for status, count in rows}
-    avg_risk = (await session.execute(select(func.avg(Ticket.risk_score)).where(Ticket.agent_id == agent_id))).scalar_one()
-    return {"by_status": by_status, "total": sum(by_status.values()), "avg_risk": round(float(avg_risk or 0), 1)}
+    avg_risk = (
+        await session.execute(select(func.avg(Ticket.risk_score)).where(Ticket.agent_id == agent_id))
+    ).scalar_one()
+    return {
+        "by_status": by_status,
+        "total": sum(by_status.values()),
+        "avg_risk": round(float(avg_risk or 0), 1),
+    }
 
 
 def event_to_dict(e: AgentEvent) -> dict[str, Any]:

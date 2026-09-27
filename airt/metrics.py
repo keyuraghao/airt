@@ -1,4 +1,5 @@
 """Minimal dependency-free Prometheus style metrics registry."""
+
 from __future__ import annotations
 
 import threading
@@ -40,7 +41,10 @@ class Metrics:
 
     def snapshot(self) -> dict:
         with self._lock:
-            return {"counters": {f"{n}{dict(l)}" if l else n: v for (n, l), v in self._counters.items()}, "histograms": {n: len(v) for n, v in self._hist.items()}}
+            return {
+                "counters": {f"{n}{dict(l)}" if l else n: v for (n, l), v in self._counters.items()},
+                "histograms": {n: len(v) for n, v in self._hist.items()},
+            }
 
 
 metrics = Metrics()

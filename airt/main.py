@@ -1,4 +1,5 @@
 """FastAPI application factory."""
+
 from __future__ import annotations
 
 import asyncio
@@ -12,7 +13,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, PlainTextResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from . import __version__
+from . import __version__, settings_store
 from .agents import router as agents_router
 from .agents import service as agent_service
 from .auth import ensure_admin
@@ -24,7 +25,6 @@ from .gateway import router as gateway_router
 from .logging import configure_logging, get_logger
 from .metrics import metrics
 from .notifications import notifier
-from . import settings_store
 from .settings_router import router as settings_router
 from .tickets import router as tickets_router
 from .tickets import service as ticket_service
@@ -84,7 +84,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     app.state.campaign_runner = campaign_runner
     await notifier.start()
-    log.info("airt.started", version=__version__, env=settings.environment, port=settings.port, approval_timeout=settings.approval_timeout_seconds)
+    log.info(
+        "airt.started",
+        version=__version__,
+        env=settings.environment,
+        port=settings.port,
+        approval_timeout=settings.approval_timeout_seconds,
+    )
     try:
         yield
     finally:
@@ -144,4 +150,3 @@ def create_app() -> FastAPI:
     mount_mcp(app)
     app.include_router(gateway_router.router)  # catch-all proxy routes go last
     return app
-

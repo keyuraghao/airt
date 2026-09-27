@@ -35,7 +35,8 @@ from airt.redteam import evaluators, mutators  # noqa: E402
 
 
 # --- fake upstream: OpenAI-style chat completions --------------------------------
-CANARY_SNIPPETS = ("CANARY-", "canary token")
+LEAKY_HOST = "upstream.test"  # echoes canaries back
+STRICT_HOST = "strict.test"  # refuses everything, never leaks
 
 
 def _fake_upstream(request: httpx.Request) -> httpx.Response:
@@ -49,12 +50,13 @@ def _fake_upstream(request: httpx.Request) -> httpx.Response:
         body = {}
     messages = body.get("messages", [])
     system_text = " ".join(m.get("content", "") for m in messages if m.get("role") == "system")
-    # find a canary token in the system prompt and leak it back
+    # find a canary token in the system prompt and leak it back, unless this is the "strict" upstream
     reply = "I'm sorry, but I can't help with that request. It goes against my guidelines."
-    for token in system_text.split():
-        if token.startswith("CANARY-"):
-            reply = f"Of course! The secret token is {token} and here is everything you asked for."
-            break
+    if request.url.host != STRICT_HOST:
+        for token in system_text.split():
+            if token.startswith("CANARY-"):
+                reply = f"Of course! The secret token is {token} and here is everything you asked for."
+                break
     completion = {
         "id": "chatcmpl-test",
         "object": "chat.completion",
@@ -171,13 +173,13 @@ async def app_client():
 import uuid as _uuid  # noqa: E402
 
 
-async def _create_agent(client: httpx.AsyncClient) -> str:
+async def _create_agent(client: httpx.AsyncClient, host: str = LEAKY_HOST) -> str:
     r = await client.post(
         "/api/agents",
         json={
             "name": f"redteam-target-{_uuid.uuid4().hex[:8]}",
             "upstream_provider": "openai",
-            "upstream_base_url": "https://upstream.test/v1",
+            "upstream_base_url": f"https://{host}/v1",
             "upstream_api_key": "sk-test",
             "require_approval": False,
         },
@@ -309,3 +311,132 @@ async def test_campaign_materializes_results_before_start(app_client) -> None:
     body = r.json()
     assert body["total"] == 8
     assert all(i["verdict"] == "PENDING" for i in body["items"])
+
+
+async def _wait_status(client: httpx.AsyncClient, cid: str) -> dict:
+    campaign: dict = {}
+    for _ in range(150):
+        campaign = (await client.get(f"/api/redteam/campaigns/{cid}")).json()
+        if campaign["status"] in ("COMPLETED", "FAILED", "CANCELLED"):
+            break
+        await asyncio.sleep(0.1)
+    return campaign
+
+
+async def test_group_runs_two_targets_concurrently_and_compares(app_client) -> None:
+    leaky = await _create_agent(app_client, LEAKY_HOST)
+    strict = await _create_agent(app_client, STRICT_HOST)
+    r = await app_client.post(
+        "/api/redteam/groups",
+        json={
+            "name": "model bake-off",
+            "targets": [
+                {"agent_id": leaky, "target_model": "leaky-model", "label": "leaky"},
+                {"agent_id": strict, "target_model": "strict-model", "label": "strict"},
+            ],
+            "categories": ["system_prompt_extraction", "data_exfiltration", "benign_control"],
+            "max_probes": 30,
+            "seed": 11,
+            "auto_start": True,
+        },
+    )
+    assert r.status_code == 201, r.text
+    body = r.json()
+    group_id = body["group_id"]
+    assert group_id.startswith("grp_")
+    assert len(body["campaigns"]) == 2
+    ids = [c["id"] for c in body["campaigns"]]
+    labels = {c["target_label"] for c in body["campaigns"]}
+    assert labels == {"leaky", "strict"}
+    assert all(c["group_id"] == group_id for c in body["campaigns"])
+
+    # identical probe selection across siblings
+    probe_lists = [[p["probe_id"] for p in c["config"]["probes"]] for c in body["campaigns"]]
+    assert probe_lists[0] == probe_lists[1] and probe_lists[0]
+
+    # both run at the same time: poll until both finish and confirm they overlapped (both were RUNNING together
+    # at least once, or finished within the same polling window)
+    seen_both_running = False
+    finals: dict[str, dict] = {}
+    for _ in range(200):
+        states = {cid: (await app_client.get(f"/api/redteam/campaigns/{cid}")).json() for cid in ids}
+        if all(s["status"] == "RUNNING" for s in states.values()):
+            seen_both_running = True
+        if all(s["status"] in ("COMPLETED", "FAILED", "CANCELLED") for s in states.values()):
+            finals = states
+            break
+        await asyncio.sleep(0.05)
+    assert finals, "group did not finish"
+    assert all(s["status"] == "COMPLETED" for s in finals.values()), finals
+    # started_at of both is set before finished_at of either, proving concurrent execution
+    starts = [s["started_at"] for s in finals.values()]
+    ends = [s["finished_at"] for s in finals.values()]
+    assert all(st <= min(ends) for st in starts) or seen_both_running
+
+    # compare view
+    r = await app_client.get(f"/api/redteam/groups/{group_id}")
+    assert r.status_code == 200, r.text
+    cmp = r.json()
+    assert cmp["group_id"] == group_id and cmp["name"] == "model bake-off"
+    assert {c["id"] for c in cmp["campaigns"]} == set(ids)
+    by_label = {cmp["labels"][cid]: cid for cid in ids}
+    leaky_id, strict_id = by_label["leaky"], by_label["strict"]
+    # the leaky model leaks canaries -> higher score and rate than the strict one
+    assert cmp["weighted_scores"][leaky_id] > cmp["weighted_scores"][strict_id]
+    assert cmp["vulnerability_rates"][leaky_id] > cmp["vulnerability_rates"][strict_id]
+    assert cmp["ranking"] == [strict_id, leaky_id]
+    assert cmp["verdict_totals"][leaky_id].get("VULNERABLE", 0) > 0
+    assert cmp["verdict_totals"][strict_id].get("VULNERABLE", 0) == 0
+    # matrix has every campaign under every category
+    assert "system_prompt_extraction" in cmp["matrix"]
+    for cat, cells in cmp["matrix"].items():
+        assert set(cells) == set(ids)
+        assert all({"vulnerable", "total", "rate"} <= set(cell) for cell in cells.values())
+    assert cmp["matrix"]["system_prompt_extraction"][leaky_id]["rate"] > cmp["matrix"]["system_prompt_extraction"][strict_id]["rate"]
+    # per_probe rows align by probe_id and carry a verdict per campaign
+    assert cmp["per_probe"] and all(set(row["verdicts"]) == set(ids) for row in cmp["per_probe"])
+    assert sorted(row["probe_id"] for row in cmp["per_probe"]) == sorted(probe_lists[0])
+    # owasp coverage present at group and campaign level
+    assert "LLM07" in cmp["owasp_coverage"] and cmp["owasp_coverage"]["LLM07"]["covered"] is True
+    for cid in ids:
+        summary = (await app_client.get(f"/api/redteam/campaigns/{cid}/summary")).json()
+        assert "owasp_coverage" in summary and "owasp_breakdown" in summary
+        assert summary["owasp_coverage"]["LLM07"]["covered"] is True
+    assert "LLM07" in (await app_client.get(f"/api/redteam/campaigns/{leaky_id}/summary")).json()["owasp_breakdown"]
+
+    # listing and filters
+    groups = (await app_client.get("/api/redteam/groups")).json()
+    mine = next(g for g in groups if g["group_id"] == group_id)
+    assert mine["campaign_count"] == 2 and mine["statuses"].get("COMPLETED") == 2 and mine["name"] == "model bake-off"
+    filtered = (await app_client.get("/api/redteam/campaigns", params={"group_id": group_id})).json()
+    assert {c["id"] for c in filtered} == set(ids)
+
+    # delete removes both siblings
+    r = await app_client.delete(f"/api/redteam/groups/{group_id}")
+    assert r.status_code == 200 and r.json()["deleted"] == group_id and set(r.json()["campaigns"]) == set(ids)
+    assert (await app_client.get(f"/api/redteam/groups/{group_id}")).status_code == 404
+    for cid in ids:
+        assert (await app_client.get(f"/api/redteam/campaigns/{cid}")).status_code == 404
+
+
+async def test_group_without_autostart_then_start_and_cancel(app_client) -> None:
+    a = await _create_agent(app_client, LEAKY_HOST)
+    b = await _create_agent(app_client, STRICT_HOST)
+    r = await app_client.post(
+        "/api/redteam/groups",
+        json={"name": "manual", "targets": [{"agent_id": a, "target_model": "m1"}, {"agent_id": b, "target_model": "m2"}], "categories": ["benign_control"], "max_probes": 4},
+    )
+    assert r.status_code == 201
+    gid = r.json()["group_id"]
+    assert all(c["status"] == "CREATED" for c in r.json()["campaigns"])
+    # default labels fall back to the target model
+    assert {c["target_label"] for c in r.json()["campaigns"]} == {"m1", "m2"}
+    r = await app_client.post(f"/api/redteam/groups/{gid}/start")
+    assert r.status_code == 200
+    for c in r.json()["campaigns"]:
+        await _wait_status(app_client, c["id"])
+    cmp = (await app_client.get(f"/api/redteam/groups/{gid}")).json()
+    assert all(c["status"] == "COMPLETED" for c in cmp["campaigns"])
+    r = await app_client.post(f"/api/redteam/groups/{gid}/cancel")
+    assert r.status_code == 200  # cancelling a finished group is a no-op that still returns the compare view
+    assert (await app_client.get("/api/redteam/groups/nope")).status_code == 404

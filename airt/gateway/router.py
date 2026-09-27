@@ -7,6 +7,7 @@
 Synchronous mode (default): the HTTP call blocks until a reviewer decides or the timeout elapses.
 Asynchronous mode (header X-AIRT-Async: 1): returns 202 with the ticket id; poll /gateway/tickets/{id}.
 """
+
 from __future__ import annotations
 
 import json
@@ -18,6 +19,7 @@ from fastapi import APIRouter, Depends, Request, Response
 from fastapi.responses import JSONResponse, StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from .. import settings_store
 from ..agents import service as agents
 from ..analysis import analyze_request, analyze_response
 from ..config import get_settings
@@ -29,7 +31,6 @@ from ..security import redact_headers
 from ..tickets import service as tickets
 from . import canary as canary_mod
 from . import forwarder, policy
-from .. import settings_store
 from .hold import hold_registry
 from .parser import extract_response_text, normalize
 
@@ -78,16 +79,43 @@ async def intercept(request: Request, path: str, session: AsyncSession) -> Respo
         agent = await _authenticate(request, session)
     except GatewayAuthError:
         metrics.inc("gateway_auth_failures_total")
-        return JSONResponse({"error": {"message": "invalid or missing AIRT agent key", "type": "airt_gateway", "code": "unauthorized"}}, status_code=401)
+        return JSONResponse(
+            {
+                "error": {
+                    "message": "invalid or missing AIRT agent key",
+                    "type": "airt_gateway",
+                    "code": "unauthorized",
+                }
+            },
+            status_code=401,
+        )
 
     if not agents.check_rate_limit(agent):
         await agents.log_agent_event(agent.id, "rate_limited", level="WARNING", session=session, path=path)
         await session.commit()
-        return JSONResponse({"error": {"message": "agent rate limit exceeded", "type": "airt_gateway", "code": "rate_limited"}}, status_code=429)
+        return JSONResponse(
+            {
+                "error": {
+                    "message": "agent rate limit exceeded",
+                    "type": "airt_gateway",
+                    "code": "rate_limited",
+                }
+            },
+            status_code=429,
+        )
 
     body = await request.body()
     if len(body) > settings.max_request_body_bytes:
-        return JSONResponse({"error": {"message": "request body too large", "type": "airt_gateway", "code": "payload_too_large"}}, status_code=413)
+        return JSONResponse(
+            {
+                "error": {
+                    "message": "request body too large",
+                    "type": "airt_gateway",
+                    "code": "payload_too_large",
+                }
+            },
+            status_code=413,
+        )
 
     inbound_headers = dict(request.headers)
     normalized = normalize(path, body, provider_hint=agent.upstream_provider)
@@ -132,7 +160,10 @@ async def intercept(request: Request, path: str, session: AsyncSession) -> Respo
     )
     await agents.touch_agent(session, agent.id)
 
-    analysis = await analyze_request(normalized, {"agent": agents.agent_to_dict(agent), "path": path, "headers": redact_headers(inbound_headers)})
+    analysis = await analyze_request(
+        normalized,
+        {"agent": agents.agent_to_dict(agent), "path": path, "headers": redact_headers(inbound_headers)},
+    )
     await tickets.set_analysis(session, ticket, analysis.to_dict())
     metrics.observe("gateway_risk_score", ticket.risk_score)
 
@@ -143,16 +174,31 @@ async def intercept(request: Request, path: str, session: AsyncSession) -> Respo
 
     if ticket.status == TicketStatus.DENIED.value:
         metrics.inc("gateway_denied_total")
-        return JSONResponse(forwarder.error_json(ticket.id, "denied", "request blocked by AIRT policy: " + ticket.decision_note, {"risk_score": ticket.risk_score}), status_code=403)
+        return JSONResponse(
+            forwarder.error_json(
+                ticket.id,
+                "denied",
+                "request blocked by AIRT policy: " + ticket.decision_note,
+                {"risk_score": ticket.risk_score},
+            ),
+            status_code=403,
+        )
 
     if ticket.status == TicketStatus.PENDING.value:
         if async_mode:
             return JSONResponse(
-                {"ticket_id": ticket.id, "status": "PENDING", "poll_url": f"/gateway/tickets/{ticket.id}", "expires_at": ticket.expires_at.isoformat() if ticket.expires_at else None},
+                {
+                    "ticket_id": ticket.id,
+                    "status": "PENDING",
+                    "poll_url": f"/gateway/tickets/{ticket.id}",
+                    "expires_at": ticket.expires_at.isoformat() if ticket.expires_at else None,
+                },
                 status_code=202,
                 headers={"X-AIRT-Ticket": ticket.id},
             )
-        log.info("ticket.waiting", ticket_id=ticket.id, agent=agent.name, timeout=settings.approval_timeout_seconds)
+        log.info(
+            "ticket.waiting", ticket_id=ticket.id, agent=agent.name, timeout=settings.approval_timeout_seconds
+        )
         wait_started = time.perf_counter()
         status = await hold_registry.wait(ticket.id)
         metrics.observe("gateway_wait_seconds", time.perf_counter() - wait_started)
@@ -161,15 +207,42 @@ async def intercept(request: Request, path: str, session: AsyncSession) -> Respo
             await tickets.mark_expired(session, ticket)
             await session.commit()
             metrics.inc("gateway_expired_total")
-            return JSONResponse(forwarder.error_json(ticket.id, "expired", "no reviewer decision before the approval timeout; nothing was sent upstream"), status_code=504)
+            return JSONResponse(
+                forwarder.error_json(
+                    ticket.id,
+                    "expired",
+                    "no reviewer decision before the approval timeout; nothing was sent upstream",
+                ),
+                status_code=504,
+            )
         if ticket.status == TicketStatus.DENIED.value:
             metrics.inc("gateway_denied_total")
-            return JSONResponse(forwarder.error_json(ticket.id, "denied", "request denied by reviewer: " + (ticket.decision_note or ""), {"decided_by": ticket.decided_by}), status_code=403)
+            return JSONResponse(
+                forwarder.error_json(
+                    ticket.id,
+                    "denied",
+                    "request denied by reviewer: " + (ticket.decision_note or ""),
+                    {"decided_by": ticket.decided_by},
+                ),
+                status_code=403,
+            )
 
-    return await forward_ticket(request.app, session, ticket, agent, request.method, path, request.url.query, inbound_headers, body)
+    return await forward_ticket(
+        request.app, session, ticket, agent, request.method, path, request.url.query, inbound_headers, body
+    )
 
 
-async def forward_ticket(app: Any, session: AsyncSession, ticket: Ticket, agent: Agent, method: str, path: str, query: str, inbound_headers: dict[str, str], body: bytes) -> Response:
+async def forward_ticket(
+    app: Any,
+    session: AsyncSession,
+    ticket: Ticket,
+    agent: Agent,
+    method: str,
+    path: str,
+    query: str,
+    inbound_headers: dict[str, str],
+    body: bytes,
+) -> Response:
     """Ticket is APPROVED: send it upstream, record the outcome, relay the answer (streaming aware)."""
     settings = get_settings()
     client: httpx.AsyncClient = app.state.http
@@ -201,8 +274,17 @@ async def forward_ticket(app: Any, session: AsyncSession, ticket: Ticket, agent:
         await session.commit()
         if withheld:
             metrics.inc("gateway_responses_withheld_total")
-            return JSONResponse(forwarder.error_json(ticket.id, "response_withheld", withheld), status_code=403, headers={"X-AIRT-Ticket": ticket.id})
-        return Response(content=raw, status_code=upstream.status_code, headers=resp_headers, media_type=content_type or None)
+            return JSONResponse(
+                forwarder.error_json(ticket.id, "response_withheld", withheld),
+                status_code=403,
+                headers={"X-AIRT-Ticket": ticket.id},
+            )
+        return Response(
+            content=raw,
+            status_code=upstream.status_code,
+            headers=resp_headers,
+            media_type=content_type or None,
+        )
 
     ticket_id = ticket.id
     captured = bytearray()
@@ -222,7 +304,9 @@ async def forward_ticket(app: Any, session: AsyncSession, ticket: Ticket, agent:
                 if t is not None:
                     await _finish(s, t, status_code, resp_headers, bytes(captured), latency)
 
-    return StreamingResponse(relay(), status_code=status_code, headers=resp_headers, media_type=content_type or "text/event-stream")
+    return StreamingResponse(
+        relay(), status_code=status_code, headers=resp_headers, media_type=content_type or "text/event-stream"
+    )
 
 
 async def _iter_upstream(upstream: httpx.Response):
@@ -234,7 +318,14 @@ async def _iter_upstream(upstream: httpx.Response):
         yield chunk
 
 
-async def _finish(session: AsyncSession, ticket: Ticket, status_code: int, headers: dict[str, str], raw: bytes, latency_ms: float) -> str | None:
+async def _finish(
+    session: AsyncSession,
+    ticket: Ticket,
+    status_code: int,
+    headers: dict[str, str],
+    raw: bytes,
+    latency_ms: float,
+) -> str | None:
     """Record the upstream outcome. Returns a reason string when policy says the response must be withheld from the client."""
     normalized = ticket.normalized or {}
     text = extract_response_text(raw, normalized.get("endpoint", ""))
@@ -242,12 +333,30 @@ async def _finish(session: AsyncSession, ticket: Ticket, status_code: int, heade
     canary = normalized.get("canary")
     if text:
         try:
-            res = await analyze_response(normalized, text, {"agent_id": ticket.agent_id, "canaries": [canary] if canary else []})
+            res = await analyze_response(
+                normalized, text, {"agent_id": ticket.agent_id, "canaries": [canary] if canary else []}
+            )
             response_findings = [f.to_dict() for f in res.findings]
         except Exception as exc:
             log.warning("response.analysis.failed", ticket_id=ticket.id, error=str(exc))
-        if canary_mod.leaked(text, canary) and not any(f.get("category") == "canary_leak" for f in response_findings):
-            response_findings.insert(0, {"analyzer": "canary", "category": "canary_leak", "severity": "CRITICAL", "title": "Canary token leaked in response", "description": "The secret canary injected into the system prompt appears in the model output: the system prompt was disclosed.", "evidence": canary, "location": "response", "confidence": 1.0, "tags": ["rebuff"], "metadata": {}})
+        if canary_mod.leaked(text, canary) and not any(
+            f.get("category") == "canary_leak" for f in response_findings
+        ):
+            response_findings.insert(
+                0,
+                {
+                    "analyzer": "canary",
+                    "category": "canary_leak",
+                    "severity": "CRITICAL",
+                    "title": "Canary token leaked in response",
+                    "description": "The secret canary injected into the system prompt appears in the model output: the system prompt was disclosed.",
+                    "evidence": canary,
+                    "location": "response",
+                    "confidence": 1.0,
+                    "tags": ["rebuff"],
+                    "metadata": {},
+                },
+            )
     metrics.inc("gateway_upstream_responses_total", labels={"status": str(status_code)})
     metrics.observe("gateway_upstream_latency_ms", latency_ms)
     await tickets.mark_completed(
@@ -261,12 +370,16 @@ async def _finish(session: AsyncSession, ticket: Ticket, status_code: int, heade
         response_preview=text.replace("\n", " ")[:500],
     )
     pol = settings_store.get_namespace("policy")
-    if pol.get("block_on_canary_leak", True) and any(f.get("category") == "canary_leak" for f in response_findings):
+    if pol.get("block_on_canary_leak", True) and any(
+        f.get("category") == "canary_leak" for f in response_findings
+    ):
         reason = "response withheld: system prompt canary leaked in the model output"
         ticket.error = reason
         await tickets.add_event(session, ticket, "withheld", actor="policy", reason=reason)
         return reason
-    if pol.get("quarantine_on_critical_response_finding") and any(f.get("severity") == "CRITICAL" for f in response_findings):
+    if pol.get("quarantine_on_critical_response_finding") and any(
+        f.get("severity") == "CRITICAL" for f in response_findings
+    ):
         reason = "response withheld: critical finding in the model output"
         ticket.error = reason
         await tickets.add_event(session, ticket, "withheld", actor="policy", reason=reason)
@@ -275,29 +388,45 @@ async def _finish(session: AsyncSession, ticket: Ticket, status_code: int, heade
 
 
 @router.api_route("/v1/{path:path}", methods=METHODS, include_in_schema=False)
-async def openai_compatible(path: str, request: Request, session: AsyncSession = Depends(get_session)) -> Response:
+async def openai_compatible(
+    path: str, request: Request, session: AsyncSession = Depends(get_session)
+) -> Response:
     return await intercept(request, "v1/" + path, session)
 
 
 @router.api_route("/proxy/{path:path}", methods=METHODS, include_in_schema=False)
-async def generic_proxy(path: str, request: Request, session: AsyncSession = Depends(get_session)) -> Response:
+async def generic_proxy(
+    path: str, request: Request, session: AsyncSession = Depends(get_session)
+) -> Response:
     return await intercept(request, path, session)
 
 
 @router.get("/gateway/tickets/{ticket_id}", summary="Poll an asynchronous ticket (agent authenticated)")
-async def poll_ticket(ticket_id: str, request: Request, session: AsyncSession = Depends(get_session)) -> Response:
+async def poll_ticket(
+    ticket_id: str, request: Request, session: AsyncSession = Depends(get_session)
+) -> Response:
     try:
         agent = await _authenticate(request, session)
     except GatewayAuthError:
-        return JSONResponse({"error": {"message": "invalid or missing AIRT agent key", "code": "unauthorized"}}, status_code=401)
+        return JSONResponse(
+            {"error": {"message": "invalid or missing AIRT agent key", "code": "unauthorized"}},
+            status_code=401,
+        )
     ticket = await tickets.get_ticket(session, ticket_id)
     if ticket is None or ticket.agent_id != agent.id:
         return JSONResponse({"error": {"message": "ticket not found", "code": "not_found"}}, status_code=404)
     if ticket.status == TicketStatus.APPROVED.value:
         headers = {k: v for k, v in (ticket.request_headers or {}).items()}
         body = (ticket.request_body or "").encode()
-        return await forward_ticket(request.app, session, ticket, agent, ticket.method, ticket.path, "", headers, body)
-    payload: dict[str, Any] = {"ticket_id": ticket.id, "status": ticket.status, "decided_by": ticket.decided_by, "decision_note": ticket.decision_note}
+        return await forward_ticket(
+            request.app, session, ticket, agent, ticket.method, ticket.path, "", headers, body
+        )
+    payload: dict[str, Any] = {
+        "ticket_id": ticket.id,
+        "status": ticket.status,
+        "decided_by": ticket.decided_by,
+        "decision_note": ticket.decision_note,
+    }
     if ticket.status in (TicketStatus.COMPLETED.value, TicketStatus.FAILED.value) and ticket.response_status:
         try:
             payload["response"] = json.loads(ticket.response_body)

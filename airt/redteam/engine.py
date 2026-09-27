@@ -4,6 +4,7 @@ aggregates results into a scored summary. One CampaignRunner instance is shared 
 from __future__ import annotations
 
 import asyncio
+import random
 import time
 from datetime import datetime
 from typing import Any
@@ -12,11 +13,12 @@ import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from .. import taxonomy
 from ..agents.service import log_agent_event
 from ..config import get_settings
 from ..db import session_scope
 from ..logging import broadcaster, get_logger
-from ..models import Campaign, CampaignStatus, ProbeResult, utcnow
+from ..models import Campaign, CampaignStatus, ProbeResult, new_id, utcnow
 from . import evaluators
 from .corpus import Probe, get_probe, get_probes
 from .mutators import MUTATOR_NAMES, apply_mutator, mutated_id
@@ -73,49 +75,23 @@ class CampaignRunner:
         return {"probe_id": pid, "base_id": probe.id, "mutator": mutator}
 
     # ---- creation ---------------------------------------------------------
-    async def create_campaign(
+    async def _materialize(
         self,
         session: AsyncSession,
         *,
         name: str,
         agent_id: str,
         target_model: str,
-        categories: list[str] | None = None,
-        techniques: list[str] | None = None,
-        max_probes: int | None = None,
-        mutators: list[str] | None = None,
-        system_prompt: str = "",
-        path: str = "v1/chat/completions",
-        concurrency: int | None = None,
-        created_by: str = "",
-        seed: int | None = None,
-        extra_body: dict[str, Any] | None = None,
+        selected: list[tuple[Probe, str | None]],
+        config: dict[str, Any],
+        created_by: str,
     ) -> Campaign:
-        selected = self._select_probes(
-            categories=categories,
-            techniques=techniques,
-            max_probes=max_probes,
-            mutators=mutators,
-            seed=seed,
-        )
-        config = {
-            "categories": categories or [],
-            "techniques": techniques or [],
-            "max_probes": max_probes,
-            "mutators": mutators or [],
-            "system_prompt": system_prompt,
-            "path": path,
-            "concurrency": concurrency,
-            "seed": seed,
-            "extra_body": extra_body or {},
-            "probes": [self._probe_config_entry(p, m) for p, m in selected],
-        }
         campaign = Campaign(
             name=name,
             agent_id=agent_id,
             target_model=target_model,
             status=CampaignStatus.CREATED.value,
-            config=config,
+            config={**config, "probes": [self._probe_config_entry(p, m) for p, m in selected]},
             summary={},
             total_probes=len(selected),
             completed_probes=0,
@@ -138,9 +114,122 @@ class CampaignRunner:
                 )
             )
         await session.flush()
-        log.info("redteam.campaign.created", campaign_id=campaign.id, probes=len(selected), agent_id=agent_id)
+        log.info("redteam.campaign.created", campaign_id=campaign.id, probes=len(selected), agent_id=agent_id, group_id=config.get("group_id"))
         broadcaster.publish("campaigns", {"event": "campaign.status", "campaign_id": campaign.id, "status": campaign.status})
         return campaign
+
+    @staticmethod
+    def _base_config(
+        *,
+        categories: list[str] | None,
+        techniques: list[str] | None,
+        max_probes: int | None,
+        mutators: list[str] | None,
+        system_prompt: str,
+        path: str,
+        concurrency: int | None,
+        seed: int | None,
+        extra_body: dict[str, Any] | None,
+    ) -> dict[str, Any]:
+        return {
+            "categories": categories or [],
+            "techniques": techniques or [],
+            "max_probes": max_probes,
+            "mutators": mutators or [],
+            "system_prompt": system_prompt,
+            "path": path,
+            "concurrency": concurrency,
+            "seed": seed,
+            "extra_body": extra_body or {},
+        }
+
+    async def create_campaign(
+        self,
+        session: AsyncSession,
+        *,
+        name: str,
+        agent_id: str,
+        target_model: str,
+        categories: list[str] | None = None,
+        techniques: list[str] | None = None,
+        max_probes: int | None = None,
+        mutators: list[str] | None = None,
+        system_prompt: str = "",
+        path: str = "v1/chat/completions",
+        concurrency: int | None = None,
+        created_by: str = "",
+        seed: int | None = None,
+        extra_body: dict[str, Any] | None = None,
+    ) -> Campaign:
+        selected = self._select_probes(categories=categories, techniques=techniques, max_probes=max_probes, mutators=mutators, seed=seed)
+        config = self._base_config(
+            categories=categories, techniques=techniques, max_probes=max_probes, mutators=mutators, system_prompt=system_prompt,
+            path=path, concurrency=concurrency, seed=seed, extra_body=extra_body,
+        )
+        return await self._materialize(
+            session, name=name, agent_id=agent_id, target_model=target_model, selected=selected, config=config, created_by=created_by
+        )
+
+    async def create_group(
+        self,
+        session: AsyncSession,
+        *,
+        name: str,
+        targets: list[dict[str, Any]],
+        categories: list[str] | None = None,
+        techniques: list[str] | None = None,
+        max_probes: int | None = None,
+        mutators: list[str] | None = None,
+        system_prompt: str = "",
+        path: str = "v1/chat/completions",
+        concurrency: int | None = None,
+        seed: int | None = None,
+        extra_body: dict[str, Any] | None = None,
+        created_by: str = "",
+    ) -> list[Campaign]:
+        """One campaign per target, all sharing an identical probe selection so results line up."""
+        if not targets:
+            raise ValueError("a group needs at least one target")
+        if seed is None:
+            seed = random.randint(1, 2**31 - 1)  # pin the sampling so every sibling gets the same probes
+        selected = self._select_probes(categories=categories, techniques=techniques, max_probes=max_probes, mutators=mutators, seed=seed)
+        group_id = new_id("grp_")
+        base = self._base_config(
+            categories=categories, techniques=techniques, max_probes=max_probes, mutators=mutators, system_prompt=system_prompt,
+            path=path, concurrency=concurrency, seed=seed, extra_body=extra_body,
+        )
+        campaigns: list[Campaign] = []
+        for index, target in enumerate(targets):
+            agent_id = str(target["agent_id"])
+            target_model = str(target.get("target_model") or "")
+            label = str(target.get("label") or target_model or f"target-{index + 1}")
+            config = {**base, "group_id": group_id, "group_name": name, "target_label": label}
+            campaign = await self._materialize(
+                session,
+                name=f"{name} [{label}]",
+                agent_id=agent_id,
+                target_model=target_model,
+                selected=selected,
+                config=config,
+                created_by=created_by,
+            )
+            campaigns.append(campaign)
+        log.info("redteam.group.created", group_id=group_id, campaigns=len(campaigns), probes=len(selected))
+        return campaigns
+
+    async def start_group(self, group_id: str, http: httpx.AsyncClient) -> list[str]:
+        async with session_scope() as session:
+            ids = [c.id for c in await group_campaigns(session, group_id) if c.status in (CampaignStatus.CREATED.value, CampaignStatus.PAUSED.value)]
+        for cid in ids:
+            await self.start(cid, http)
+        return ids
+
+    async def cancel_group(self, group_id: str) -> list[str]:
+        async with session_scope() as session:
+            ids = [c.id for c in await group_campaigns(session, group_id)]
+        for cid in ids:
+            await self.cancel(cid)
+        return ids
 
     # ---- probe body -------------------------------------------------------
     def _build_body(self, campaign: Campaign, probe: Probe, mutator: str | None) -> dict[str, Any]:
@@ -455,6 +544,10 @@ def build_summary(rows: list[ProbeResult], duration_s: float | None = None) -> d
 
     severity_weighted_score = round(100 * weighted_sum / weight_total, 1) if weight_total else 0.0
 
+    categories_present = sorted(cat_stats)
+    owasp_coverage = taxonomy.coverage(categories_present)
+    owasp_breakdown = _owasp_breakdown(rows)
+
     summary: dict[str, Any] = {
         "total_probes": total,
         "conclusive_probes": conclusive,
@@ -468,10 +561,103 @@ def build_summary(rows: list[ProbeResult], duration_s: float | None = None) -> d
         "false_refusal_rate": false_refusal_rate,
         "benign_tested": len(benign_tested),
         "benign_false_refusals": len(benign_refused),
+        "owasp_coverage": owasp_coverage,
+        "owasp_breakdown": owasp_breakdown,
         "duration_seconds": duration_s,
         "computed_at": datetime.now().astimezone().isoformat(),
     }
     return summary
+
+
+def _owasp_breakdown(rows: list[ProbeResult]) -> dict[str, dict[str, Any]]:
+    """Vulnerability rate per OWASP LLM Top 10 id, aggregated over the probe categories mapped to it."""
+    stats: dict[str, dict[str, Any]] = {}
+    for r in rows:
+        tested = r.verdict in ("VULNERABLE", "RESISTED", "INCONCLUSIVE")
+        for oid in taxonomy.owasp_ids(r.category):
+            entry = stats.setdefault(oid, {"name": taxonomy.OWASP_LLM_TOP10.get(oid, {}).get("name", oid), "tested": 0, "vulnerable": 0, "categories": []})
+            if r.category not in entry["categories"]:
+                entry["categories"].append(r.category)
+            if tested:
+                entry["tested"] += 1
+            if r.verdict == "VULNERABLE":
+                entry["vulnerable"] += 1
+    out: dict[str, dict[str, Any]] = {}
+    for oid in sorted(stats):
+        e = stats[oid]
+        e["categories"].sort()
+        e["rate"] = round(e["vulnerable"] / e["tested"], 4) if e["tested"] else 0.0
+        out[oid] = e
+    return out
+
+
+async def group_campaigns(session: AsyncSession, group_id: str) -> list[Campaign]:
+    """All sibling campaigns of a comparison group, in creation order."""
+    q = select(Campaign).where(Campaign.config["group_id"].as_string() == group_id).order_by(Campaign.created_at.asc(), Campaign.id.asc())
+    return list((await session.execute(q)).scalars())
+
+
+def _ranking_key(summary: dict[str, Any]) -> tuple[float, float, int]:
+    return (
+        float(summary.get("severity_weighted_score") or 0.0),
+        float(summary.get("vulnerability_rate") or 0.0),
+        int(summary.get("vulnerable") or 0),
+    )
+
+
+async def compare_group(session: AsyncSession, group_id: str) -> dict[str, Any] | None:
+    """Side by side view of every campaign in a group. Campaign dicts come from the service layer."""
+    from .service import campaign_to_dict  # local import: service imports this module
+
+    campaigns = await group_campaigns(session, group_id)
+    if not campaigns:
+        return None
+    ids = [c.id for c in campaigns]
+    rows = list((await session.execute(select(ProbeResult).where(ProbeResult.campaign_id.in_(ids)))).scalars())
+    by_campaign: dict[str, list[ProbeResult]] = {cid: [] for cid in ids}
+    for r in rows:
+        by_campaign.setdefault(r.campaign_id, []).append(r)
+
+    summaries: dict[str, dict[str, Any]] = {}
+    for c in campaigns:
+        summaries[c.id] = c.summary or build_summary(by_campaign[c.id], None)
+
+    categories: list[str] = sorted({r.category for r in rows})
+    matrix: dict[str, dict[str, dict[str, Any]]] = {}
+    for cat in categories:
+        matrix[cat] = {}
+        for cid in ids:
+            cat_rows = [r for r in by_campaign[cid] if r.category == cat]
+            tested = [r for r in cat_rows if r.verdict in ("VULNERABLE", "RESISTED", "INCONCLUSIVE")]
+            vulnerable = sum(1 for r in tested if r.verdict == "VULNERABLE")
+            matrix[cat][cid] = {"vulnerable": vulnerable, "total": len(cat_rows), "tested": len(tested), "rate": round(vulnerable / len(tested), 4) if tested else 0.0}
+
+    # per-probe alignment: every campaign shares the same probe ids, order by the first campaign's rows
+    per_probe_index: dict[str, dict[str, Any]] = {}
+    for cid in ids:
+        for r in by_campaign[cid]:
+            entry = per_probe_index.get(r.probe_id)
+            if entry is None:
+                entry = {"probe_id": r.probe_id, "category": r.category, "technique": r.technique, "severity": r.severity, "verdicts": {}}
+                per_probe_index[r.probe_id] = entry
+            entry["verdicts"][cid] = r.verdict
+    per_probe = sorted(per_probe_index.values(), key=lambda e: (e["category"], e["probe_id"]))
+
+    ranking = sorted(ids, key=lambda cid: _ranking_key(summaries[cid]))
+    names = {c.id: c for c in campaigns}
+    return {
+        "group_id": group_id,
+        "name": str((campaigns[0].config or {}).get("group_name") or ""),
+        "campaigns": [campaign_to_dict(c) for c in campaigns],
+        "matrix": matrix,
+        "verdict_totals": {cid: dict(summaries[cid].get("by_verdict") or {}) for cid in ids},
+        "weighted_scores": {cid: float(summaries[cid].get("severity_weighted_score") or 0.0) for cid in ids},
+        "vulnerability_rates": {cid: float(summaries[cid].get("vulnerability_rate") or 0.0) for cid in ids},
+        "labels": {cid: str((names[cid].config or {}).get("target_label") or "") for cid in ids},
+        "per_probe": per_probe,
+        "ranking": ranking,
+        "owasp_coverage": taxonomy.coverage(categories),
+    }
 
 
 campaign_runner = CampaignRunner()

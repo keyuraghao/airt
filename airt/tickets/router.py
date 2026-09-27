@@ -1,4 +1,5 @@
 """Reviewer REST API for tickets, plus live SSE streams."""
+
 from __future__ import annotations
 
 import asyncio
@@ -48,28 +49,57 @@ async def list_tickets(
     session: AsyncSession = Depends(get_session),
 ) -> dict[str, Any]:
     rows, total = await tickets.list_tickets(
-        session, status=status, agent_id=agent_id, min_risk=min_risk, model=model, source=source, campaign_id=campaign_id, search=search, since=since, until=until, limit=limit, offset=offset, order=order
+        session,
+        status=status,
+        agent_id=agent_id,
+        min_risk=min_risk,
+        model=model,
+        source=source,
+        campaign_id=campaign_id,
+        search=search,
+        since=since,
+        until=until,
+        limit=limit,
+        offset=offset,
+        order=order,
     )
-    return {"items": [tickets.ticket_to_dict(t, brief=True) for t in rows], "total": total, "limit": limit, "offset": offset}
+    return {
+        "items": [tickets.ticket_to_dict(t, brief=True) for t in rows],
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+    }
 
 
 @router.get("/tickets/stats")
-async def ticket_stats(_: Principal = Depends(current_principal), session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
+async def ticket_stats(
+    _: Principal = Depends(current_principal), session: AsyncSession = Depends(get_session)
+) -> dict[str, Any]:
     return await tickets.stats(session)
 
 
 @router.post("/tickets/bulk/approve")
-async def bulk_approve(payload: BulkDecisionIn, p: Principal = Depends(require_role("reviewer")), session: AsyncSession = Depends(get_session)) -> dict[str, str]:
+async def bulk_approve(
+    payload: BulkDecisionIn,
+    p: Principal = Depends(require_role("reviewer")),
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, str]:
     return await tickets.bulk_decide(session, payload.ticket_ids, True, p.username, payload.note)
 
 
 @router.post("/tickets/bulk/deny")
-async def bulk_deny(payload: BulkDecisionIn, p: Principal = Depends(require_role("reviewer")), session: AsyncSession = Depends(get_session)) -> dict[str, str]:
+async def bulk_deny(
+    payload: BulkDecisionIn,
+    p: Principal = Depends(require_role("reviewer")),
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, str]:
     return await tickets.bulk_decide(session, payload.ticket_ids, False, p.username, payload.note)
 
 
 @router.get("/tickets/{ticket_id}")
-async def get_ticket(ticket_id: str, _: Principal = Depends(current_principal), session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
+async def get_ticket(
+    ticket_id: str, _: Principal = Depends(current_principal), session: AsyncSession = Depends(get_session)
+) -> dict[str, Any]:
     t = await tickets.get_ticket(session, ticket_id)
     if t is None:
         raise HTTPException(404, "ticket not found")
@@ -80,14 +110,18 @@ async def get_ticket(ticket_id: str, _: Principal = Depends(current_principal), 
 
 
 @router.get("/tickets/{ticket_id}/events")
-async def get_ticket_events(ticket_id: str, _: Principal = Depends(current_principal), session: AsyncSession = Depends(get_session)) -> list[dict[str, Any]]:
+async def get_ticket_events(
+    ticket_id: str, _: Principal = Depends(current_principal), session: AsyncSession = Depends(get_session)
+) -> list[dict[str, Any]]:
     t = await tickets.get_ticket(session, ticket_id)
     if t is None:
         raise HTTPException(404, "ticket not found")
     return [tickets.event_to_dict(e) for e in await tickets.list_events(session, t.id)]
 
 
-async def _decide(ticket_id: str, approve: bool, payload: DecisionIn, p: Principal, session: AsyncSession) -> dict[str, Any]:
+async def _decide(
+    ticket_id: str, approve: bool, payload: DecisionIn, p: Principal, session: AsyncSession
+) -> dict[str, Any]:
     t = await tickets.get_ticket(session, ticket_id)
     if t is None:
         raise HTTPException(404, "ticket not found")
@@ -99,26 +133,58 @@ async def _decide(ticket_id: str, approve: bool, payload: DecisionIn, p: Princip
 
 
 @router.post("/tickets/{ticket_id}/approve")
-async def approve_ticket(ticket_id: str, payload: DecisionIn = DecisionIn(), p: Principal = Depends(require_role("reviewer")), session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
+async def approve_ticket(
+    ticket_id: str,
+    payload: DecisionIn = DecisionIn(),
+    p: Principal = Depends(require_role("reviewer")),
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, Any]:
     return await _decide(ticket_id, True, payload, p, session)
 
 
 @router.post("/tickets/{ticket_id}/deny")
-async def deny_ticket(ticket_id: str, payload: DecisionIn = DecisionIn(), p: Principal = Depends(require_role("reviewer")), session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
+async def deny_ticket(
+    ticket_id: str,
+    payload: DecisionIn = DecisionIn(),
+    p: Principal = Depends(require_role("reviewer")),
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, Any]:
     return await _decide(ticket_id, False, payload, p, session)
 
 
 @router.get("/audit")
-async def list_audit(limit: int = Query(200, le=2000), offset: int = 0, action: str | None = None, actor: str | None = None, _: Principal = Depends(current_principal), session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
+async def list_audit(
+    limit: int = Query(200, le=2000),
+    offset: int = 0,
+    action: str | None = None,
+    actor: str | None = None,
+    _: Principal = Depends(current_principal),
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, Any]:
     rows = await audit.list_entries(session, limit=limit, offset=offset, action=action, actor=actor)
     return {
-        "items": [{"id": r.id, "ts": r.ts.isoformat(), "actor": r.actor, "action": r.action, "target_type": r.target_type, "target_id": r.target_id, "detail": r.detail, "hash": r.hash, "prev_hash": r.prev_hash} for r in rows],
+        "items": [
+            {
+                "id": r.id,
+                "ts": r.ts.isoformat(),
+                "actor": r.actor,
+                "action": r.action,
+                "target_type": r.target_type,
+                "target_id": r.target_id,
+                "detail": r.detail,
+                "hash": r.hash,
+                "prev_hash": r.prev_hash,
+            }
+            for r in rows
+        ],
         "total": await audit.count_entries(session),
     }
 
 
 @router.get("/audit/verify")
-async def verify_audit(_: Principal = Depends(current_principal), session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
+async def verify_audit(
+    _: Principal = Depends(current_principal), session: AsyncSession = Depends(get_session)
+) -> dict[str, Any]:
     return await audit.verify_chain(session)
 
 
@@ -130,7 +196,7 @@ async def _stream(request: Request, channel: str, replay: int, filt: dict[str, A
                 break
             try:
                 item = await asyncio.wait_for(q.get(), timeout=15)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 yield {"event": "ping", "data": "{}"}
                 continue
             if filt and any(item.get(k) != v for k, v in filt.items() if v):
@@ -146,7 +212,9 @@ async def stream_tickets(request: Request, replay: int = 20, _: Principal = Depe
 
 
 @router.get("/stream/logs")
-async def stream_logs(request: Request, agent_id: str | None = None, replay: int = 50, _: Principal = Depends(current_principal)):
+async def stream_logs(
+    request: Request, agent_id: str | None = None, replay: int = 50, _: Principal = Depends(current_principal)
+):
     return EventSourceResponse(_stream(request, "logs", replay, {"agent_id": agent_id}))
 
 
