@@ -192,6 +192,8 @@ def main(argv: list[str] | None = None) -> int:
             if args.dry_run:
                 show_diff(path, before, after)
             else:
+                if before.endswith("\n") and not after.endswith("\n"):
+                    after += "\n"
                 path.write_text(after, encoding="utf-8")
                 print(f"updated {path.relative_to(ROOT)}")
         if args.dry_run:
