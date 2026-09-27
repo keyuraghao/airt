@@ -16,6 +16,7 @@ import httpx
 from .. import settings_store
 from ..agents import service as agents
 from ..analysis import analyze_request, analyze_response
+from ..config import get_settings
 from ..db import session_scope
 from ..logging import get_logger
 from ..metrics import metrics
@@ -99,6 +100,12 @@ async def submit(
         )
         await tickets.set_analysis(session, ticket, analysis.to_dict())
         decision = policy.evaluate(agent, normalized, path, ticket.risk_score, ticket.findings)
+        if source == "redteam" and decision.action == "review" and not get_settings().require_approval_for_redteam_probes:
+            decision = policy.PolicyDecision(
+                "approve",
+                ["red-team probes run unattended because require_approval_for_redteam_probes is false"],
+                ["settings.require_approval_for_redteam_probes"],
+            )
         await tickets.apply_policy(session, ticket, decision.to_dict())
         metrics.inc("gateway_requests_total")
         metrics.inc("gateway_policy_total", labels={"action": decision.action})

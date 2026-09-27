@@ -207,7 +207,7 @@ so they work with every provider format and need no external service.
    for chat completions, the `system` field for Anthropic, `instructions` for the OpenAI responses API and
    `systemInstruction` for Gemini. A request with no system prompt gets one. Callers holding a plain
    prompt string can do the same with `aisrf.guardrails.rebuff.add_canary_word(prompt)`, which prepends an
-   HTML comment like Rebuff's SDK. (`integrations.rebuff.canary_default` is reserved for a per-deployment
+   HTML comment like Rebuff's SDK. (`integrations.rebuff.canary_default` turns canary injection on for every agent as a per-deployment
    default; the gateway currently honours only the agent's `inject_canary` flag.)
 2. **Forwarding.** The upstream provider sees the canary as part of its instructions; nothing else changes.
 3. **Leak detection.** The response pipeline passes the token to the response analyzers as
