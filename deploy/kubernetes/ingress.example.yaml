@@ -1,0 +1,32 @@
+# Edit the host and the TLS secret. Synchronous gateway calls block until a reviewer decides,
+# so raise the proxy timeouts and disable buffering for the SSE stream (annotations below are
+# for ingress-nginx; adapt for Traefik, HAProxy or a cloud load balancer).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aisrf
+  labels:
+    app.kubernetes.io/name: aisrf
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+    nginx.ingress.kubernetes.io/proxy-body-size: 8m
+    cert-manager.io/cluster-issuer: letsencrypt
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - aisrf.example.com
+      secretName: aisrf-tls
+  rules:
+    - host: aisrf.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: aisrf
+                port:
+                  name: http

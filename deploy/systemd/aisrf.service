@@ -1,0 +1,57 @@
+# AISRF gateway as a systemd service. Install steps: deploy/systemd/README.md
+[Unit]
+Description=AISRF, AI Security & Research Framework gateway
+Documentation=https://github.com/keyuraghao/aisrf
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=aisrf
+Group=aisrf
+# All AISRF_* settings live here (mode 0640, owned by root:aisrf). See deploy/systemd/README.md.
+EnvironmentFile=/etc/aisrf/aisrf.env
+Environment=AISRF_HOME=/var/lib/aisrf
+Environment=AISRF_DATA_DIR=/var/lib/aisrf/data
+Environment=AISRF_LOG_DIR=/var/log/aisrf
+Environment=AISRF_DATABASE_URL=sqlite+aiosqlite:////var/lib/aisrf/data/aisrf.db
+Environment=AISRF_LOG_JSON_CONSOLE=true
+WorkingDirectory=/var/lib/aisrf
+# Binary install (scripts/install.sh puts a symlink in /usr/local/bin). For a pip install use
+# ExecStart=/opt/aisrf/.venv/bin/aisrf serve
+ExecStart=/usr/local/bin/aisrf serve
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=30s
+KillSignal=SIGTERM
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=false
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged @resources
+CapabilityBoundingSet=
+AmbientCapabilities=
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+ReadWritePaths=/var/lib/aisrf /var/log/aisrf
+StateDirectory=aisrf
+LogsDirectory=aisrf
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

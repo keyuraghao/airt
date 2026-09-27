@@ -1,0 +1,22 @@
+# Optional. Only meaningful with AISRF_DATABASE_URL pointing at PostgreSQL: with SQLite on a
+# ReadWriteOnce volume the Deployment must stay at one replica (see docs/DEPLOYMENT.md, Scaling).
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: aisrf
+  labels:
+    app.kubernetes.io/name: aisrf
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aisrf
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 75

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  AISRF gateway as a macOS launchd agent (per user) or daemon (system wide).
+
+  Per user (starts at login, runs as you):
+    mkdir -p ~/Library/Logs/AISRF
+    cp deploy/launchd/com.aisrf.gateway.plist ~/Library/LaunchAgents/
+    launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.aisrf.gateway.plist
+    launchctl kickstart -k gui/$(id -u)/com.aisrf.gateway
+  System wide (edit ProgramArguments, UserName and the paths, then):
+    sudo cp deploy/launchd/com.aisrf.gateway.plist /Library/LaunchDaemons/
+    sudo launchctl bootstrap system /Library/LaunchDaemons/com.aisrf.gateway.plist
+  Stop / remove:
+    launchctl bootout gui/$(id -u)/com.aisrf.gateway
+
+  The binary reads its settings from ~/Library/Application Support/AISRF/aisrf.env (generated on
+  first run with a random secret key and admin token). Override AISRF_HOME below to relocate it.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.aisrf.gateway</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/local/bin/aisrf</string>
+    <string>serve</string>
+    <string>--host</string>
+    <string>127.0.0.1</string>
+    <string>--port</string>
+    <string>8080</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>AISRF_ENVIRONMENT</key>
+    <string>production</string>
+    <key>AISRF_LOG_JSON_CONSOLE</key>
+    <string>true</string>
+    <key>PATH</key>
+    <string>/usr/local/bin:/usr/bin:/bin</string>
+  </dict>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <dict>
+    <key>SuccessfulExit</key>
+    <false/>
+  </dict>
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+  <key>ExitTimeOut</key>
+  <integer>30</integer>
+  <key>StandardOutPath</key>
+  <string>/tmp/aisrf.launchd.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/aisrf.launchd.log</string>
+  <key>ProcessType</key>
+  <string>Background</string>
+</dict>
+</plist>

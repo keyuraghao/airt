@@ -87,6 +87,30 @@ docker run -p 8080:8080 -v aisrf-data:/app/data -v aisrf-logs:/app/logs -e AISRF
 
 See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for compose, Postgres and TLS.
 
+## Install
+
+No Python required: every release ships self-contained binaries for Linux (x86_64, arm64), macOS (Apple silicon, Intel) and Windows (x86_64), verified by SHA256.
+
+```bash
+# Linux and macOS
+curl -fsSL https://raw.githubusercontent.com/keyuraghao/aisrf/main/scripts/install.sh | bash
+aisrf desktop                                  # local dashboard in a window or your browser
+```
+
+```powershell
+# Windows (PowerShell)
+irm https://raw.githubusercontent.com/keyuraghao/aisrf/main/scripts/install.ps1 | iex
+aisrf desktop
+```
+
+```bash
+# Containers and clusters
+docker run -d -p 127.0.0.1:8080:8080 -v aisrf-data:/app/data -e AISRF_ADMIN_PASSWORD=change-me ghcr.io/keyuraghao/aisrf:latest
+helm install aisrf deploy/helm/aisrf -n aisrf --create-namespace --set secretEnv.AISRF_SECRET_KEY=$(openssl rand -hex 32)
+```
+
+`aisrf desktop` (or `aisrf-desktop` from a `pip install "aisrf[desktop]"`) starts the gateway on 127.0.0.1, generates a random secret key and admin API token in a per-user `aisrf.env` on first run and opens the dashboard. Server installs (systemd, launchd, Windows service, Kubernetes manifests), pip/pipx, upgrade and uninstall steps for every path: [docs/INSTALL.md](docs/INSTALL.md).
+
 ## Interception modes
 
 | Mode | How |

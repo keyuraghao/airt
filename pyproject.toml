@@ -39,17 +39,19 @@ mitm = ["mitmproxy>=10"]
 guardrails = ["llm-guard>=0.3", "nemoguardrails>=0.10", "rebuff>=0.0.5"]
 scanners = ["garak>=0.10", "pyrit>=0.5"]
 codereview = ["semgrep>=1.100", "bandit>=1.7"]
+desktop = ["pywebview>=5"]
 all = ["asyncpg>=0.29", "mitmproxy>=10", "llm-guard>=0.3", "nemoguardrails>=0.10", "rebuff>=0.0.5", "garak>=0.10", "pyrit>=0.5", "semgrep>=1.100", "bandit>=1.7"]
 dev = ["pytest>=8", "pytest-asyncio>=0.23", "ruff>=0.5", "asgi-lifespan>=2"]
 
 [project.scripts]
 aisrf = "aisrf.cli:app"
+aisrf-desktop = "aisrf.desktop:main"
 
 [tool.setuptools.packages.find]
 include = ["aisrf*"]
 
 [tool.setuptools.package-data]
-aisrf = ["dashboard/templates/*.html", "dashboard/static/*", "redteam/corpus/*.yaml", "guardrails/nemo_default/*"]
+aisrf = ["dashboard/templates/*.html", "dashboard/static/*", "redteam/corpus/*.yaml", "guardrails/nemo_default/*", "codereview/rules/semgrep/*.yaml"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

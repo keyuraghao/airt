@@ -624,6 +624,18 @@ def mcp_command(url: UrlOpt = DEFAULT_URL, token: TokenOpt = None) -> None:
     run_stdio(url, token)
 
 
+@app.command("desktop")
+def desktop_command(
+    port: Annotated[int | None, typer.Option("--port", help="Loopback port (default: a free port).")] = None,
+    no_window: Annotated[bool, typer.Option("--no-window", help="Skip the native window and open the system browser.")] = False,
+    no_browser: Annotated[bool, typer.Option("--no-browser", help="Do not open anything, just print the URL.")] = False,
+) -> None:
+    """Run the gateway locally and open the dashboard in a window or the browser (desktop mode)."""
+    from .desktop import run_desktop
+
+    raise typer.Exit(run_desktop(port=port, open_window=not no_window, open_browser=not no_browser))
+
+
 def main() -> None:
     app()
 

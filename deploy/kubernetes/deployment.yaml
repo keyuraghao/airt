@@ -1,0 +1,95 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aisrf
+  labels:
+    app.kubernetes.io/name: aisrf
+    app.kubernetes.io/component: gateway
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate   # the SQLite file on the PVC must not be opened by two pods
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: aisrf
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: aisrf
+        app.kubernetes.io/component: gateway
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: aisrf
+          image: ghcr.io/keyuraghao/aisrf:latest
+          imagePullPolicy: IfNotPresent
+          args: ["serve"]
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          envFrom:
+            - secretRef:
+                name: aisrf-env
+          env:
+            - name: AISRF_HOST
+              value: "0.0.0.0"
+            - name: AISRF_PORT
+              value: "8080"
+            - name: AISRF_ENVIRONMENT
+              value: production
+            - name: AISRF_DATA_DIR
+              value: /app/data
+            - name: AISRF_LOG_DIR
+              value: /app/logs
+            - name: AISRF_LOG_JSON_CONSOLE
+              value: "true"
+            - name: AISRF_COOKIE_SECURE
+              value: "true"
+            - name: AISRF_PUBLIC_URL
+              value: https://aisrf.example.com
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+            - name: logs
+              mountPath: /app/logs
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: aisrf-data
+        - name: logs
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}

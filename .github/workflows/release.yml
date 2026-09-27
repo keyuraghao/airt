@@ -80,7 +80,7 @@ jobs:
       - name: Install
         run: |
           uv venv .venv --python ${{ env.PYTHON_VERSION }}
-          uv pip install --python .venv/bin/python -e ".[dev]"
+          uv pip install --python .venv/bin/python -e ".[dev,codereview]"
       - name: Ruff
         run: .venv/bin/ruff check aisrf tests examples
       - name: Style guard
@@ -187,11 +187,73 @@ jobs:
           docker run --rm ${{ env.IMAGE }}:${{ needs.verify.outputs.version }} version | tee /tmp/version.txt
           grep -q "${{ needs.verify.outputs.version }}" /tmp/version.txt
 
+  binaries:
+    # Self-contained PyInstaller builds (scripts/build_binary.py: build, smoke test, archive, checksums).
+    # Legs marked optional (arm64 Linux, Intel macOS) may lack a runner; they then fail without
+    # blocking the release and their archive is simply absent from the release page.
+    name: binary (${{ matrix.os_name }}-${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 40
+    needs: [verify, test]
+    continue-on-error: ${{ matrix.optional }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            os_name: linux
+            arch: x86_64
+            optional: false
+          - runner: ubuntu-24.04-arm
+            os_name: linux
+            arch: arm64
+            optional: true
+          - runner: windows-latest
+            os_name: windows
+            arch: x86_64
+            optional: false
+          - runner: macos-14
+            os_name: macos
+            arch: arm64
+            optional: false
+          - runner: macos-13
+            os_name: macos
+            arch: x86_64
+            optional: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.verify.outputs.tag }}
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "pyproject.toml"
+      - name: Create venv and install with PyInstaller
+        shell: bash
+        run: |
+          uv venv .venv --python ${{ env.PYTHON_VERSION }}
+          if [ "$RUNNER_OS" = "Windows" ]; then PY=.venv/Scripts/python.exe; else PY=.venv/bin/python; fi
+          echo "PY=$PY" >> "$GITHUB_ENV"
+          uv pip install --python "$PY" -e . pyinstaller
+      - name: Build, smoke test, archive and checksum
+        shell: bash
+        run: |
+          "$PY" scripts/build_binary.py
+          ls -l dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: binary-${{ matrix.os_name }}-${{ matrix.arch }}
+          path: |
+            dist/aisrf-*-${{ matrix.os_name }}-${{ matrix.arch }}.*
+            dist/SHA256SUMS-${{ matrix.os_name }}-${{ matrix.arch }}.txt
+          if-no-files-found: error
+          retention-days: 30
+
   release:
     name: GitHub release
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [verify, build, docker]
+    needs: [verify, build, docker, binaries]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -203,6 +265,14 @@ jobs:
         with:
           name: dist
           path: dist
+      - name: Download binary archives
+        uses: actions/download-artifact@v4
+        with:
+          pattern: binary-*
+          path: dist
+          merge-multiple: true
+      - name: List release files
+        run: ls -l dist
       - name: Release notes from CHANGELOG.md
         id: notes
         shell: bash
@@ -219,6 +289,7 @@ jobs:
             echo
             echo "- Container image: \`docker pull ${{ env.IMAGE }}:${{ needs.verify.outputs.version }}\` (also \`:${{ needs.verify.outputs.major_minor }}\` and \`:latest\` for stable releases), digest \`${{ needs.docker.outputs.digest }}\`, linux/amd64 and linux/arm64"
             echo "- Python wheel and sdist, CycloneDX SBOM and \`SHA256SUMS.txt\` are attached below"
+            echo "- Self-contained binaries (no Python needed): \`aisrf-${{ needs.verify.outputs.version }}-<linux|macos|windows>-<x86_64|arm64>.<tar.gz|zip>\` with \`SHA256SUMS-<os>-<arch>.txt\`; install with the one-liners in docs/INSTALL.md"
           } >> release-notes.md
           cat release-notes.md
       - name: Create release
@@ -234,8 +305,10 @@ jobs:
           files: |
             dist/*.whl
             dist/*.tar.gz
+            dist/*.zip
             dist/*.cyclonedx.json
             dist/SHA256SUMS.txt
+            dist/SHA256SUMS-*.txt
 
   # PyPI publishing via trusted publishing (OIDC, no API token). To enable:
   #   1. On pypi.org, add a "pending publisher" for project `aisrf`: owner keyuraghao, repository aisrf,

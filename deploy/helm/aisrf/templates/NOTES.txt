@@ -1,0 +1,27 @@
+AISRF {{ .Chart.AppVersion }} is being deployed as release {{ .Release.Name }} in namespace {{ .Release.Namespace }}.
+
+Reach the dashboard:
+{{- if .Values.ingress.enabled }}
+{{- range .Values.ingress.hosts }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ .host }}
+{{- end }}
+{{- else }}
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "aisrf.fullname" . }} 8080:{{ .Values.service.port }}
+  open http://127.0.0.1:8080
+{{- end }}
+
+Sign in with {{ .Values.env.AISRF_ADMIN_USERNAME | default "admin" }} and the AISRF_ADMIN_PASSWORD from the Secret
+{{ include "aisrf.secretName" . }}{{ if and (not .Values.existingSecret) (not .Values.secretEnv.AISRF_ADMIN_PASSWORD) }} (not set: the default is "admin", change it now){{ end }}.
+{{- if and (not .Values.existingSecret) (not .Values.secretEnv.AISRF_SECRET_KEY) }}
+
+WARNING: secretEnv.AISRF_SECRET_KEY is empty. The gateway runs with the built-in development key;
+set it (python3 -c 'import secrets; print(secrets.token_urlsafe(48))') before storing any provider credential.
+{{- end }}
+{{- if not .Values.databaseUrl }}
+
+Database: SQLite on {{ if .Values.persistence.enabled }}the persistent volume{{ else }}an emptyDir (data is lost on restart){{ end }}; keep replicaCount at 1.
+For several replicas set databaseUrl to a PostgreSQL URL.
+{{- end }}
+
+Health: /healthz (liveness), /readyz (readiness), /metrics (Prometheus).
+Docs: https://github.com/keyuraghao/aisrf/blob/main/docs/INSTALL.md

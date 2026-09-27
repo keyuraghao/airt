@@ -23,6 +23,10 @@ Initial public release of AISRF, the AI Security & Research Framework.
 
 ### Added
 
+- Self-contained native builds for Windows, macOS and Linux (PyInstaller bundles attached to every
+  release), a `desktop` mode with per-user data directory and generated secrets, install scripts,
+  and server deployment assets: systemd unit, launchd plist, Windows service scripts, Kubernetes
+  manifests and a Helm chart.
 - Source code review: static analysis of LLM application code from a zip, archive URL, git
   repository (token or SSH, credentials encrypted at rest), local path or pasted snippet, with
   92 original rules in six packs (prompt injection, agent and tool abuse, LLM output handling,

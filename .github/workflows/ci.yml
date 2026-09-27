@@ -106,6 +106,28 @@ jobs:
           .venv/bin/aisrf version
           .venv/bin/aisrf --help > /dev/null
 
+  binary-smoke:
+    # PyInstaller build of the Linux binary plus the smoke test in scripts/build_binary.py,
+    # so a missing hidden import or data file is caught before a release is tagged.
+    name: binary smoke (linux x86_64)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [python]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "pyproject.toml"
+      - name: Create venv and install with PyInstaller
+        run: |
+          uv venv .venv --python 3.12
+          uv pip install --python .venv/bin/python -e . pyinstaller
+      - name: Build and smoke test
+        run: .venv/bin/python scripts/build_binary.py --skip-archive
+      - name: Bundle size
+        run: du -sh dist/aisrf >> "$GITHUB_STEP_SUMMARY"
+
   heavy-extras:
     # garak, PyRIT, LLM Guard and NeMo pull multi-gigabyte ML dependencies; run on demand or weekly.
     name: heavy extras (scanners + guardrails)

@@ -1,0 +1,121 @@
+# Default values for the AISRF chart. Every AISRF_* setting can be added under `env` or `secretEnv`.
+replicaCount: 1
+
+image:
+  repository: ghcr.io/keyuraghao/aisrf
+  # Defaults to the chart appVersion.
+  tag: ""
+  pullPolicy: IfNotPresent
+imagePullSecrets: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# Plain (non secret) settings. Rendered as env vars on the container.
+env:
+  AISRF_ENVIRONMENT: production
+  AISRF_LOG_JSON_CONSOLE: "true"
+  AISRF_COOKIE_SECURE: "true"
+  AISRF_APPROVAL_TIMEOUT_SECONDS: "300"
+  # AISRF_PUBLIC_URL: https://aisrf.example.com
+
+# Secret settings. Either let the chart create a Secret from these values (fine for a first
+# install, the values then live in your values file / CI) or set existingSecret to a Secret
+# you manage (sealed-secrets, external-secrets, vault). Keys are the AISRF_* variable names.
+secretEnv:
+  AISRF_SECRET_KEY: ""
+  AISRF_ADMIN_PASSWORD: ""
+  AISRF_ADMIN_API_TOKEN: ""
+  # AISRF_ENCRYPTION_KEY: ""
+existingSecret: ""
+
+# External database. Leave empty for SQLite on the persistent volume (single replica only).
+# Example: postgresql+asyncpg://aisrf:secret@postgres.aisrf.svc:5432/aisrf?ssl=require
+# When set, it is stored in the chart Secret (or must be a key AISRF_DATABASE_URL in existingSecret).
+databaseUrl: ""
+
+persistence:
+  enabled: true
+  # existingClaim: ""
+  storageClass: ""
+  accessModes:
+    - ReadWriteOnce
+  size: 5Gi
+  annotations: {}
+
+service:
+  type: ClusterIP
+  port: 8080
+  annotations: {}
+
+ingress:
+  enabled: false
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+    nginx.ingress.kubernetes.io/proxy-body-size: 8m
+  hosts:
+    - host: aisrf.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  #  - secretName: aisrf-tls
+  #    hosts:
+  #      - aisrf.example.com
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: "1"
+    memory: 1Gi
+
+probes:
+  liveness:
+    path: /healthz
+    initialDelaySeconds: 10
+    periodSeconds: 20
+    timeoutSeconds: 5
+  readiness:
+    path: /readyz
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 5
+
+# Only meaningful with databaseUrl (PostgreSQL); SQLite must stay at one replica.
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 75
+
+podAnnotations: {}
+podLabels: {}
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  runAsGroup: 10001
+  fsGroup: 10001
+  seccompProfile:
+    type: RuntimeDefault
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+extraEnv: []
+extraVolumes: []
+extraVolumeMounts: []

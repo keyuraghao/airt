@@ -1,0 +1,18 @@
+apiVersion: v2
+name: aisrf
+description: AISRF, the AI Security & Research Framework. Human-in-the-loop interception, analysis and red teaming gateway for LLM traffic.
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+kubeVersion: ">=1.25.0-0"
+home: https://github.com/keyuraghao/aisrf
+sources:
+  - https://github.com/keyuraghao/aisrf
+keywords:
+  - llm
+  - security
+  - gateway
+  - red-team
+maintainers:
+  - name: Keyur Aghao
+    url: https://github.com/keyuraghao
