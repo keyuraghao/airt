@@ -1,6 +1,6 @@
 # MCP server
 
-AIRT exposes every reviewer action as a Model Context Protocol tool, so an AI assistant (Claude
+AISRF exposes every reviewer action as a Model Context Protocol tool, so an AI assistant (Claude
 Desktop, Claude Code, Cursor, any MCP client) can triage tickets, decide them, manage agents, run
 red-team campaigns and pull reports. Every tool is a thin wrapper over the REST API, so
 authorisation and the audit trail are identical to the dashboard: decisions made through MCP are
@@ -10,14 +10,14 @@ recorded with the token principal (`api-token`) as actor.
 
 | Transport | How | Auth |
 | --- | --- | --- |
-| Streamable HTTP (in-process) | `POST http://<gateway>/mcp` | `Authorization: Bearer <AIRT_ADMIN_API_TOKEN>`; the endpoint answers 503 until the token is configured |
-| stdio (local) | `airt mcp --url http://<gateway> --token <AIRT_ADMIN_API_TOKEN>` (or env `AIRT_URL`, `AIRT_ADMIN_API_TOKEN`) | the token is used for the REST calls |
+| Streamable HTTP (in-process) | `POST http://<gateway>/mcp` | `Authorization: Bearer <AISRF_ADMIN_API_TOKEN>`; the endpoint answers 503 until the token is configured |
+| stdio (local) | `aisrf mcp --url http://<gateway> --token <AISRF_ADMIN_API_TOKEN>` (or env `AISRF_URL`, `AISRF_ADMIN_API_TOKEN`) | the token is used for the REST calls |
 
-Enable the endpoint by setting `AIRT_ADMIN_API_TOKEN` on the gateway:
+Enable the endpoint by setting `AISRF_ADMIN_API_TOKEN` on the gateway:
 
 ```bash
-export AIRT_ADMIN_API_TOKEN=$(python -c "import secrets; print(secrets.token_urlsafe(32))")
-airt serve
+export AISRF_ADMIN_API_TOKEN=$(python -c "import secrets; print(secrets.token_urlsafe(32))")
+aisrf serve
 ```
 
 ## Claude Desktop
@@ -28,22 +28,22 @@ Add to `claude_desktop_config.json` (macOS: `~/Library/Application Support/Claud
 ```json
 {
   "mcpServers": {
-    "airt": {
-      "command": "airt",
-      "args": ["mcp", "--url", "http://localhost:8080", "--token", "<AIRT_ADMIN_API_TOKEN>"]
+    "aisrf": {
+      "command": "aisrf",
+      "args": ["mcp", "--url", "http://localhost:8080", "--token", "<AISRF_ADMIN_API_TOKEN>"]
     }
   }
 }
 ```
 
-Use the absolute path of the `airt` executable (`/path/to/.venv/bin/airt`) if it is not on PATH.
+Use the absolute path of the `aisrf` executable (`/path/to/.venv/bin/aisrf`) if it is not on PATH.
 
 ## Claude Code
 
 ```bash
-claude mcp add airt -- airt mcp --url http://localhost:8080 --token "$AIRT_ADMIN_API_TOKEN"
+claude mcp add aisrf -- aisrf mcp --url http://localhost:8080 --token "$AISRF_ADMIN_API_TOKEN"
 # or the HTTP transport:
-claude mcp add --transport http airt-http http://localhost:8080/mcp --header "Authorization: Bearer $AIRT_ADMIN_API_TOKEN"
+claude mcp add --transport http aisrf-http http://localhost:8080/mcp --header "Authorization: Bearer $AISRF_ADMIN_API_TOKEN"
 ```
 
 Or drop the `mcpServers` block from `examples/mcp_client_config.json` into the project's `.mcp.json`.
@@ -60,7 +60,7 @@ Or drop the `mcpServers` block from `examples/mcp_client_config.json` into the p
 | Reviewers | `list_reviewers()`, `create_reviewer(username, password, role)`, `set_reviewer_password(reviewer_id, password)`, `deactivate_reviewer(reviewer_id)` |
 | Ops | `health()`, `metrics()` |
 
-Resources: `airt://tickets/pending` (tickets waiting for a decision), `airt://stats` (aggregate
+Resources: `aisrf://tickets/pending` (tickets waiting for a decision), `aisrf://stats` (aggregate
 statistics). Prompt: `review_ticket(ticket_id)` renders a review checklist for one ticket with its
 findings and normalised messages.
 
@@ -85,7 +85,7 @@ claude: [create_campaign ... auto_start=true] Campaign cmp_... started; probes a
 
 * The token carries the admin role: whoever can talk to the MCP server can approve traffic and
   create agents with upstream credentials. Keep it in the client's secret store, not in shared
-  config files, and rotate it by changing `AIRT_ADMIN_API_TOKEN` and restarting.
+  config files, and rotate it by changing `AISRF_ADMIN_API_TOKEN` and restarting.
 * The HTTP endpoint is stateless and JSON-response based; put it behind the same TLS and network
   restrictions as the reviewer API.
 * An assistant deciding tickets is still a reviewer: its decisions are audited with the token

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block body_attrs %}data-group-id="{{ group_id }}"{% endblock %}
+{% block content %}
+<div class="page-head">
+  <a class="btn ghost sm" href="/redteam">&larr; Red team</a>
+  <h1 id="title">Comparison</h1>
+  <span id="head-badges" class="flex wrap"></span>
+  <span class="spacer"></span>
+  <span id="controls" class="flex wrap"></span>
+</div>
+<div class="card">
+  <div class="card-head"><h2>Ranking</h2><span class="hint">best to worst by severity weighted score (lower is better), with the vulnerability rate</span></div>
+  <div id="podium" class="podium"></div>
+</div>
+<div class="card mt pad-0">
+  <div class="card-head"><h2>Progress per target</h2><span class="hint" id="progress-hint"></span></div>
+  <div class="table-wrap"><table><thead><tr><th>Target</th><th>Agent</th><th>Model</th><th>Status</th><th>Progress</th><th>Verdicts</th><th>Score</th><th>Rate</th><th>Reports</th></tr></thead><tbody id="target-rows"></tbody></table></div>
+</div>
+<div class="card mt pad-0">
+  <div class="card-head"><h2>Vulnerability heatmap</h2><span class="hint">rows are probe categories, cells show rate and vulnerable / tested</span></div>
+  <div class="table-wrap"><table class="heat" id="heatmap"><thead></thead><tbody></tbody></table></div>
+</div>
+<div class="card mt">
+  <div class="card-head"><h2>OWASP LLM Top 10 coverage</h2><span class="hint">items exercised by the probe categories in this group</span></div>
+  <div id="coverage" class="chips coverage-chips"></div>
+</div>
+<div class="card mt pad-0">
+  <div class="card-head">
+    <h2>Per-probe matrix</h2>
+    <select id="m-category"><option value="">All categories</option></select>
+    <label class="check"><input type="checkbox" id="m-differs"> Only probes that differ between targets</label>
+    <span class="hint" id="m-count"></span>
+  </div>
+  <div class="table-wrap"><table class="probe-matrix" id="matrix"><thead></thead><tbody></tbody></table></div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/group.js"></script>{% endblock %}

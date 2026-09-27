@@ -2,10 +2,10 @@
 *                       @keyuraghao
 
 # Security sensitive paths: always require the maintainer's review.
-/airt/gateway/          @keyuraghao
-/airt/auth.py           @keyuraghao
-/airt/security.py       @keyuraghao
-/airt/audit/            @keyuraghao
+/aisrf/gateway/          @keyuraghao
+/aisrf/auth.py           @keyuraghao
+/aisrf/security.py       @keyuraghao
+/aisrf/audit/            @keyuraghao
 /SECURITY.md            @keyuraghao
 /.github/               @keyuraghao
 /scripts/               @keyuraghao

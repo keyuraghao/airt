@@ -13,14 +13,14 @@ from pathlib import Path
 import httpx
 import pytest
 
-_TMP = Path(tempfile.mkdtemp(prefix="airt-test-"))
-os.environ.setdefault("AIRT_DATABASE_URL", f"sqlite+aiosqlite:///{_TMP / 'test.db'}")
-os.environ.setdefault("AIRT_DATA_DIR", str(_TMP / "data"))
-os.environ.setdefault("AIRT_LOG_DIR", str(_TMP / "logs"))
-os.environ.setdefault("AIRT_ADMIN_API_TOKEN", "test-admin-token")
-os.environ.setdefault("AIRT_APPROVAL_TIMEOUT_SECONDS", "5")
-os.environ.setdefault("AIRT_HOLD_POLL_INTERVAL_SECONDS", "0.2")
-os.environ.setdefault("AIRT_LOG_LEVEL", "WARNING")
+_TMP = Path(tempfile.mkdtemp(prefix="aisrf-test-"))
+os.environ.setdefault("AISRF_DATABASE_URL", f"sqlite+aiosqlite:///{_TMP / 'test.db'}")
+os.environ.setdefault("AISRF_DATA_DIR", str(_TMP / "data"))
+os.environ.setdefault("AISRF_LOG_DIR", str(_TMP / "logs"))
+os.environ.setdefault("AISRF_ADMIN_API_TOKEN", "test-admin-token")
+os.environ.setdefault("AISRF_APPROVAL_TIMEOUT_SECONDS", "5")
+os.environ.setdefault("AISRF_HOLD_POLL_INTERVAL_SECONDS", "0.2")
+os.environ.setdefault("AISRF_LOG_LEVEL", "WARNING")
 
 
 def _stand_in(name: str, **attrs):
@@ -40,11 +40,11 @@ def _stand_in(name: str, **attrs):
 def _install_stand_ins() -> None:
     from fastapi import APIRouter
 
-    _stand_in("airt.redteam.engine", campaign_runner=types.SimpleNamespace(shutdown=lambda: asyncio.sleep(0)))
-    _stand_in("airt.redteam.router", router=APIRouter())
-    _stand_in("airt.reports.router", router=APIRouter())
-    _stand_in("airt.dashboard.router", mount_dashboard=lambda app: None)
-    _stand_in("airt.mcp_server", mount_mcp=lambda app: None)
+    _stand_in("aisrf.redteam.engine", campaign_runner=types.SimpleNamespace(shutdown=lambda: asyncio.sleep(0)))
+    _stand_in("aisrf.redteam.router", router=APIRouter())
+    _stand_in("aisrf.reports.router", router=APIRouter())
+    _stand_in("aisrf.dashboard.router", mount_dashboard=lambda app: None)
+    _stand_in("aisrf.mcp_server", mount_mcp=lambda app: None)
 
 
 def openai_upstream_handler(request: httpx.Request) -> httpx.Response:
@@ -87,11 +87,11 @@ def openai_upstream_handler(request: httpx.Request) -> httpx.Response:
 @pytest.fixture
 async def app():
     _install_stand_ins()
-    from airt import config, db
+    from aisrf import config, db
 
     config.reset_settings_cache()
     await db.dispose_db()
-    from airt.main import create_app
+    from aisrf.main import create_app
 
     application = create_app()
     async with application.router.lifespan_context(application):

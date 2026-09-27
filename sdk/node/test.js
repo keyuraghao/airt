@@ -1,7 +1,7 @@
 "use strict";
 // Self-test: node sdk/node/test.js
 const assert = require("node:assert/strict");
-const airt = require("./index.js");
+const aisrf = require("./index.js");
 
 const calls = [];
 const stubFetch = async function (input, init) {
@@ -16,29 +16,29 @@ const stubFetch = async function (input, init) {
     if (n === 1) return new Response(JSON.stringify({ ticket_id: "tkt_1", status: "PENDING" }), { status: 202, headers: { "content-type": "application/json" } });
     return new Response(JSON.stringify({ ticket_id: "tkt_1", status: "COMPLETED", decided_by: "admin", response: { choices: [{ message: { content: "hi" } }] }, response_status: 200 }), { status: 200 });
   }
-  return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { "X-AIRT-Ticket": "tkt_sync" } });
+  return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { "X-AISRF-Ticket": "tkt_sync" } });
 };
 
 async function main() {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = stubFetch;
   try {
-    assert.throws(() => airt.install({}), /gatewayUrl is required/);
-    airt.install({ gatewayUrl: "http://gw:8080/", agentKey: "airt_test", asyncMode: true, correlationId: "corr_1" });
-    assert.equal(airt.isInstalled(), true);
+    assert.throws(() => aisrf.install({}), /gatewayUrl is required/);
+    aisrf.install({ gatewayUrl: "http://gw:8080/", agentKey: "aisrf_test", asyncMode: true, correlationId: "corr_1" });
+    assert.equal(aisrf.isInstalled(), true);
     assert.ok(globalThis.fetch.__airtWrapped, "global fetch is wrapped");
 
     // string input with init
     let res = await fetch("https://api.openai.com/v1/chat/completions?x=1", { method: "POST", headers: { Authorization: "Bearer sk-real", "content-type": "application/json" }, body: "{\"a\":1}" });
-    assert.equal(res.headers.get("x-airt-ticket"), "tkt_sync");
+    assert.equal(res.headers.get("x-aisrf-ticket"), "tkt_sync");
     let c = calls.at(-1);
     assert.equal(c.url, "http://gw:8080/proxy/v1/chat/completions?x=1");
     assert.equal(c.method, "POST");
     assert.equal(c.body, "{\"a\":1}");
-    assert.equal(c.headers.get("x-airt-key"), "airt_test");
-    assert.equal(c.headers.get("x-airt-source"), "sdk");
-    assert.equal(c.headers.get("x-airt-async"), "1");
-    assert.equal(c.headers.get("x-airt-correlation-id"), "corr_1");
+    assert.equal(c.headers.get("x-aisrf-key"), "aisrf_test");
+    assert.equal(c.headers.get("x-aisrf-source"), "sdk");
+    assert.equal(c.headers.get("x-aisrf-async"), "1");
+    assert.equal(c.headers.get("x-aisrf-correlation-id"), "corr_1");
     assert.equal(c.headers.get("authorization"), null, "provider key stripped");
     assert.equal(c.headers.get("content-type"), "application/json");
 
@@ -54,7 +54,7 @@ async function main() {
     assert.equal(c.url, "http://gw:8080/proxy/openai/v1/chat/completions");
     assert.equal(c.method, "POST");
     assert.equal(c.body, "{\"b\":2}");
-    assert.equal(c.headers.get("x-airt-key"), "airt_test");
+    assert.equal(c.headers.get("x-aisrf-key"), "aisrf_test");
 
     // port sensitive host
     await fetch("http://localhost:11434/api/chat", { method: "POST", body: "{}" });
@@ -66,45 +66,45 @@ async function main() {
     await fetch("https://example.com/health");
     c = calls.at(-1);
     assert.equal(c.url, "https://example.com/health");
-    assert.equal(c.headers.get("x-airt-key"), null);
+    assert.equal(c.headers.get("x-aisrf-key"), null);
 
     // pure helpers
-    assert.equal(airt.rewriteUrl("https://api.mistral.ai/v1/models"), "http://gw:8080/proxy/v1/models");
-    assert.equal(airt.rewriteUrl("https://github.com"), null);
-    assert.equal(airt.rewriteUrl("not a url"), null);
-    const custom = airt.rewriteUrl("https://llm.internal.example/v1/x", { gatewayUrl: "https://airt.example", agentKey: "k", hosts: ["llm.internal.example"], source: "sdk" });
-    assert.equal(custom, "https://airt.example/proxy/v1/x");
+    assert.equal(aisrf.rewriteUrl("https://api.mistral.ai/v1/models"), "http://gw:8080/proxy/v1/models");
+    assert.equal(aisrf.rewriteUrl("https://github.com"), null);
+    assert.equal(aisrf.rewriteUrl("not a url"), null);
+    const custom = aisrf.rewriteUrl("https://llm.internal.example/v1/x", { gatewayUrl: "https://aisrf.example", agentKey: "k", hosts: ["llm.internal.example"], source: "sdk" });
+    assert.equal(custom, "https://aisrf.example/proxy/v1/x");
 
     // SDK option helpers
-    const oa = airt.configureOpenAI({ gatewayUrl: "http://gw:8080", agentKey: "airt_test" });
-    assert.deepEqual(oa, { baseURL: "http://gw:8080/v1", apiKey: "airt_test", defaultHeaders: { "X-AIRT-Key": "airt_test", "X-AIRT-Source": "sdk" } });
-    const an = airt.configureAnthropic({ gatewayUrl: "http://gw:8080", agentKey: "airt_test", asyncMode: true });
+    const oa = aisrf.configureOpenAI({ gatewayUrl: "http://gw:8080", agentKey: "aisrf_test" });
+    assert.deepEqual(oa, { baseURL: "http://gw:8080/v1", apiKey: "aisrf_test", defaultHeaders: { "X-AISRF-Key": "aisrf_test", "X-AISRF-Source": "sdk" } });
+    const an = aisrf.configureAnthropic({ gatewayUrl: "http://gw:8080", agentKey: "aisrf_test", asyncMode: true });
     assert.equal(an.baseURL, "http://gw:8080");
-    assert.equal(an.defaultHeaders["X-AIRT-Async"], "1");
+    assert.equal(an.defaultHeaders["X-AISRF-Async"], "1");
 
     // async ticket polling
-    const t = await airt.waitForTicket("tkt_1", { pollIntervalMs: 1 });
+    const t = await aisrf.waitForTicket("tkt_1", { pollIntervalMs: 1 });
     assert.equal(t.status, "COMPLETED");
     assert.equal(t.decidedBy, "admin");
     assert.equal(t.body.choices[0].message.content, "hi");
     assert.ok(calls.at(-1).url.endsWith("/gateway/tickets/tkt_1"));
-    assert.equal(calls.at(-1).headers.get("x-airt-key"), "airt_test");
+    assert.equal(calls.at(-1).headers.get("x-aisrf-key"), "aisrf_test");
 
     // uninstall restores fetch
-    airt.uninstall();
-    assert.equal(airt.isInstalled(), false);
+    aisrf.uninstall();
+    assert.equal(aisrf.isInstalled(), false);
     assert.equal(globalThis.fetch, stubFetch);
     await fetch("https://api.openai.com/v1/models");
     assert.equal(calls.at(-1).url, "https://api.openai.com/v1/models");
-    console.log(`airt-intercept self-test passed (${calls.length} stubbed requests)`);
+    console.log(`aisrf-intercept self-test passed (${calls.length} stubbed requests)`);
   } finally {
-    airt.uninstall();
+    aisrf.uninstall();
     globalThis.fetch = originalFetch;
   }
 }
 
 main().catch((err) => {
-  console.error("airt-intercept self-test FAILED");
+  console.error("aisrf-intercept self-test FAILED");
   console.error(err);
   process.exit(1);
 });

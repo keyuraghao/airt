@@ -1,34 +1,34 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="1600" height="860" viewBox="0 0 1600 860" font-family="Liberation Sans, Arial, Helvetica, sans-serif">
-<title>Airt deployment topology</title>
+<title>AISRF deployment topology</title>
 <defs><marker id="arw94a3b8" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8"/></marker><marker id="arw94a3b8s" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 10 0 L 0 5 L 10 10 z" fill="#94a3b8"/></marker><marker id="arw9ca3af" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#9ca3af"/></marker><marker id="arw9ca3afs" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 10 0 L 0 5 L 10 10 z" fill="#9ca3af"/></marker><marker id="arwa78bfa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#a78bfa"/></marker><marker id="arwa78bfas" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 10 0 L 0 5 L 10 10 z" fill="#a78bfa"/></marker><marker id="arwfbbf24" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#fbbf24"/></marker><marker id="arwfbbf24s" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 10 0 L 0 5 L 10 10 z" fill="#fbbf24"/></marker></defs>
 <rect x="0" y="0" width="1600" height="860" rx="18" ry="18" fill="#0f172a"/>
-<text x="32" y="44" font-size="24" font-weight="bold" fill="#e5e7eb">Airt deployment topology</text>
+<text x="32" y="44" font-size="24" font-weight="bold" fill="#e5e7eb">AISRF deployment topology</text>
 <text x="32" y="66" font-size="13" fill="#a3adbd">docker compose up -d (SQLite volume) or docker compose --profile postgres up -d; TLS terminates in a reverse proxy in front of the gateway.</text>
-<rect x="32.0" y="92.0" width="300.0" height="500.0" rx="14" ry="14" fill="#162036" stroke="#334155" stroke-width="1.5" opacity="1.0"/>
+<rect x="32.0" y="92.0" width="300.0" height="520.0" rx="14" ry="14" fill="#162036" stroke="#334155" stroke-width="1.5" opacity="1.0"/>
 <text x="48.0" y="118.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="16" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">Actors</text>
 <text x="48.0" y="136.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#a3adbd" text-anchor="start" font-weight="normal" opacity="1.0">outside the compose network</text>
-<rect x="48.0" y="150.0" width="268.0" height="70.0" rx="10" ry="10" fill="#1e3a8a" stroke="#60a5fa" stroke-width="1.6" opacity="1.0"/>
+<rect x="48.0" y="150.0" width="268.0" height="78.0" rx="10" ry="10" fill="#1e3a8a" stroke="#60a5fa" stroke-width="1.6" opacity="1.0"/>
 <text x="60.0" y="176.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">Applications and agents</text>
 <text x="60.0" y="196.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">SDK base_url, /proxy, mitmproxy</text>
-<text x="60.0" y="211.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">X-AIRT-Key, sync or async</text>
-<rect x="48.0" y="236.0" width="268.0" height="70.0" rx="10" ry="10" fill="#713f12" stroke="#fbbf24" stroke-width="1.6" opacity="1.0"/>
-<text x="60.0" y="262.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">Reviewers (browser)</text>
-<text x="60.0" y="282.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">dashboard, SSE live queues</text>
-<text x="60.0" y="297.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">signed HttpOnly session cookie</text>
-<rect x="48.0" y="322.0" width="268.0" height="70.0" rx="10" ry="10" fill="#713f12" stroke="#fbbf24" stroke-width="1.6" opacity="1.0"/>
-<text x="60.0" y="348.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">MCP clients over HTTP</text>
-<text x="60.0" y="368.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">Claude Desktop / Claude Code</text>
-<text x="60.0" y="383.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">POST /mcp + Bearer admin token</text>
-<rect x="48.0" y="408.0" width="268.0" height="86.0" rx="10" ry="10" fill="#713f12" stroke="#fbbf24" stroke-width="1.6" opacity="1.0"/>
-<text x="60.0" y="434.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">MCP clients over stdio</text>
-<text x="60.0" y="454.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">`airt mcp --url https://gw --token ...`</text>
-<text x="60.0" y="469.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">runs beside the client and calls</text>
-<text x="60.0" y="484.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">the REST API (separate process)</text>
-<rect x="48.0" y="510.0" width="268.0" height="66.0" rx="10" ry="10" fill="#713f12" stroke="#fbbf24" stroke-width="1.6" opacity="1.0"/>
-<text x="60.0" y="536.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">CLI and CI</text>
-<text x="60.0" y="556.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">airt tickets / report / audit verify</text>
-<text x="60.0" y="571.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">AIRT_URL + AIRT_ADMIN_API_TOKEN</text>
+<text x="60.0" y="211.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">X-AISRF-Key, sync or async</text>
+<rect x="48.0" y="240.0" width="268.0" height="78.0" rx="10" ry="10" fill="#713f12" stroke="#fbbf24" stroke-width="1.6" opacity="1.0"/>
+<text x="60.0" y="266.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">Reviewers (browser)</text>
+<text x="60.0" y="286.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">dashboard, SSE live queues</text>
+<text x="60.0" y="301.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">signed HttpOnly session cookie</text>
+<rect x="48.0" y="330.0" width="268.0" height="78.0" rx="10" ry="10" fill="#713f12" stroke="#fbbf24" stroke-width="1.6" opacity="1.0"/>
+<text x="60.0" y="356.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">MCP clients over HTTP</text>
+<text x="60.0" y="376.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">Claude Desktop / Claude Code</text>
+<text x="60.0" y="391.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">POST /mcp + Bearer admin token</text>
+<rect x="48.0" y="420.0" width="268.0" height="92.0" rx="10" ry="10" fill="#713f12" stroke="#fbbf24" stroke-width="1.6" opacity="1.0"/>
+<text x="60.0" y="446.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">MCP clients over stdio</text>
+<text x="60.0" y="466.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">`aisrf mcp --url https://gw --token ...`</text>
+<text x="60.0" y="481.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">runs beside the client and calls</text>
+<text x="60.0" y="496.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">the REST API (separate process)</text>
+<rect x="48.0" y="524.0" width="268.0" height="76.0" rx="10" ry="10" fill="#713f12" stroke="#fbbf24" stroke-width="1.6" opacity="1.0"/>
+<text x="60.0" y="550.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">CLI and CI</text>
+<text x="60.0" y="570.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">aisrf tickets / report / audit verify</text>
+<text x="60.0" y="585.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">AISRF_URL + AISRF_ADMIN_API_TOKEN</text>
 <rect x="390.0" y="250.0" width="220.0" height="150.0" rx="10" ry="10" fill="#1e293b" stroke="#94a3b8" stroke-width="1.6" opacity="1.0"/>
 <text x="402.0" y="276.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">Reverse proxy (TLS)</text>
 <text x="402.0" y="296.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">nginx / Caddy / Traefik</text>
@@ -37,44 +37,44 @@
 <text x="402.0" y="341.4" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">no buffering for SSE</text>
 <text x="402.0" y="356.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">and streamed relays</text>
 <text x="402.0" y="371.1" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">forwards X-Request-ID</text>
-<path d="M 316.0 185.0 L 390.0 325.0" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arw94a3b8)"/>
-<path d="M 316.0 271.0 L 390.0 325.0" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arw94a3b8)"/>
-<path d="M 316.0 357.0 L 390.0 325.0" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arw94a3b8)"/>
-<path d="M 316.0 543.0 L 390.0 325.0" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arw94a3b8)"/>
-<path d="M 316.0 451.0 L 390.0 325.0" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arw94a3b8)"/>
+<path d="M 316.0 189.0 L 390.0 325.0" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arw94a3b8)"/>
+<path d="M 316.0 279.0 L 390.0 325.0" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arw94a3b8)"/>
+<path d="M 316.0 369.0 L 390.0 325.0" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arw94a3b8)"/>
+<path d="M 316.0 466.0 L 390.0 325.0" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arw94a3b8)"/>
+<path d="M 316.0 562.0 L 390.0 325.0" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arw94a3b8)"/>
 <text x="325.0" y="240.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#a3adbd" text-anchor="start" font-weight="normal" opacity="1.0">HTTPS</text>
 <rect x="660.0" y="92.0" width="620.0" height="620.0" rx="14" ry="14" fill="#162036" stroke="#2dd4bf" stroke-width="1.5" opacity="1.0"/>
 <text x="676.0" y="118.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="16" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">docker compose network</text>
-<text x="676.0" y="136.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#a3adbd" text-anchor="start" font-weight="normal" opacity="1.0">image airt:latest, multi-stage python:3.12-slim, non-root user, HEALTHCHECK GET /healthz</text>
+<text x="676.0" y="136.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#a3adbd" text-anchor="start" font-weight="normal" opacity="1.0">image aisrf:latest, multi-stage python:3.12-slim, non-root user, HEALTHCHECK GET /healthz</text>
 <rect x="680.0" y="150.0" width="580.0" height="250.0" rx="10" ry="10" fill="#134e4a" stroke="#2dd4bf" stroke-width="1.6" opacity="1.0"/>
-<text x="692.0" y="176.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">airt-gateway container (127.0.0.1:8080 -&gt; 8080)</text>
-<text x="692.0" y="196.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">uvicorn, AIRT_WORKERS=1 (default): one process serves gateway /v1 /proxy /gateway/tickets,</text>
+<text x="692.0" y="176.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">aisrf-gateway container (127.0.0.1:8080 -&gt; 8080)</text>
+<text x="692.0" y="196.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">uvicorn, AISRF_WORKERS=1 (default): one process serves gateway /v1 /proxy /gateway/tickets,</text>
 <text x="692.0" y="211.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">reviewer API /api/*, dashboard, MCP /mcp, /metrics, /healthz, /readyz</text>
 <text x="692.0" y="226.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0"></text>
 <text x="692.0" y="241.5" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">in-process state:  hold registry (asyncio.Event per waiting ticket)  |  rate limiter  |</text>
 <text x="692.0" y="256.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">SSE broadcaster  |  metrics  |  background sweeper (expire PENDING every 5 s, purge old tickets)</text>
 <text x="692.0" y="271.1" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0"></text>
-<text x="692.0" y="286.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">env: .env + AIRT_* (AIRT_DATABASE_URL, AIRT_SECRET_KEY / AIRT_ENCRYPTION_KEY, AIRT_ADMIN_API_TOKEN,</text>
-<text x="692.0" y="300.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">AIRT_NOTIFY_WEBHOOK_URLS, AIRT_APPROVAL_TIMEOUT_SECONDS, AIRT_HOLD_POLL_INTERVAL_SECONDS)</text>
+<text x="692.0" y="286.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">env: .env + AISRF_* (AISRF_DATABASE_URL, AISRF_SECRET_KEY / AISRF_ENCRYPTION_KEY, AISRF_ADMIN_API_TOKEN,</text>
+<text x="692.0" y="300.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">AISRF_NOTIFY_WEBHOOK_URLS, AISRF_APPROVAL_TIMEOUT_SECONDS, AISRF_HOLD_POLL_INTERVAL_SECONDS)</text>
 <path d="M 610.0 325.0 L 680.0 325.0" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arw94a3b8)"/>
 <rect x="606.4" y="304.0" width="77.2" height="19.6" rx="4" ry="4" fill="#0f172a" stroke="#0f172a" stroke-width="0" opacity="0.92"/>
 <text x="645.0" y="317.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#e5e7eb" text-anchor="middle" font-weight="normal" opacity="1.0">HTTP :8080</text>
 <rect x="680.0" y="430.0" width="270.0" height="92.0" rx="10" ry="10" fill="#1f2937" stroke="#9ca3af" stroke-width="1.6" opacity="1.0"/>
-<text x="692.0" y="456.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">volume airt-data -&gt; /app/data</text>
-<text x="692.0" y="476.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="10.5" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">airt.db (SQLite, default)</text>
+<text x="692.0" y="456.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">volume aisrf-data -&gt; /app/data</text>
+<text x="692.0" y="476.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="10.5" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">aisrf.db (SQLite, default)</text>
 <text x="692.0" y="491.1" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="10.5" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">Fernet-encrypted upstream keys live</text>
 <text x="692.0" y="505.2" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="10.5" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">in the agents table, never on disk in clear</text>
 <rect x="990.0" y="430.0" width="270.0" height="92.0" rx="10" ry="10" fill="#1f2937" stroke="#9ca3af" stroke-width="1.6" opacity="1.0"/>
-<text x="1002.0" y="456.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">volume airt-logs -&gt; /app/logs</text>
-<text x="1002.0" y="476.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="10.5" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">airt.jsonl (50 MB x 10)</text>
+<text x="1002.0" y="456.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">volume aisrf-logs -&gt; /app/logs</text>
+<text x="1002.0" y="476.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="10.5" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">aisrf.jsonl (50 MB x 10)</text>
 <text x="1002.0" y="491.1" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="10.5" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">agents/&lt;agent_id&gt;.jsonl (20 MB x 5)</text>
 <text x="1002.0" y="505.2" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="10.5" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">JSON console output too</text>
 <path d="M 815.0 400.0 L 815.0 430.0" fill="none" stroke="#9ca3af" stroke-width="1.8" marker-end="url(#arw9ca3af)"/>
 <path d="M 1125.0 400.0 L 1125.0 430.0" fill="none" stroke="#9ca3af" stroke-width="1.8" marker-end="url(#arw9ca3af)"/>
 <rect x="680.0" y="560.0" width="580.0" height="130.0" rx="10" ry="10" fill="#1f2937" stroke="#9ca3af" stroke-width="1.6" opacity="1.0"/>
-<text x="692.0" y="586.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">airt-postgres container (profile: postgres, optional)</text>
-<text x="692.0" y="606.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">postgres:16-alpine, volume airt-pgdata -&gt; /var/lib/postgresql/data, pg_isready healthcheck</text>
-<text x="692.0" y="621.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">AIRT_DATABASE_URL=postgresql+asyncpg://airt:airt@postgres:5432/airt  (pip install "airt[postgres]")</text>
+<text x="692.0" y="586.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">aisrf-postgres container (profile: postgres, optional)</text>
+<text x="692.0" y="606.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">postgres:16-alpine, volume aisrf-pgdata -&gt; /var/lib/postgresql/data, pg_isready healthcheck</text>
+<text x="692.0" y="621.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">AISRF_DATABASE_URL=postgresql+asyncpg://aisrf:aisrf@postgres:5432/aisrf  (pip install "aisrf[postgres]")</text>
 <text x="692.0" y="636.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">gateway depends_on postgres with required: false; without the profile the gateway uses SQLite</text>
 <path d="M 815.0 522.0 L 815.0 560.0" fill="none" stroke="#9ca3af" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#arw9ca3af)"/>
 <rect x="824.0" y="532.0" width="23.4" height="19.6" rx="4" ry="4" fill="#0f172a" stroke="#0f172a" stroke-width="0" opacity="0.92"/>
@@ -82,34 +82,34 @@
 <rect x="1320.0" y="92.0" width="248.0" height="620.0" rx="14" ry="14" fill="#162036" stroke="#334155" stroke-width="1.5" opacity="1.0"/>
 <text x="1336.0" y="118.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="16" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">Outbound</text>
 <text x="1336.0" y="136.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#a3adbd" text-anchor="start" font-weight="normal" opacity="1.0">egress from the gateway only</text>
-<rect x="1336.0" y="150.0" width="216.0" height="120.0" rx="10" ry="10" fill="#4c1d95" stroke="#a78bfa" stroke-width="1.6" opacity="1.0"/>
+<rect x="1336.0" y="150.0" width="216.0" height="124.0" rx="10" ry="10" fill="#4c1d95" stroke="#a78bfa" stroke-width="1.6" opacity="1.0"/>
 <text x="1348.0" y="176.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">Upstream providers</text>
 <text x="1348.0" y="196.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">OpenAI, Anthropic, Gemini,</text>
 <text x="1348.0" y="211.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">Mistral, Groq, Ollama,</text>
 <text x="1348.0" y="226.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">custom HTTP APIs</text>
 <text x="1348.0" y="241.5" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">credentials injected by</text>
 <text x="1348.0" y="256.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">the gateway</text>
-<rect x="1336.0" y="300.0" width="216.0" height="96.0" rx="10" ry="10" fill="#713f12" stroke="#fbbf24" stroke-width="1.6" opacity="1.0"/>
-<text x="1348.0" y="326.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">Webhooks</text>
-<text x="1348.0" y="346.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">Slack or generic JSON</text>
-<text x="1348.0" y="361.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">on ticket created /</text>
-<text x="1348.0" y="376.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">expired / failed</text>
-<text x="1348.0" y="391.4" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">(AIRT_NOTIFY_*)</text>
-<rect x="1336.0" y="426.0" width="216.0" height="96.0" rx="10" ry="10" fill="#4c1d95" stroke="#a78bfa" stroke-width="1.6" opacity="1.0"/>
-<text x="1348.0" y="452.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">LLM judge / guardrail</text>
-<text x="1348.0" y="470.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">APIs</text>
-<text x="1348.0" y="491.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">optional: AIRT_JUDGE_*,</text>
-<text x="1348.0" y="506.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">Lakera Guard endpoint,</text>
-<text x="1348.0" y="521.5" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">LLM Guard / NeMo local</text>
-<rect x="1336.0" y="552.0" width="216.0" height="96.0" rx="10" ry="10" fill="#1f2937" stroke="#9ca3af" stroke-width="1.6" opacity="1.0"/>
-<text x="1348.0" y="578.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">Prometheus / SIEM</text>
-<text x="1348.0" y="598.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">scrape /metrics,</text>
-<text x="1348.0" y="613.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">ship logs/*.jsonl,</text>
-<text x="1348.0" y="628.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">verify audit chain</text>
-<path d="M 1260.0 210.0 L 1336.0 210.0" fill="none" stroke="#a78bfa" stroke-width="1.8" marker-end="url(#arwa78bfa)"/>
-<path d="M 1260.0 348.0 L 1336.0 348.0" fill="none" stroke="#fbbf24" stroke-width="1.8" marker-end="url(#arwfbbf24)"/>
-<path d="M 1260.0 474.0 L 1336.0 474.0" fill="none" stroke="#a78bfa" stroke-width="1.8" marker-end="url(#arwa78bfa)"/>
-<path d="M 1336.0 600.0 L 1260.0 600.0" fill="none" stroke="#9ca3af" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#arw9ca3af)"/>
+<rect x="1336.0" y="292.0" width="216.0" height="104.0" rx="10" ry="10" fill="#713f12" stroke="#fbbf24" stroke-width="1.6" opacity="1.0"/>
+<text x="1348.0" y="318.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">Webhooks</text>
+<text x="1348.0" y="338.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">Slack or generic JSON</text>
+<text x="1348.0" y="353.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">on ticket created /</text>
+<text x="1348.0" y="368.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">expired / failed</text>
+<text x="1348.0" y="383.4" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">(AISRF_NOTIFY_*)</text>
+<rect x="1336.0" y="412.0" width="216.0" height="104.0" rx="10" ry="10" fill="#4c1d95" stroke="#a78bfa" stroke-width="1.6" opacity="1.0"/>
+<text x="1348.0" y="438.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">LLM judge / guardrail</text>
+<text x="1348.0" y="456.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">APIs</text>
+<text x="1348.0" y="477.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">optional: AISRF_JUDGE_*,</text>
+<text x="1348.0" y="492.7" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">Lakera Guard endpoint,</text>
+<text x="1348.0" y="507.5" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">LLM Guard / NeMo local</text>
+<rect x="1336.0" y="532.0" width="216.0" height="96.0" rx="10" ry="10" fill="#1f2937" stroke="#9ca3af" stroke-width="1.6" opacity="1.0"/>
+<text x="1348.0" y="558.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">Prometheus / SIEM</text>
+<text x="1348.0" y="578.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">scrape /metrics,</text>
+<text x="1348.0" y="593.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">ship logs/*.jsonl,</text>
+<text x="1348.0" y="608.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">verify audit chain</text>
+<path d="M 1260.0 212.0 L 1336.0 212.0" fill="none" stroke="#a78bfa" stroke-width="1.8" marker-end="url(#arwa78bfa)"/>
+<path d="M 1260.0 344.0 L 1336.0 344.0" fill="none" stroke="#fbbf24" stroke-width="1.8" marker-end="url(#arwfbbf24)"/>
+<path d="M 1260.0 464.0 L 1336.0 464.0" fill="none" stroke="#a78bfa" stroke-width="1.8" marker-end="url(#arwa78bfa)"/>
+<path d="M 1336.0 580.0 L 1260.0 580.0" fill="none" stroke="#9ca3af" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#arw9ca3af)"/>
 <rect x="390.0" y="430.0" width="250.0" height="282.0" rx="12" ry="12" fill="#162036" stroke="#fb923c" stroke-width="1.5" opacity="1.0"/>
 <text x="406.0" y="456.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">Hold registry note</text>
 <text x="406.0" y="480.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">A synchronous request blocks on an</text>
@@ -122,11 +122,11 @@
 <text x="406.0" y="585.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">worker, the stdio MCP host, a</text>
 <text x="406.0" y="600.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">direct DB write) is noticed on the</text>
 <text x="406.0" y="615.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">next DB poll, every</text>
-<text x="406.0" y="630.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">AIRT_HOLD_POLL_INTERVAL_SECONDS (1</text>
-<text x="406.0" y="645.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">s). Keep AIRT_WORKERS=1 and scale</text>
-<text x="406.0" y="660.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">by adding gateways per agent group</text>
-<text x="406.0" y="675.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">until the Redis / LISTEN-NOTIFY</text>
-<text x="406.0" y="690.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">registry lands.</text>
+<text x="406.0" y="630.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">AISRF_HOLD_POLL_INTERVAL_SECONDS</text>
+<text x="406.0" y="645.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">(1 s). Keep AISRF_WORKERS=1 and</text>
+<text x="406.0" y="660.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">scale by adding gateways per agent</text>
+<text x="406.0" y="675.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">group until the Redis /</text>
+<text x="406.0" y="690.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">LISTEN-NOTIFY registry lands.</text>
 <rect x="32.0" y="760.0" width="1400.0" height="52.0" rx="10" ry="10" fill="#162036" stroke="#334155" stroke-width="1.5" opacity="1.0"/>
 <text x="44.0" y="779.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#a3adbd" text-anchor="start" font-weight="bold" opacity="1.0">Legend</text>
 <rect x="46.0" y="790.0" width="22.0" height="14.0" rx="4" ry="4" fill="#1e3a8a" stroke="#60a5fa" stroke-width="1.2" opacity="1.0"/>
@@ -134,12 +134,12 @@
 <rect x="276.0" y="790.0" width="22.0" height="14.0" rx="4" ry="4" fill="#713f12" stroke="#fbbf24" stroke-width="1.2" opacity="1.0"/>
 <text x="306.0" y="801.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">reviewer / operator surface</text>
 <rect x="506.0" y="790.0" width="22.0" height="14.0" rx="4" ry="4" fill="#134e4a" stroke="#2dd4bf" stroke-width="1.2" opacity="1.0"/>
-<text x="536.0" y="801.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">Airt container</text>
+<text x="536.0" y="801.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">AISRF container</text>
 <rect x="736.0" y="790.0" width="22.0" height="14.0" rx="4" ry="4" fill="#1f2937" stroke="#9ca3af" stroke-width="1.2" opacity="1.0"/>
 <text x="766.0" y="801.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">storage / data</text>
 <rect x="966.0" y="790.0" width="22.0" height="14.0" rx="4" ry="4" fill="#4c1d95" stroke="#a78bfa" stroke-width="1.2" opacity="1.0"/>
 <text x="996.0" y="801.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">external API</text>
 <rect x="1196.0" y="790.0" width="22.0" height="14.0" rx="4" ry="4" fill="#1e293b" stroke="#94a3b8" stroke-width="1.2" opacity="1.0"/>
 <text x="1226.0" y="801.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">infrastructure</text>
-<text x="32.0" y="830.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" fill="#a3adbd" text-anchor="start" font-weight="normal" opacity="1.0">Single container alternative: docker run -d -p 127.0.0.1:8080:8080 --env-file .env -v airt-data:/app/data -v airt-logs:/app/logs airt</text>
+<text x="32.0" y="830.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" fill="#a3adbd" text-anchor="start" font-weight="normal" opacity="1.0">Single container alternative: docker run -d -p 127.0.0.1:8080:8080 --env-file .env -v aisrf-data:/app/data -v aisrf-logs:/app/logs aisrf</text>
 </svg>

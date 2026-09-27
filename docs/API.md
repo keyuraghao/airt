@@ -9,12 +9,12 @@ Base URL in the examples: `http://localhost:8080`.
 
 | Caller | Mechanism |
 | --- | --- |
-| Agents (gateway endpoints) | `X-AIRT-Key: airt_...` (also accepted: `Authorization: Bearer airt_...`, `x-api-key`, `api-key`, `x-goog-api-key`). |
-| Reviewers (dashboard) | Session cookie `airt_session` from `POST /api/auth/login`. |
-| Automation (MCP, CLI, CI) | `Authorization: Bearer <AIRT_ADMIN_API_TOKEN>` or `X-AIRT-Admin-Token: <token>` (admin role). |
+| Agents (gateway endpoints) | `X-AISRF-Key: aisrf_...` (also accepted: `Authorization: Bearer aisrf_...`, `x-api-key`, `api-key`, `x-goog-api-key`). |
+| Reviewers (dashboard) | Session cookie `aisrf_session` from `POST /api/auth/login`. |
+| Automation (MCP, CLI, CI) | `Authorization: Bearer <AISRF_ADMIN_API_TOKEN>` or `X-AISRF-Admin-Token: <token>` (admin role). |
 
 Roles: `viewer` (read), `reviewer` (read + approve/deny), `admin` (everything). Errors use FastAPI's
-`{"detail": "..."}` shape for reviewer endpoints and `{"error": {"message", "type": "airt_gateway",
+`{"detail": "..."}` shape for reviewer endpoints and `{"error": {"message", "type": "aisrf_gateway",
 "code", "ticket_id"}}` for gateway endpoints.
 
 ## Ops
@@ -36,15 +36,15 @@ Request headers:
 
 | Header | Meaning |
 | --- | --- |
-| `X-AIRT-Key` | agent key (required, see Authentication) |
-| `X-AIRT-Async` | `1` / `true` / `yes`: return 202 instead of blocking |
-| `X-AIRT-Source` | `gateway` (default), `sdk`, `mitm`, `redteam` |
-| `X-AIRT-Correlation-Id` | groups tickets (falls back to `X-Request-ID`, else generated `corr_...`) |
-| `X-AIRT-Campaign-Id`, `X-AIRT-Probe-Id` | set by the red-team engine |
+| `X-AISRF-Key` | agent key (required, see Authentication) |
+| `X-AISRF-Async` | `1` / `true` / `yes`: return 202 instead of blocking |
+| `X-AISRF-Source` | `gateway` (default), `sdk`, `mitm`, `redteam` |
+| `X-AISRF-Correlation-Id` | groups tickets (falls back to `X-Request-ID`, else generated `corr_...`) |
+| `X-AISRF-Campaign-Id`, `X-AISRF-Probe-Id` | set by the red-team engine |
 
 ```bash
 curl -i -X POST http://localhost:8080/v1/chat/completions \
-  -H "X-AIRT-Key: airt_abc..." -H "Content-Type: application/json" \
+  -H "X-AISRF-Key: aisrf_abc..." -H "Content-Type: application/json" \
   -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"hello"}]}'
 ```
 
@@ -52,10 +52,10 @@ Responses:
 
 | Status | When | Body |
 | --- | --- | --- |
-| upstream status | approved and forwarded | upstream body verbatim (JSON or SSE), header `X-AIRT-Ticket: tkt_...` |
-| 202 | async mode, PENDING | `{"ticket_id": "tkt_...", "status": "PENDING", "poll_url": "/gateway/tickets/tkt_...", "expires_at": "..."}` + `X-AIRT-Ticket` |
-| 401 | bad or missing key | `{"error": {"message": "invalid or missing AIRT agent key", "type": "airt_gateway", "code": "unauthorized"}}` |
-| 403 | policy or reviewer denied | `{"error": {"message": "request denied by reviewer: ...", "type": "airt_gateway", "code": "denied", "ticket_id": "tkt_...", "decided_by": "alice"}}` (policy denials add `risk_score`) |
+| upstream status | approved and forwarded | upstream body verbatim (JSON or SSE), header `X-AISRF-Ticket: tkt_...` |
+| 202 | async mode, PENDING | `{"ticket_id": "tkt_...", "status": "PENDING", "poll_url": "/gateway/tickets/tkt_...", "expires_at": "..."}` + `X-AISRF-Ticket` |
+| 401 | bad or missing key | `{"error": {"message": "invalid or missing AISRF agent key", "type": "aisrf_gateway", "code": "unauthorized"}}` |
+| 403 | policy or reviewer denied | `{"error": {"message": "request denied by reviewer: ...", "type": "aisrf_gateway", "code": "denied", "ticket_id": "tkt_...", "decided_by": "alice"}}` (policy denials add `risk_score`) |
 | 413 | body too large | `code: payload_too_large` |
 | 429 | agent rate limit | `code: rate_limited` |
 | 502 | upstream error after approval | `code: upstream_error` |
@@ -68,7 +68,7 @@ Poll an asynchronous ticket. Only the agent that created it can read it (404 oth
 | Ticket status | HTTP | Body |
 | --- | --- | --- |
 | PENDING | 202 | `{"ticket_id", "status": "PENDING", "decided_by": null, "decision_note": ""}` |
-| APPROVED | upstream status | the poll forwards the request now and relays the upstream body with `X-AIRT-Ticket` |
+| APPROVED | upstream status | the poll forwards the request now and relays the upstream body with `X-AISRF-Ticket` |
 | FORWARDING | 502 | `{"ticket_id", "status": "FORWARDING", ...}` (another poll is in flight; retry) |
 | COMPLETED | 200 | `{"ticket_id", "status": "COMPLETED", "decided_by", "decision_note", "response": {...}, "response_status": 200}` (`response_text` when the body is not JSON) |
 | DENIED, EXPIRED | 403 | `{"ticket_id", "status": "DENIED", "decided_by", "decision_note"}` |
@@ -196,7 +196,7 @@ curl -b jar "http://localhost:8080/api/reports/tickets?format=sarif&min_risk=50"
 
 ## MCP
 
-`POST /mcp` (streamable HTTP, `Authorization: Bearer <AIRT_ADMIN_API_TOKEN>`). See `docs/MCP.md`.
+`POST /mcp` (streamable HTTP, `Authorization: Bearer <AISRF_ADMIN_API_TOKEN>`). See `docs/MCP.md`.
 
 ## Dashboard pages (session cookie)
 

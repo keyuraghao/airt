@@ -11,14 +11,14 @@ body:
     id: problem
     attributes:
       label: Problem
-      description: What are you trying to do that Airt makes hard or impossible today? Who is affected (reviewers, agent developers, operators)?
+      description: What are you trying to do that AISRF makes hard or impossible today? Who is affected (reviewers, agent developers, operators)?
     validations:
       required: true
   - type: textarea
     id: proposal
     attributes:
       label: Proposed solution
-      description: The behaviour you would like. For analyzers or probes include example inputs and the expected finding or verdict. For settings, the `AIRT_*` name and default you have in mind.
+      description: The behaviour you would like. For analyzers or probes include example inputs and the expected finding or verdict. For settings, the `AISRF_*` name and default you have in mind.
     validations:
       required: true
   - type: textarea

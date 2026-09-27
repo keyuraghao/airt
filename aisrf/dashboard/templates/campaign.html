@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block body_attrs %}data-campaign-id="{{ campaign_id }}"{% endblock %}
+{% block content %}
+<div class="page-head">
+  <a class="btn ghost sm" href="/redteam">&larr; Campaigns</a>
+  <h1 id="title">Campaign</h1>
+  <span id="head-badges" class="flex wrap"></span>
+  <span class="spacer"></span>
+  <span id="controls" class="flex wrap"></span>
+</div>
+<div class="tiles" id="tiles"></div>
+<div class="grid side mt">
+  <div class="stack">
+    <div class="card">
+      <div class="card-head"><h2>Progress</h2><span class="hint" id="progress-text"></span></div>
+      <div class="progress" id="progress"><span style="width:0%"></span></div>
+      <div id="verdict-dist" class="mt"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Vulnerability rate per category</h2></div>
+      <div id="category-bars"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>OWASP LLM Top 10 breakdown</h2><span class="hint">aggregated over the probe categories mapped to each item</span></div>
+      <div class="table-wrap"><table><thead><tr><th>Id</th><th>Name</th><th class="right">Tested</th><th class="right">Vulnerable</th><th>Rate</th></tr></thead><tbody id="owasp-rows"></tbody></table></div>
+    </div>
+    <div class="card pad-0">
+      <div class="card-head">
+        <h2>Results</h2>
+        <select id="r-verdict"><option value="">All verdicts</option><option>VULNERABLE</option><option>RESISTED</option><option>BLOCKED</option><option>INCONCLUSIVE</option><option>ERROR</option><option>PENDING</option></select>
+        <select id="r-category"><option value="">All categories</option></select>
+        <span class="hint" id="r-count"></span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th></th><th>Probe</th><th>Category</th><th>Technique</th><th>Severity</th><th>Verdict</th><th>Conf.</th><th>Latency</th><th>Ticket</th><th>When</th></tr></thead>
+          <tbody id="result-rows"></tbody>
+        </table>
+      </div>
+      <div class="flex" id="r-pager" style="padding:10px 16px"></div>
+    </div>
+  </div>
+  <div class="stack">
+    <div class="card">
+      <div class="card-head"><h2>Details</h2></div>
+      <dl class="kv" id="details"></dl>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Configuration</h2></div>
+      <div id="config"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Reports</h2></div>
+      <div id="reports"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/campaign.js"></script>{% endblock %}

@@ -1,0 +1,199 @@
+# AISRF general AI application hygiene rules for semgrep.
+rules:
+  - id: aisrf-gn-provider-key-literal
+    languages: [generic]
+    severity: ERROR
+    message: A provider API key appears literally in the source (AISRF-GN-001)
+    metadata:
+      aisrf_rule: AISRF-GN-001
+      pack: general
+      severity: CRITICAL
+      confidence: "0.9"
+      cwe: CWE-798
+      owasp: [LLM02, LLM07]
+      category: secrets
+    pattern-regex: '(sk-(proj-|ant-(api\d{2}-)?|or-v1-)?[A-Za-z0-9_-]{24,}|AIza[0-9A-Za-z_-]{30,}|hf_[A-Za-z0-9]{24,}|gsk_[A-Za-z0-9]{24,}|xai-[A-Za-z0-9]{24,}|r8_[A-Za-z0-9]{24,}|pcsk_[A-Za-z0-9_-]{24,}|gh[pousr]_[A-Za-z0-9]{30,}|glpat-[A-Za-z0-9_-]{20,}|xox[baprs]-[A-Za-z0-9-]{10,})'
+    paths:
+      exclude:
+        - "*.lock"
+        - "*.min.js"
+  - id: aisrf-gn-client-key-literal-py
+    languages: [python]
+    severity: ERROR
+    message: A model client is constructed with a literal API key (AISRF-GN-001)
+    metadata:
+      aisrf_rule: AISRF-GN-001
+      pack: general
+      severity: CRITICAL
+      confidence: "0.9"
+      cwe: CWE-798
+      owasp: [LLM02, LLM07]
+      category: secrets
+    patterns:
+      - pattern-either:
+          - pattern: OpenAI(..., api_key="$K", ...)
+          - pattern: AsyncOpenAI(..., api_key="$K", ...)
+          - pattern: Anthropic(..., api_key="$K", ...)
+          - pattern: AsyncAnthropic(..., api_key="$K", ...)
+          - pattern: openai.api_key = "$K"
+          - pattern: genai.configure(api_key="$K")
+          - pattern: Pinecone(api_key="$K", ...)
+          - pattern: ChatOpenAI(..., api_key="$K", ...)
+          - pattern: ChatOpenAI(..., openai_api_key="$K", ...)
+          - pattern: ChatAnthropic(..., api_key="$K", ...)
+      - metavariable-regex:
+          metavariable: $K
+          regex: ^"(?!.*(xxx|your|example|placeholder|dummy|changeme|fake|test)).{16,}"$
+  - id: aisrf-gn-cors-wildcard-py
+    languages: [python]
+    severity: WARNING
+    message: Cross-origin requests are accepted from any origin on an AI service (AISRF-GN-004)
+    metadata:
+      aisrf_rule: AISRF-GN-004
+      pack: general
+      severity: MEDIUM
+      confidence: "0.8"
+      cwe: CWE-942
+      owasp: [LLM02, LLM05]
+      category: data_exfiltration
+    pattern-either:
+      - pattern: $APP.add_middleware(CORSMiddleware, ..., allow_origins=["*"], ...)
+      - pattern: CORS($APP)
+      - pattern: CORS($APP, ..., origins="*", ...)
+      - pattern: 'CORS($APP, ..., resources={..., "origins": "*", ...}, ...)'
+      - pattern: CORS_ORIGIN_ALLOW_ALL = True
+  - id: aisrf-gn-cors-wildcard-js
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: Cross-origin requests are accepted from any origin on an AI service (AISRF-GN-004)
+    metadata:
+      aisrf_rule: AISRF-GN-004
+      pack: general
+      severity: MEDIUM
+      confidence: "0.8"
+      cwe: CWE-942
+      owasp: [LLM02, LLM05]
+      category: data_exfiltration
+    pattern-either:
+      - pattern: $APP.use(cors())
+      - pattern: 'cors({..., origin: "*", ...})'
+      - pattern: 'cors({..., origin: true, ...})'
+      - pattern: $RES.setHeader("Access-Control-Allow-Origin", "*")
+  - id: aisrf-gn-debug-mode-py
+    languages: [python]
+    severity: WARNING
+    message: The application runs with debug enabled (AISRF-GN-003)
+    metadata:
+      aisrf_rule: AISRF-GN-003
+      pack: general
+      severity: MEDIUM
+      confidence: "0.8"
+      cwe: CWE-489
+      owasp: [LLM07]
+      category: system_prompt_leak
+    pattern-either:
+      - pattern: $APP.run(..., debug=True, ...)
+      - pattern: DEBUG = True
+      - pattern: uvicorn.run(..., reload=True, ...)
+  - id: aisrf-gn-tls-verification-disabled
+    languages: [python]
+    severity: WARNING
+    message: TLS certificate verification is disabled for outbound traffic (AISRF-GN-010)
+    metadata:
+      aisrf_rule: AISRF-GN-010
+      pack: general
+      severity: MEDIUM
+      confidence: "0.8"
+      cwe: CWE-295
+      owasp: [LLM03]
+      category: supply_chain
+    pattern-either:
+      - pattern: requests.$M(..., verify=False, ...)
+      - pattern: httpx.$C(..., verify=False, ...)
+      - pattern: $S.verify = False
+      - pattern: ssl._create_unverified_context()
+      - pattern: OpenAI(..., http_client=httpx.Client(..., verify=False, ...), ...)
+  - id: aisrf-gn-tls-verification-disabled-js
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: TLS certificate verification is disabled for outbound traffic (AISRF-GN-010)
+    metadata:
+      aisrf_rule: AISRF-GN-010
+      pack: general
+      severity: MEDIUM
+      confidence: "0.8"
+      cwe: CWE-295
+      owasp: [LLM03]
+      category: supply_chain
+    pattern-either:
+      - pattern: '{..., rejectUnauthorized: false, ...}'
+      - pattern: process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"
+  - id: aisrf-gn-no-max-tokens-py
+    languages: [python]
+    severity: INFO
+    message: Completion call without max_tokens; output length and cost are unbounded (AISRF-GN-006)
+    metadata:
+      aisrf_rule: AISRF-GN-006
+      pack: general
+      severity: LOW
+      confidence: "0.5"
+      cwe: CWE-400
+      owasp: [LLM10]
+      category: denial_of_wallet
+    patterns:
+      - pattern: $C.chat.completions.create(...)
+      - pattern-not: $C.chat.completions.create(..., max_tokens=..., ...)
+      - pattern-not: $C.chat.completions.create(..., max_completion_tokens=..., ...)
+      - pattern-not: $C.chat.completions.create(..., **$KW)
+  - id: aisrf-gn-api-key-from-request-py
+    languages: [python]
+    severity: ERROR
+    message: A provider key is accepted from the request (query string or form) (AISRF-GN-008)
+    metadata:
+      aisrf_rule: AISRF-GN-008
+      pack: general
+      severity: HIGH
+      confidence: "0.8"
+      cwe: CWE-532
+      owasp: [LLM02, LLM07]
+      category: secrets
+    patterns:
+      - pattern-either:
+          - pattern: $K = request.args.get("$NAME", ...)
+          - pattern: $K = request.args["$NAME"]
+          - pattern: $K = request.form.get("$NAME", ...)
+          - pattern: $K = request.GET.get("$NAME", ...)
+      - metavariable-regex:
+          metavariable: $NAME
+          regex: (?i)^"(api_?key|token|secret|apikey)"$
+  - id: aisrf-gn-model-from-request-py
+    mode: taint
+    languages: [python]
+    severity: WARNING
+    message: The model name or provider base URL is controlled by the client (AISRF-GN-011)
+    metadata:
+      aisrf_rule: AISRF-GN-011
+      pack: general
+      severity: MEDIUM
+      confidence: "0.7"
+      cwe: CWE-20
+      owasp: [LLM10]
+      category: denial_of_wallet
+      taint: true
+    pattern-sources:
+      - pattern: request.args.get(...)
+      - pattern: request.args[...]
+      - pattern: request.json[...]
+      - pattern: request.json.get(...)
+      - pattern: request.get_json(...)
+      - pattern: await $REQ.json()
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern-inside: $C.chat.completions.create(..., model=$M, ...)
+              - pattern-inside: $C.messages.create(..., model=$M, ...)
+              - pattern-inside: OpenAI(..., base_url=$M, ...)
+              - pattern-inside: AsyncOpenAI(..., base_url=$M, ...)
+              - pattern-inside: ChatOpenAI(..., model=$M, ...)
+              - pattern-inside: ChatOpenAI(..., base_url=$M, ...)
+          - pattern: $M

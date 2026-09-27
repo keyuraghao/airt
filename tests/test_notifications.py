@@ -7,12 +7,12 @@ import json
 
 import httpx
 
-from airt import notifications
-from airt.logging import broadcaster
+from aisrf import notifications
+from aisrf.logging import broadcaster
 
 
 async def test_notifier_posts_to_webhooks(monkeypatch):
-    from airt.config import get_settings
+    from aisrf.config import get_settings
 
     settings = get_settings()
     monkeypatch.setattr(

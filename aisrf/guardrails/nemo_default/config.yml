@@ -1,0 +1,17 @@
+# Default NeMo Guardrails configuration shipped with AISRF.
+#
+# It runs entirely offline: no `models` section, so no LLM is contacted, and the rails call the
+# custom Python actions in actions.py (regex heuristics for jailbreak personas, instruction override,
+# delimiter spoofing, system prompt extraction and, on the output side, canary or credential leaks).
+# Point integrations.nemo_guardrails.config_path at your own directory to replace it; keep
+# `enable_rails_exceptions: true` so the gateway can tell which flow blocked the message.
+colang_version: "1.0"
+enable_rails_exceptions: true
+rails:
+  input:
+    flows:
+      - aisrf jailbreak check
+      - aisrf injection check
+  output:
+    flows:
+      - aisrf output check

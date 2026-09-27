@@ -1,0 +1,35 @@
+define bot refuse to respond
+  "I'm sorry, I can't respond to that."
+
+define subflow aisrf jailbreak check
+  """Blocks jailbreak personas (DAN, developer mode, unrestricted AI) using the offline regex heuristics in actions.py."""
+  $aisrf_jailbreak = execute aisrf_check_jailbreak(text=$user_message)
+  if $aisrf_jailbreak["blocked"]
+    $aisrf_reason = $aisrf_jailbreak["reason"]
+    if $config.enable_rails_exceptions
+      create event AISRFJailbreakRailException(message=$aisrf_reason)
+    else
+      bot refuse to respond
+    stop
+
+define subflow aisrf injection check
+  """Blocks instruction override, delimiter spoofing and system prompt extraction attempts."""
+  $aisrf_injection = execute aisrf_check_injection(text=$user_message)
+  if $aisrf_injection["blocked"]
+    $aisrf_reason = $aisrf_injection["reason"]
+    if $config.enable_rails_exceptions
+      create event AISRFInjectionRailException(message=$aisrf_reason)
+    else
+      bot refuse to respond
+    stop
+
+define subflow aisrf output check
+  """Blocks responses that leak a gateway canary token or credential material."""
+  $aisrf_output = execute aisrf_check_output(text=$bot_message)
+  if $aisrf_output["blocked"]
+    $aisrf_reason = $aisrf_output["reason"]
+    if $config.enable_rails_exceptions
+      create event AISRFOutputRailException(message=$aisrf_reason)
+    else
+      bot refuse to respond
+    stop

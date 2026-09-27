@@ -1,23 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 478 128" width="478" height="128" role="img" aria-label="Airt, AI Security &amp; Research Framework (reversed)">
-  <title>Airt horizontal logo</title>
-  <!-- Mark, 96 px tall -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 478 128" width="478" height="128" role="img" aria-label="AISRF, AI Security &amp; Research Framework (reversed)">
+  <title>AISRF horizontal logo</title>
+  <!-- Mark, 96 px box -->
   <g transform="translate(16 16) scale(1.5)">
-    <rect x="5" y="5" width="54" height="54" rx="13" fill="none" stroke="#FFFFFF" stroke-width="5"/>
-    <g fill="#FFFFFF">
-      <polygon points="18,6 22,6 22,12 20,16 18,12"/>
-      <polygon points="30,6 34,6 34,12 32,16 30,12"/>
-      <polygon points="42,6 46,6 46,12 44,16 42,12"/>
-    </g>
-    <g transform="translate(32 37) rotate(45)">
-      <polygon points="0,-20 -8.5,0 8.5,0" fill="#22D3EE"/>
-      <polygon points="0,20 -8.5,0 8.5,0" fill="#F59E0B"/>
-    </g>
-    <circle cx="32" cy="37" r="5.8" fill="#0B1220"/>
-    <path d="M29 37.2 L31.3 39.5 L35.2 35.1" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- The beam: a request in flight, with a human-shaped notch cut out of it -->
+    <path fill="#FFFFFF" fill-rule="evenodd" d="M9 15 H55 A4 4 0 0 1 59 19 V45 A4 4 0 0 1 55 49 H9 A4 4 0 0 1 5 45 V19 A4 4 0 0 1 9 15 Z M21.5 49 V43 A10.5 10.5 0 0 1 42.5 43 V49 Z"/>
+    <!-- The human standing in the beam -->
+    <circle cx="32" cy="25" r="5.4" fill="#F59E0B"/>
   </g>
-  <!-- Wordmark and tagline -->
+  <!-- Wordmark and descriptor -->
   <g font-family="Inter, 'Segoe UI', 'Noto Sans', Roboto, Helvetica, Arial, sans-serif">
-    <text x="134" y="74" font-size="64" font-weight="700" letter-spacing="1" fill="#FFFFFF">Airt</text>
+    <text x="134" y="74" font-size="64" font-weight="700" letter-spacing="2.5" fill="#FFFFFF">AISRF</text>
     <text x="137" y="100" font-size="13" font-weight="600" letter-spacing="2.4" fill="#FFFFFF" fill-opacity="0.72">AI SECURITY &amp; RESEARCH FRAMEWORK</text>
   </g>
 </svg>

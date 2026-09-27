@@ -67,18 +67,18 @@ jobs:
           uv pip install --python .venv/bin/python -e ".[dev]" pytest-cov
       - name: Ruff check (strict)
         continue-on-error: false
-        run: .venv/bin/ruff check --output-format=github airt tests examples
+        run: .venv/bin/ruff check --output-format=github aisrf tests examples
       - name: Ruff format check
         # TODO: flip to continue-on-error: false once the core is formatted (`make fmt`).
         continue-on-error: true
-        run: .venv/bin/ruff format --check airt tests examples
+        run: .venv/bin/ruff format --check aisrf tests examples
       - name: Pytest with coverage
         env:
-          AIRT_SECRET_KEY: ci-only-secret-key-not-for-production
-          AIRT_LOG_JSON_CONSOLE: "true"
+          AISRF_SECRET_KEY: ci-only-secret-key-not-for-production
+          AISRF_LOG_JSON_CONSOLE: "true"
         run: |
           .venv/bin/python -m pytest -q \
-            --cov=airt --cov-branch \
+            --cov=aisrf --cov-branch \
             --cov-report=term-missing:skip-covered \
             --cov-report=xml:coverage.xml \
             --junitxml=pytest-junit.xml
@@ -98,11 +98,11 @@ jobs:
           retention-days: 14
           if-no-files-found: warn
       - name: Import integrations without optional extras
-        run: .venv/bin/python -c "import airt.integrations.python_sdk, airt.integrations.mitm_addon"
+        run: .venv/bin/python -c "import aisrf.integrations.python_sdk, aisrf.integrations.mitm_addon"
       - name: CLI smoke test
         run: |
-          .venv/bin/airt version
-          .venv/bin/airt --help > /dev/null
+          .venv/bin/aisrf version
+          .venv/bin/aisrf --help > /dev/null
 
   node:
     name: node sdk self-test
@@ -132,10 +132,10 @@ jobs:
           context: .
           push: false
           load: true
-          tags: airt:ci
+          tags: aisrf:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Smoke test the image
         run: |
-          docker run --rm airt:ci version
-          docker run --rm -e AIRT_SECRET_KEY=ci-only-secret-key-not-for-production airt:ci init-db
+          docker run --rm aisrf:ci version
+          docker run --rm -e AISRF_SECRET_KEY=ci-only-secret-key-not-for-production aisrf:ci init-db

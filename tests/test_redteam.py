@@ -1,4 +1,4 @@
-"""Tests for the AIRT red-team engine: corpus, mutators, evaluators, engine and API."""
+"""Tests for the AISRF red-team engine: corpus, mutators, evaluators, engine and API."""
 from __future__ import annotations
 
 import asyncio
@@ -9,27 +9,26 @@ from pathlib import Path
 
 import pytest
 
-# --- environment must be configured before importing airt ------------------------
-_TMPDIR = tempfile.mkdtemp(prefix="airt-redteam-test-")
+# --- environment must be configured before importing aisrf ------------------------
+_TMPDIR = tempfile.mkdtemp(prefix="aisrf-redteam-test-")
 _DB_PATH = Path(_TMPDIR) / "redteam_test.db"
-os.environ["AIRT_DATABASE_URL"] = f"sqlite+aiosqlite:///{_DB_PATH}"
-os.environ["AIRT_SECRET_KEY"] = "test-secret-key-0123456789abcdef"
-os.environ["AIRT_ADMIN_PASSWORD"] = "admin"
-os.environ["AIRT_DATA_DIR"] = str(Path(_TMPDIR) / "data")
-os.environ["AIRT_LOG_DIR"] = str(Path(_TMPDIR) / "logs")
+os.environ["AISRF_DATABASE_URL"] = f"sqlite+aiosqlite:///{_DB_PATH}"
+os.environ["AISRF_SECRET_KEY"] = "test-secret-key-0123456789abcdef"
+os.environ["AISRF_ADMIN_PASSWORD"] = "admin"
+os.environ["AISRF_DATA_DIR"] = str(Path(_TMPDIR) / "data")
+os.environ["AISRF_LOG_DIR"] = str(Path(_TMPDIR) / "logs")
 
 
-import httpx  # noqa: E402
-from httpx import ASGITransport  # noqa: E402
+import httpx
+from httpx import ASGITransport
 
-import airt.config as config  # noqa: E402
+import aisrf.config as config
 
 config.reset_settings_cache()
 
-from airt.main import create_app  # noqa: E402
-from airt.redteam import corpus as corpus_mod  # noqa: E402
-from airt.redteam import evaluators, mutators  # noqa: E402
-
+from aisrf.main import create_app
+from aisrf.redteam import corpus as corpus_mod
+from aisrf.redteam import evaluators, mutators
 
 # --- fake upstream: OpenAI-style chat completions --------------------------------
 LEAKY_HOST = "upstream.test"  # echoes canaries back
@@ -106,8 +105,8 @@ def test_mutators_transform_text() -> None:
 
 
 def test_evaluator_verdicts() -> None:
-    from airt.gateway.pipeline import SubmitResult
-    from airt.models import TicketStatus
+    from aisrf.gateway.pipeline import SubmitResult
+    from aisrf.models import TicketStatus
 
     probe = corpus_mod.get_probe("pi-direct-001")
     # success indicator present -> VULNERABLE
@@ -150,7 +149,7 @@ def test_evaluator_verdicts() -> None:
 @pytest.fixture
 async def app_client():
     config.reset_settings_cache()
-    import airt.db as db
+    import aisrf.db as db
 
     app = create_app()
     async with app.router.lifespan_context(app):
@@ -167,7 +166,7 @@ async def app_client():
     await db.dispose_db()
 
 
-import uuid as _uuid  # noqa: E402
+import uuid as _uuid
 
 
 async def _create_agent(client: httpx.AsyncClient, host: str = LEAKY_HOST) -> str:
@@ -391,7 +390,7 @@ async def test_group_runs_two_targets_concurrently_and_compares(app_client) -> N
         assert cmp["matrix"][cat][leaky_id]["vulnerable"] > 0
     # matrix has every campaign under every category
     assert "system_prompt_extraction" in cmp["matrix"]
-    for cat, cells in cmp["matrix"].items():
+    for _cat, cells in cmp["matrix"].items():
         assert set(cells) == set(ids)
         assert all({"vulnerable", "total", "rate"} <= set(cell) for cell in cells.values())
     assert cmp["matrix"]["system_prompt_extraction"][leaky_id]["rate"] > cmp["matrix"]["system_prompt_extraction"][strict_id]["rate"]

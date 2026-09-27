@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head">
+  <h1>Code review</h1>
+  <span class="hint">static analysis of LLM application source code: prompt injection, agent and tool abuse, output handling, model supply chain, RAG poisoning</span>
+  <span class="spacer"></span>
+  <button class="btn primary" id="new-run-btn">New run</button>
+</div>
+<div class="card hidden" id="create-card">
+  <div class="card-head"><h2>New review run</h2>
+    <div class="tabs" style="margin:0;border:none" id="source-tabs">
+      <button type="button" class="active" data-source="git">Git repository</button>
+      <button type="button" data-source="url">Archive URL</button>
+      <button type="button" data-source="zip">Upload archive</button>
+      <button type="button" data-source="path">Local path</button>
+      <button type="button" data-source="snippet">Paste snippet</button>
+    </div>
+    <span class="grow"></span><button class="btn ghost sm" id="cancel-create">Cancel</button></div>
+  <form id="run-form" class="form-grid" autocomplete="off">
+    <label class="field span-2">Name<input type="text" name="name" placeholder="optional, defaults to the source"></label>
+    <label class="field span-2 src src-git">Repository URL *<input type="text" name="git_url" placeholder="https://github.com/org/repo.git"></label>
+    <label class="field src src-git">Branch, tag or commit<input type="text" name="ref" placeholder="default branch"></label>
+    <label class="field src src-git">Access token<input type="password" name="token" placeholder="used for this clone only, never stored"></label>
+    <label class="field src src-git">Saved credential<select name="credential_id" id="credential-select"><option value="">none</option></select></label>
+    <label class="field span-2 src src-url hidden">Archive URL *<input type="text" name="archive_url" placeholder="https://example.com/app.zip or .tar.gz"></label>
+    <label class="field src src-url hidden">Bearer token<input type="password" name="url_token" placeholder="optional"></label>
+    <label class="field span-2 src src-zip hidden">Archive file *<input type="file" name="file" accept=".zip,.tar,.gz,.tgz,.bz2,.tbz2,.xz,.txz"></label>
+    <label class="field span-2 src src-path hidden">Directory on the server *<input type="text" name="path" placeholder="/var/lib/aisrf/checkouts/app"><span class="hint">administrators only; the directory must sit under the data directory or the codereview path allowlist</span></label>
+    <label class="field src src-snippet hidden">Language<select name="language"><option value="python">Python</option><option value="javascript">JavaScript</option><option value="typescript">TypeScript</option><option value="java">Java</option><option value="go">Go</option><option value="csharp">C#</option><option value="ruby">Ruby</option><option value="php">PHP</option><option value="yaml">YAML</option><option value="dockerfile">Dockerfile</option><option value="prompt">Prompt text</option></select></label>
+    <label class="field span-2 src src-snippet hidden">Code *<textarea name="code" rows="10" spellcheck="false" placeholder="paste the code to review"></textarea></label>
+    <div class="field span-2">
+      <div class="flex between"><span>Rule packs (none selected = all)</span><span class="flex"><button type="button" class="btn xs" id="packs-all">All</button><button type="button" class="btn xs" id="packs-none">None</button></span></div>
+      <div id="pack-checks" class="chips"></div>
+    </div>
+    <div class="field span-2"><span>Engines</span><div id="engine-checks" class="chips"></div></div>
+    <label class="field">Include globs<input type="text" name="include" placeholder="src/**, *.py (comma separated)"></label>
+    <label class="field">Exclude globs<input type="text" name="exclude" placeholder="tests/**, docs/**"></label>
+    <div class="span-2 flex"><button type="submit" class="btn primary" id="run-submit">Start review</button><span class="hint" id="run-summary"></span></div>
+  </form>
+</div>
+<div class="card pad-0 mt">
+  <div class="card-head">
+    <h2>Runs</h2>
+    <select id="runs-status"><option value="">All statuses</option><option>CREATED</option><option>FETCHING</option><option>ANALYZING</option><option>COMPLETED</option><option>FAILED</option><option>CANCELLED</option></select>
+    <span class="hint" id="runs-count"></span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Name</th><th>Source</th><th>Status</th><th>Progress</th><th>Files</th><th>Findings</th><th>Risk</th><th>Created</th><th>By</th><th></th></tr></thead>
+      <tbody id="run-rows"></tbody>
+    </table>
+  </div>
+  <div class="flex" id="runs-pager" style="padding:10px 16px"></div>
+</div>
+<div class="card mt hidden" id="credentials-card">
+  <div class="card-head"><h2>Saved credentials</h2><span class="hint">tokens are encrypted at rest and only ever passed to git through an askpass helper</span></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Label</th><th>Provider</th><th>Username</th><th>Created</th><th>By</th><th></th></tr></thead>
+      <tbody id="credential-rows"></tbody>
+    </table>
+  </div>
+  <form id="credential-form" class="form-grid mt" autocomplete="off">
+    <label class="field">Label *<input type="text" name="label" required maxlength="80"></label>
+    <label class="field">Provider<select name="provider"><option value="github">GitHub</option><option value="gitlab">GitLab</option><option value="bitbucket">Bitbucket</option><option value="azure">Azure DevOps</option><option value="generic">Generic</option></select></label>
+    <label class="field">Username<input type="text" name="username" placeholder="optional"></label>
+    <label class="field">Token *<input type="password" name="token" required></label>
+    <div class="span-2 flex"><button type="submit" class="btn sm">Save credential</button></div>
+  </form>
+</div>
+<div class="card mt">
+  <div class="card-head">
+    <h2>Rule catalogue</h2>
+    <select id="cat-pack"><option value="">All packs</option></select>
+    <select id="cat-severity"><option value="">Any severity</option><option>CRITICAL</option><option>HIGH</option><option>MEDIUM</option><option>LOW</option><option>INFO</option></select>
+    <input type="search" id="cat-search" placeholder="Search rules">
+    <span class="hint" id="cat-count"></span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th></th><th>ID</th><th>Pack</th><th>Severity</th><th>Title</th><th>OWASP</th><th>CWE</th><th>Engines</th></tr></thead>
+      <tbody id="rule-rows"></tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/codereview.js"></script>{% endblock %}

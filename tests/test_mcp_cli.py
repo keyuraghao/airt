@@ -14,26 +14,26 @@ from typing import Any
 import httpx
 import pytest
 
-_TMP = Path(tempfile.mkdtemp(prefix="airt-test-"))
+_TMP = Path(tempfile.mkdtemp(prefix="aisrf-test-"))
 # setdefault so that this module and tests/conftest.py agree whichever is imported first
-os.environ.setdefault("AIRT_DATABASE_URL", f"sqlite+aiosqlite:///{_TMP / 'airt.db'}")
-os.environ.setdefault("AIRT_ADMIN_API_TOKEN", "test-token")
-os.environ.setdefault("AIRT_DATA_DIR", str(_TMP / "data"))
-os.environ.setdefault("AIRT_LOG_DIR", str(_TMP / "logs"))
-os.environ.setdefault("AIRT_LOG_LEVEL", "WARNING")
-ADMIN_TOKEN = os.environ["AIRT_ADMIN_API_TOKEN"]
+os.environ.setdefault("AISRF_DATABASE_URL", f"sqlite+aiosqlite:///{_TMP / 'aisrf.db'}")
+os.environ.setdefault("AISRF_ADMIN_API_TOKEN", "test-token")
+os.environ.setdefault("AISRF_DATA_DIR", str(_TMP / "data"))
+os.environ.setdefault("AISRF_LOG_DIR", str(_TMP / "logs"))
+os.environ.setdefault("AISRF_LOG_LEVEL", "WARNING")
+ADMIN_TOKEN = os.environ["AISRF_ADMIN_API_TOKEN"]
 
-import airt.config
+import aisrf.config
 
-airt.config.reset_settings_cache()
+aisrf.config.reset_settings_cache()
 
 
 def _install_stand_ins() -> None:
     """Other builders create these modules in parallel; provide minimal stand-ins only when they are missing."""
     from fastapi import APIRouter, Response
 
-    if importlib.util.find_spec("airt.redteam.router") is None:
-        mod = types.ModuleType("airt.redteam.router")
+    if importlib.util.find_spec("aisrf.redteam.router") is None:
+        mod = types.ModuleType("aisrf.redteam.router")
         router = APIRouter(prefix="/api/redteam")
 
         @router.get("/corpus")
@@ -41,18 +41,18 @@ def _install_stand_ins() -> None:
             return {"categories": [], "techniques": [], "probes": 0}
 
         mod.router = router  # type: ignore[attr-defined]
-        sys.modules["airt.redteam.router"] = mod
-    if importlib.util.find_spec("airt.redteam.engine") is None:
-        mod = types.ModuleType("airt.redteam.engine")
+        sys.modules["aisrf.redteam.router"] = mod
+    if importlib.util.find_spec("aisrf.redteam.engine") is None:
+        mod = types.ModuleType("aisrf.redteam.engine")
 
         class _Runner:
             async def shutdown(self) -> None:
                 return None
 
         mod.campaign_runner = _Runner()  # type: ignore[attr-defined]
-        sys.modules["airt.redteam.engine"] = mod
-    if importlib.util.find_spec("airt.reports.router") is None:
-        mod = types.ModuleType("airt.reports.router")
+        sys.modules["aisrf.redteam.engine"] = mod
+    if importlib.util.find_spec("aisrf.reports.router") is None:
+        mod = types.ModuleType("aisrf.reports.router")
         router = APIRouter(prefix="/api/reports")
 
         @router.get("")
@@ -65,18 +65,18 @@ def _install_stand_ins() -> None:
             return Response(body, media_type="application/json" if format == "json" else "text/plain")
 
         mod.router = router  # type: ignore[attr-defined]
-        sys.modules["airt.reports.router"] = mod
-    if importlib.util.find_spec("airt.dashboard.router") is None:
-        mod = types.ModuleType("airt.dashboard.router")
+        sys.modules["aisrf.reports.router"] = mod
+    if importlib.util.find_spec("aisrf.dashboard.router") is None:
+        mod = types.ModuleType("aisrf.dashboard.router")
         mod.mount_dashboard = lambda app: None  # type: ignore[attr-defined]
-        sys.modules["airt.dashboard.router"] = mod
+        sys.modules["aisrf.dashboard.router"] = mod
 
 
 _install_stand_ins()
 
-from airt import __version__
-from airt.main import create_app
-from airt.mcp_server import build_server
+from aisrf import __version__
+from aisrf.main import create_app
+from aisrf.mcp_server import build_server
 
 INIT_BODY = {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2025-06-18", "capabilities": {}, "clientInfo": {"name": "pytest", "version": "0"}}}
 MCP_HEADERS = {"Accept": "application/json, text/event-stream", "Content-Type": "application/json"}
@@ -84,9 +84,9 @@ MCP_HEADERS = {"Accept": "application/json, text/event-stream", "Content-Type": 
 
 @pytest.fixture
 async def app() -> AsyncIterator[Any]:
-    from airt import db
+    from aisrf import db
 
-    airt.config.reset_settings_cache()
+    aisrf.config.reset_settings_cache()
     await db.dispose_db()
     application = create_app()
     async with application.router.lifespan_context(application):
@@ -95,18 +95,21 @@ async def app() -> AsyncIterator[Any]:
 
 @pytest.fixture
 async def client(app: Any) -> AsyncIterator[httpx.AsyncClient]:
-    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://airt.internal") as c:
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://aisrf.internal") as c:
         yield c
 
 
 def _payload(result: Any) -> Any:
+    if isinstance(result, tuple):  # mcp 1.x returns (content, structured_content)
+        content, structured = result
+        return structured if structured is not None else json.loads(content[0].text)
     if result.structured_content is not None:
         return result.structured_content
     return json.loads(result.content[0].text)
 
 
 async def test_tools_in_process(app: Any, client: httpx.AsyncClient) -> None:
-    server = build_server("http://airt.internal", ADMIN_TOKEN, transport_client=client)
+    server = build_server("http://aisrf.internal", ADMIN_TOKEN, transport_client=client)
     names = {t.name for t in await server.list_tools()}
     assert {"list_tickets", "approve_ticket", "create_agent", "create_campaign", "generate_report", "verify_audit", "health", "metrics"} <= names
     stats = _payload(await server.call_tool("ticket_stats", {}))
@@ -114,7 +117,7 @@ async def test_tools_in_process(app: Any, client: httpx.AsyncClient) -> None:
     tickets = _payload(await server.call_tool("list_tickets", {"status": "PENDING", "limit": 5}))
     assert isinstance(tickets, dict) and "items" in tickets and tickets["total"] >= 0
     created = _payload(await server.call_tool("create_agent", {"name": "mcp-agent", "upstream_provider": "anthropic", "require_approval": False}))
-    assert created.get("api_key", "").startswith("airt_"), created
+    assert created.get("api_key", "").startswith("aisrf_"), created
     assert created["upstream_provider"] == "anthropic"
     fetched = _payload(await server.call_tool("get_agent", {"agent_id": created["id"]}))
     assert fetched["name"] == "mcp-agent" and "stats" in fetched
@@ -132,17 +135,17 @@ async def test_tools_in_process(app: Any, client: httpx.AsyncClient) -> None:
     assert report["bytes"] > 0 and Path(report["path"]).exists() and report["media_type"] == "application/json"
     corpus = _payload(await server.call_tool("list_corpus", {}))
     assert isinstance(corpus, dict)
-    bad_token = build_server("http://airt.internal", "wrong", transport_client=client)
+    bad_token = build_server("http://aisrf.internal", "wrong", transport_client=client)
     denied = _payload(await bad_token.call_tool("ticket_stats", {}))
     assert denied["status"] == 401 and "error" in denied
 
 
 async def test_resources_and_prompt(app: Any, client: httpx.AsyncClient) -> None:
-    server = build_server("http://airt.internal", ADMIN_TOKEN, transport_client=client)
-    assert {str(r.uri) for r in await server.list_resources()} == {"airt://tickets/pending", "airt://stats"}
-    pending = json.loads(next(iter(await server.read_resource("airt://tickets/pending"))).content)
+    server = build_server("http://aisrf.internal", ADMIN_TOKEN, transport_client=client)
+    assert {str(r.uri) for r in await server.list_resources()} == {"aisrf://tickets/pending", "aisrf://stats"}
+    pending = json.loads(next(iter(await server.read_resource("aisrf://tickets/pending"))).content)
     assert "items" in pending
-    stats = json.loads(next(iter(await server.read_resource("airt://stats"))).content)
+    stats = json.loads(next(iter(await server.read_resource("aisrf://stats"))).content)
     assert "pending" in stats
     prompt = await server.get_prompt("review_ticket", {"ticket_id": "tkt_missing"})
     text = prompt.messages[0].content.text
@@ -154,7 +157,7 @@ async def test_mcp_endpoint_requires_token(app: Any, client: httpx.AsyncClient) 
     assert (await client.post("/mcp", json=INIT_BODY, headers=MCP_HEADERS)).status_code == 401
     wrong = await client.post("/mcp", json=INIT_BODY, headers={**MCP_HEADERS, "Authorization": "Bearer nope"})
     assert wrong.status_code == 401 and "error" in wrong.json()
-    settings = airt.config.get_settings()
+    settings = aisrf.config.get_settings()
     settings.admin_api_token = None
     try:
         disabled = await client.post("/mcp", json=INIT_BODY, headers={**MCP_HEADERS, "Authorization": f"Bearer {ADMIN_TOKEN}"})
@@ -168,7 +171,7 @@ async def test_mcp_endpoint_handshake(app: Any, client: httpx.AsyncClient) -> No
     response = await client.post("/mcp", json=INIT_BODY, headers=headers)
     assert response.status_code == 200, response.text
     body = response.json()
-    assert body["id"] == 1 and body["result"]["serverInfo"]["name"] == "airt"
+    assert body["id"] == 1 and body["result"]["serverInfo"]["name"] == "aisrf"
     assert "protocolVersion" in body["result"]
     listed = await client.post("/mcp", json={"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}}, headers=headers)
     assert listed.status_code == 200
@@ -182,14 +185,14 @@ async def test_mcp_endpoint_handshake(app: Any, client: httpx.AsyncClient) -> No
 def test_cli_version_and_agent_create() -> None:
     from typer.testing import CliRunner
 
-    from airt.cli import app as cli
+    from aisrf.cli import app as cli
 
     runner = CliRunner(env={"COLUMNS": "200"})
     result = runner.invoke(cli, ["version"])
     assert result.exit_code == 0 and __version__ in result.output
     result = runner.invoke(cli, ["agent", "create", "cli-agent", "--provider", "openai", "--no-approval", "--auto-deny-at", "80", "--tag", "ci"])
     assert result.exit_code == 0, result.output
-    assert "API key: airt_" in result.output
+    assert "API key: aisrf_" in result.output
     result = runner.invoke(cli, ["agent", "list"])
     assert result.exit_code == 0 and "cli-agent" in result.output
     result = runner.invoke(cli, ["agent", "create", "cli-agent"])

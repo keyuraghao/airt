@@ -1,4 +1,4 @@
-# Contributing to AIRT
+# Contributing to AISRF
 
 Thanks for helping make LLM traffic reviewable. This page covers the workflow; the architecture is
 described in `docs/ARCHITECTURE.md`.
@@ -11,7 +11,7 @@ cd AI_RedTeam
 uv venv .venv --python 3.12            # or: python3 -m venv .venv
 uv pip install --python .venv/bin/python -e ".[dev,postgres,mitm]"
 cp .env.example .env
-.venv/bin/airt serve                     # http://localhost:8080, admin / admin
+.venv/bin/aisrf serve                     # http://localhost:8080, admin / admin
 ```
 
 `make dev`, `make run`, `make test`, `make lint` wrap the same commands. Node 18+ is needed only
@@ -21,15 +21,15 @@ for `sdk/node` (`node sdk/node/test.js`).
 
 | Path | Purpose |
 | --- | --- |
-| `airt/gateway/` | Interception: router, parser (request normalisation), policy engine, forwarder, hold registry |
-| `airt/analysis/` | Analyzer framework and built-in analyzers (`analyzers/`) |
-| `airt/tickets/`, `airt/agents/`, `airt/audit/` | Ticket lifecycle, agent registry, hash-chained audit log |
-| `airt/redteam/` | Probe corpus (YAML), mutators, campaign engine, REST API |
-| `airt/reports/` | Format-agnostic report model, builders, renderers |
-| `airt/dashboard/` | Server rendered reviewer UI |
-| `airt/mcp_server.py`, `airt/cli.py` | MCP server and Typer CLI |
-| `airt/integrations/` | Client side helpers (Python SDK patching, mitmproxy addon) |
-| `sdk/node/` | `airt-intercept` npm package |
+| `aisrf/gateway/` | Interception: router, parser (request normalisation), policy engine, forwarder, hold registry |
+| `aisrf/analysis/` | Analyzer framework and built-in analyzers (`analyzers/`) |
+| `aisrf/tickets/`, `aisrf/agents/`, `aisrf/audit/` | Ticket lifecycle, agent registry, hash-chained audit log |
+| `aisrf/redteam/` | Probe corpus (YAML), mutators, campaign engine, REST API |
+| `aisrf/reports/` | Format-agnostic report model, builders, renderers |
+| `aisrf/dashboard/` | Server rendered reviewer UI |
+| `aisrf/mcp_server.py`, `aisrf/cli.py` | MCP server and Typer CLI |
+| `aisrf/integrations/` | Client side helpers (Python SDK patching, mitmproxy addon) |
+| `sdk/node/` | `aisrf-intercept` npm package |
 | `docs/`, `examples/` | Documentation and runnable examples |
 | `tests/` | pytest suite (`asyncio_mode = auto`) |
 
@@ -40,25 +40,25 @@ for `sdk/node` (`node sdk/node/test.js`).
 * No em dash characters anywhere (code, comments, docs, strings, config); use a hyphen or a comma.
   `scripts/check_style.py` (part of `make lint` and CI) enforces this and rejects merge markers.
 * No unnecessary blank lines; keep modules compact and readable.
-* Never log or store raw secrets. Use `airt.security.redact_headers` for headers and the Fernet
+* Never log or store raw secrets. Use `aisrf.security.redact_headers` for headers and the Fernet
   helpers for upstream credentials.
 * An analyzer must never raise into the gateway: the runner already isolates exceptions, but keep
-  analyzers pure and bounded (see `MAX_SCAN_CHARS` in `airt/analysis/analyzers/common.py`).
-* Every privileged action goes through `airt.audit.service.record` so the hash chain stays complete.
+  analyzers pure and bounded (see `MAX_SCAN_CHARS` in `aisrf/analysis/analyzers/common.py`).
+* Every privileged action goes through `aisrf.audit.service.record` so the hash chain stays complete.
 * Do not edit `pyproject.toml` dependencies without discussing it in the PR; keep the core free of
   heavyweight runtime dependencies.
 
 ## Adding an analyzer
 
-1. Create `airt/analysis/analyzers/<name>.py` with an object exposing `name`, `description` and
+1. Create `aisrf/analysis/analyzers/<name>.py` with an object exposing `name`, `description` and
    `analyze(normalized, context) -> list[Finding]` (sync or async).
-2. Register it in `airt/analysis/analyzers/__init__.py` with `register(analyzer)` or
+2. Register it in `aisrf/analysis/analyzers/__init__.py` with `register(analyzer)` or
    `register(analyzer, response=True)` for response analyzers.
 3. Add tests with both a positive and a benign sample; false positives cost reviewer time.
 
 ## Adding red-team probes
 
-Probes live in `airt/redteam/corpus/*.yaml`. Each probe needs a unique `id`, a `category`, a
+Probes live in `aisrf/redteam/corpus/*.yaml`. Each probe needs a unique `id`, a `category`, a
 `technique`, a `severity`, the `messages` (or `prompt`) and the success criteria used by the verdict
 logic. Keep benign controls in `benign_control` so campaigns can measure over-blocking.
 

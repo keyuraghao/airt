@@ -48,9 +48,9 @@ async def test_request_is_held_until_approved_then_forwarded(client, admin_heade
     body = resp.json()
     assert body["choices"][0]["message"]["content"] == "echo: What is the capital of France?"
     assert body["seen_auth"] == "Bearer sk-upstream-secret", (
-        "gateway must swap the AIRT key for the upstream key"
+        "gateway must swap the AISRF key for the upstream key"
     )
-    assert resp.headers["x-airt-ticket"] == pending["id"]
+    assert resp.headers["x-aisrf-ticket"] == pending["id"]
     final = (await client.get(f"/api/tickets/{pending['id']}", headers=admin_headers)).json()
     assert final["status"] == "COMPLETED"
     assert final["decided_by"] == "api-token"
@@ -84,7 +84,7 @@ async def test_denied_request_never_reaches_upstream(client, admin_headers, agen
 
 
 async def test_timeout_expires_ticket(client, admin_headers, agent, monkeypatch):
-    from airt import config
+    from aisrf import config
 
     monkeypatch.setattr(config.get_settings(), "approval_timeout_seconds", 1)
     key = agent["api_key"]
@@ -118,7 +118,7 @@ async def test_policy_auto_approve_when_not_required(client, admin_headers, agen
         "/v1/chat/completions", json=CHAT, headers={"Authorization": f"Bearer {agent['api_key']}"}
     )
     assert resp.status_code == 200
-    tid = resp.headers["x-airt-ticket"]
+    tid = resp.headers["x-aisrf-ticket"]
     t = (await client.get(f"/api/tickets/{tid}", headers=admin_headers)).json()
     assert t["status"] == "COMPLETED"
     assert t["policy_decision"]["action"] == "approve"
@@ -148,7 +148,7 @@ async def test_allowed_paths_and_models(client, admin_headers, agent):
 
 
 async def test_async_mode_returns_ticket_and_polls(client, admin_headers, agent):
-    headers = {"Authorization": f"Bearer {agent['api_key']}", "X-AIRT-Async": "1"}
+    headers = {"Authorization": f"Bearer {agent['api_key']}", "X-AISRF-Async": "1"}
     resp = await client.post("/v1/chat/completions", json=CHAT, headers=headers)
     assert resp.status_code == 202
     tid = resp.json()["ticket_id"]
@@ -173,7 +173,7 @@ async def test_streaming_response_is_relayed_and_captured(client, admin_headers,
         assert resp.status_code == 200
         assert resp.headers["content-type"].startswith("text/event-stream")
         raw = b"".join([chunk async for chunk in resp.aiter_bytes()])
-        tid = resp.headers["x-airt-ticket"]
+        tid = resp.headers["x-aisrf-ticket"]
     assert b"[DONE]" in raw
     for _ in range(50):
         t = (await client.get(f"/api/tickets/{tid}", headers=admin_headers)).json()
@@ -187,10 +187,10 @@ async def test_streaming_response_is_relayed_and_captured(client, admin_headers,
 
 async def test_generic_proxy_path_and_custom_headers(client, admin_headers, agent):
     await client.patch(f"/api/agents/{agent['id']}", headers=admin_headers, json={"require_approval": False})
-    resp = await client.get("/proxy/v1/models", headers={"X-AIRT-Key": agent["api_key"]})
+    resp = await client.get("/proxy/v1/models", headers={"X-AISRF-Key": agent["api_key"]})
     assert resp.status_code == 200
     assert resp.json()["data"][0]["id"] == "mock-model"
-    tid = resp.headers["x-airt-ticket"]
+    tid = resp.headers["x-aisrf-ticket"]
     t = (await client.get(f"/api/tickets/{tid}", headers=admin_headers)).json()
     assert t["method"] == "GET"
     assert t["path"] == "v1/models"
@@ -203,7 +203,7 @@ async def test_anthropic_style_request_normalizes(client, admin_headers, agent):
         "max_tokens": 10,
         "messages": [{"role": "user", "content": [{"type": "text", "text": "Say hi"}]}],
     }
-    headers = {"x-api-key": agent["api_key"], "X-AIRT-Async": "1", "anthropic-version": "2023-06-01"}
+    headers = {"x-api-key": agent["api_key"], "X-AISRF-Async": "1", "anthropic-version": "2023-06-01"}
     resp = await client.post("/v1/messages", json=body, headers=headers)
     assert resp.status_code == 202
     t = (await client.get(f"/api/tickets/{resp.json()['ticket_id']}", headers=admin_headers)).json()
@@ -213,7 +213,7 @@ async def test_anthropic_style_request_normalizes(client, admin_headers, agent):
 
 
 async def test_bulk_decisions_and_stats(client, admin_headers, agent):
-    headers = {"Authorization": f"Bearer {agent['api_key']}", "X-AIRT-Async": "1"}
+    headers = {"Authorization": f"Bearer {agent['api_key']}", "X-AISRF-Async": "1"}
     ids = []
     for _ in range(3):
         r = await client.post("/v1/chat/completions", json=CHAT, headers=headers)
@@ -228,14 +228,14 @@ async def test_bulk_decisions_and_stats(client, admin_headers, agent):
 
 
 async def test_agent_logs_and_events_are_recorded(client, admin_headers, agent):
-    headers = {"Authorization": f"Bearer {agent['api_key']}", "X-AIRT-Async": "1"}
+    headers = {"Authorization": f"Bearer {agent['api_key']}", "X-AISRF-Async": "1"}
     r = await client.post("/v1/chat/completions", json=CHAT, headers=headers)
     tid = r.json()["ticket_id"]
     await client.post(f"/api/tickets/{tid}/deny", headers=admin_headers, json={"note": "x"})
     events = (await client.get(f"/api/agents/{agent['id']}/events", headers=admin_headers)).json()
     names = {e["event"] for e in events}
     assert {"request.intercepted", "request.analyzed", "policy.review", "decision.denied"} <= names
-    from airt.config import get_settings
+    from aisrf.config import get_settings
 
     log_files = list((get_settings().log_dir / "agents").glob("*.jsonl"))
     assert log_files, "per-agent log file must exist"
@@ -244,7 +244,7 @@ async def test_agent_logs_and_events_are_recorded(client, admin_headers, agent):
 
 
 async def test_audit_chain_is_verifiable(client, admin_headers, agent):
-    headers = {"Authorization": f"Bearer {agent['api_key']}", "X-AIRT-Async": "1"}
+    headers = {"Authorization": f"Bearer {agent['api_key']}", "X-AISRF-Async": "1"}
     r = await client.post("/v1/chat/completions", json=CHAT, headers=headers)
     await client.post(f"/api/tickets/{r.json()['ticket_id']}/approve", headers=admin_headers, json={})
     audit = (await client.get("/api/audit", headers=admin_headers)).json()
@@ -292,7 +292,7 @@ async def test_metrics_and_health(client):
     assert (await client.get("/healthz")).json()["status"] == "ok"
     assert (await client.get("/readyz")).status_code == 200
     m = await client.get("/metrics")
-    assert m.status_code == 200 and "airt_" in m.text
+    assert m.status_code == 200 and "aisrf_" in m.text
 
 
 async def test_key_rotation_invalidates_old_key(client, admin_headers, agent):
@@ -300,23 +300,23 @@ async def test_key_rotation_invalidates_old_key(client, admin_headers, agent):
     r = await client.post(f"/api/agents/{agent['id']}/rotate-key", headers=admin_headers)
     new = r.json()["api_key"]
     assert new != old
-    h_old = {"Authorization": f"Bearer {old}", "X-AIRT-Async": "1"}
-    h_new = {"Authorization": f"Bearer {new}", "X-AIRT-Async": "1"}
+    h_old = {"Authorization": f"Bearer {old}", "X-AISRF-Async": "1"}
+    h_new = {"Authorization": f"Bearer {new}", "X-AISRF-Async": "1"}
     assert (await client.post("/v1/chat/completions", json=CHAT, headers=h_old)).status_code == 401
     assert (await client.post("/v1/chat/completions", json=CHAT, headers=h_new)).status_code == 202
 
 
 async def test_scan_tokens_authenticate_until_revoked(client, admin_headers, agent, app):
-    from airt.agents import service as agents
-    from airt.db import get_sessionmaker
+    from aisrf.agents import service as agents
+    from aisrf.db import get_sessionmaker
 
     async with get_sessionmaker()() as s:
         _tok, raw = await agents.mint_scan_token(
             s, agent["id"], ttl_seconds=60, purpose="garak", campaign_id="cmp_test"
         )
         await s.commit()
-    assert raw.startswith("airt_scan_")
-    h = {"Authorization": f"Bearer {raw}", "X-AIRT-Async": "1"}
+    assert raw.startswith("aisrf_scan_")
+    h = {"Authorization": f"Bearer {raw}", "X-AISRF-Async": "1"}
     r = await client.post("/v1/chat/completions", json=CHAT, headers=h)
     assert r.status_code == 202
     t = (await client.get(f"/api/tickets/{r.json()['ticket_id']}", headers=admin_headers)).json()
@@ -328,7 +328,7 @@ async def test_scan_tokens_authenticate_until_revoked(client, admin_headers, age
 
 
 async def test_concurrent_tickets_get_unique_numbers(client, admin_headers, agent):
-    h = {"Authorization": f"Bearer {agent['api_key']}", "X-AIRT-Async": "1"}
+    h = {"Authorization": f"Bearer {agent['api_key']}", "X-AISRF-Async": "1"}
     responses = await asyncio.gather(*(client.post("/v1/chat/completions", json=CHAT, headers=h) for _ in range(25)))
     assert all(r.status_code == 202 for r in responses), [r.status_code for r in responses]
     ids = [r.json()["ticket_id"] for r in responses]

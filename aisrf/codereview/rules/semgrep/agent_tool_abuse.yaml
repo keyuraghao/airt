@@ -1,0 +1,339 @@
+# AISRF agent and tool abuse rules for semgrep. Sources: parameters of tool functions. Sinks: shell, code, SQL, files, network.
+rules:
+  - id: aisrf-at-tool-args-to-shell-py
+    mode: taint
+    languages: [python]
+    severity: ERROR
+    message: Tool arguments (chosen by the model) reach a shell command (AISRF-AT-001)
+    metadata:
+      aisrf_rule: AISRF-AT-001
+      pack: agent_tool_abuse
+      severity: CRITICAL
+      confidence: "0.8"
+      cwe: CWE-78
+      owasp: [LLM06, LLM05]
+      category: tool_abuse
+      taint: true
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern-inside: |
+                  @$DECO(...)
+                  def $F(..., $P, ...):
+                    ...
+              - pattern-inside: |
+                  @$DECO
+                  def $F(..., $P, ...):
+                    ...
+          - metavariable-regex:
+              metavariable: $DECO
+              regex: (?i).*(tool|kernel_function|mcp|function_tool|register).*
+          - focus-metavariable: $P
+    pattern-sanitizers:
+      - pattern: shlex.quote(...)
+    pattern-sinks:
+      - pattern: subprocess.run(...)
+      - pattern: subprocess.Popen(...)
+      - pattern: subprocess.call(...)
+      - pattern: subprocess.check_output(...)
+      - pattern: subprocess.check_call(...)
+      - pattern: subprocess.getoutput(...)
+      - pattern: os.system(...)
+      - pattern: os.popen(...)
+      - pattern: asyncio.create_subprocess_shell(...)
+  - id: aisrf-at-tool-args-to-eval-py
+    mode: taint
+    languages: [python]
+    severity: ERROR
+    message: Tool arguments (chosen by the model) are evaluated as code (AISRF-AT-002)
+    metadata:
+      aisrf_rule: AISRF-AT-002
+      pack: agent_tool_abuse
+      severity: CRITICAL
+      confidence: "0.8"
+      cwe: CWE-95
+      owasp: [LLM06, LLM05]
+      category: tool_abuse
+      taint: true
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern-inside: |
+                  @$DECO(...)
+                  def $F(..., $P, ...):
+                    ...
+              - pattern-inside: |
+                  @$DECO
+                  def $F(..., $P, ...):
+                    ...
+          - metavariable-regex:
+              metavariable: $DECO
+              regex: (?i).*(tool|kernel_function|mcp|function_tool|register).*
+          - focus-metavariable: $P
+    pattern-sinks:
+      - pattern: eval(...)
+      - pattern: exec(...)
+      - pattern: compile(...)
+      - pattern: $REPL.run(...)
+  - id: aisrf-at-tool-args-to-sql-py
+    mode: taint
+    languages: [python]
+    severity: ERROR
+    message: Tool arguments (chosen by the model) are formatted into a SQL statement (AISRF-AT-005)
+    metadata:
+      aisrf_rule: AISRF-AT-005
+      pack: agent_tool_abuse
+      severity: CRITICAL
+      confidence: "0.75"
+      cwe: CWE-89
+      owasp: [LLM06, LLM05]
+      category: tool_abuse
+      taint: true
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern-inside: |
+                  @$DECO(...)
+                  def $F(..., $P, ...):
+                    ...
+              - pattern-inside: |
+                  @$DECO
+                  def $F(..., $P, ...):
+                    ...
+          - metavariable-regex:
+              metavariable: $DECO
+              regex: (?i).*(tool|kernel_function|mcp|function_tool|register).*
+          - focus-metavariable: $P
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern-inside: $CUR.execute($Q, ...)
+              - pattern-inside: $CUR.executemany($Q, ...)
+              - pattern-inside: $DB.query($Q, ...)
+              - pattern-inside: $DB.raw($Q, ...)
+              - pattern-inside: text($Q)
+              - pattern-inside: $CONN.exec_driver_sql($Q, ...)
+          - pattern: $Q
+          - pattern-either:
+              - pattern: f"..."
+              - pattern: $T.format(...)
+              - pattern: $A + $B
+              - pattern: $A % $B
+              - pattern: $VAR
+  - id: aisrf-at-tool-args-to-file-py
+    mode: taint
+    languages: [python]
+    severity: WARNING
+    message: Tool arguments (chosen by the model) select a file path without containment (AISRF-AT-003)
+    metadata:
+      aisrf_rule: AISRF-AT-003
+      pack: agent_tool_abuse
+      severity: HIGH
+      confidence: "0.65"
+      cwe: CWE-22
+      owasp: [LLM06, LLM05]
+      category: tool_abuse
+      taint: true
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern-inside: |
+                  @$DECO(...)
+                  def $F(..., $P, ...):
+                    ...
+              - pattern-inside: |
+                  @$DECO
+                  def $F(..., $P, ...):
+                    ...
+          - metavariable-regex:
+              metavariable: $DECO
+              regex: (?i).*(tool|kernel_function|mcp|function_tool|register).*
+          - focus-metavariable: $P
+    pattern-sanitizers:
+      - pattern: os.path.realpath(...)
+      - pattern: $P.resolve()
+      - pattern: safe_join(...)
+      - pattern: secure_filename(...)
+      - pattern: os.path.basename(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern-inside: open($P, ...)
+              - pattern-inside: Path($P, ...)
+              - pattern-inside: os.remove($P)
+              - pattern-inside: os.unlink($P)
+              - pattern-inside: shutil.rmtree($P, ...)
+              - pattern-inside: send_file($P, ...)
+              - pattern-inside: os.listdir($P)
+          - pattern: $P
+  - id: aisrf-at-tool-args-to-http-py
+    mode: taint
+    languages: [python]
+    severity: WARNING
+    message: Tool arguments (chosen by the model) select an outbound URL without an allowlist (AISRF-AT-004)
+    metadata:
+      aisrf_rule: AISRF-AT-004
+      pack: agent_tool_abuse
+      severity: HIGH
+      confidence: "0.6"
+      cwe: CWE-918
+      owasp: [LLM06, LLM05]
+      category: tool_abuse
+      taint: true
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern-inside: |
+                  @$DECO(...)
+                  def $F(..., $P, ...):
+                    ...
+              - pattern-inside: |
+                  @$DECO
+                  def $F(..., $P, ...):
+                    ...
+          - metavariable-regex:
+              metavariable: $DECO
+              regex: (?i).*(tool|kernel_function|mcp|function_tool|register).*
+          - focus-metavariable: $P
+    pattern-sanitizers:
+      - pattern: validate_url(...)
+      - pattern: check_url(...)
+      - pattern: is_allowed_url(...)
+      - pattern: allowlisted(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern-inside: requests.$M($U, ...)
+              - pattern-inside: httpx.$M($U, ...)
+              - pattern-inside: urlopen($U, ...)
+              - pattern-inside: $SESSION.get($U, ...)
+              - pattern-inside: $SESSION.post($U, ...)
+          - pattern: $U
+  - id: aisrf-at-dangerous-framework-tools-py
+    languages: [python]
+    severity: ERROR
+    message: A framework component with code or shell execution is enabled (AISRF-AT-014)
+    metadata:
+      aisrf_rule: AISRF-AT-014
+      pack: agent_tool_abuse
+      severity: CRITICAL
+      confidence: "0.85"
+      cwe: CWE-94
+      owasp: [LLM06, LLM05]
+      category: tool_abuse
+    pattern-either:
+      - pattern: PythonREPLTool(...)
+      - pattern: PythonAstREPLTool(...)
+      - pattern: ShellTool(...)
+      - pattern: BashProcess(...)
+      - pattern: PALChain.from_math_prompt(...)
+      - pattern: LLMMathChain(...)
+      - pattern: LLMMathChain.from_llm(...)
+      - pattern: $F(..., allow_dangerous_code=True, ...)
+      - pattern: $F(..., allow_dangerous_requests=True, ...)
+      - pattern: load_tools([..., "terminal", ...], ...)
+      - pattern: load_tools([..., "python_repl", ...], ...)
+      - pattern: create_pandas_dataframe_agent(...)
+      - pattern: create_python_agent(...)
+      - pattern: LocalCommandLineCodeExecutor(...)
+      - pattern: LocalPythonExecutor(...)
+  - id: aisrf-at-dispatch-by-model-name-py
+    languages: [python]
+    severity: ERROR
+    message: The function to run is looked up dynamically from a model-supplied name (AISRF-AT-010)
+    metadata:
+      aisrf_rule: AISRF-AT-010
+      pack: agent_tool_abuse
+      severity: HIGH
+      confidence: "0.7"
+      cwe: CWE-470
+      owasp: [LLM06]
+      category: excessive_agency
+    patterns:
+      - pattern-either:
+          - pattern: globals()[$NAME](...)
+          - pattern: locals()[$NAME](...)
+          - pattern: vars()[$NAME](...)
+          - pattern: getattr($MOD, $NAME)(...)
+          - pattern: getattr($MOD, $NAME, ...)(...)
+      - pattern-not: getattr($MOD, "...")(...)
+      - pattern-not: getattr($MOD, "...", ...)(...)
+      - pattern-either:
+          - pattern-inside: |
+              for $CALL in $RESP.tool_calls:
+                ...
+          - pattern-inside: |
+              for $CALL in $RESP.choices[0].message.tool_calls:
+                ...
+          - pattern-inside: |
+              for $CALL in $CALLS:
+                ...
+          - pattern-inside: |
+              def $F(..., $NAME, ...):
+                ...
+  - id: aisrf-at-exec-runtime-command-js
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: A shell command built at runtime is executed; in an AI tool this is reachable through prompt injection (AISRF-AT-001)
+    metadata:
+      aisrf_rule: AISRF-AT-001
+      pack: agent_tool_abuse
+      severity: CRITICAL
+      confidence: "0.55"
+      cwe: CWE-78
+      owasp: [LLM06, LLM05]
+      category: tool_abuse
+    patterns:
+      - pattern-either:
+          - pattern: exec($CMD, ...)
+          - pattern: execSync($CMD, ...)
+          - pattern: $CP.exec($CMD, ...)
+          - pattern: $CP.execSync($CMD, ...)
+          - pattern: 'spawn($CMD, ..., {..., shell: true, ...})'
+          - pattern: 'spawnSync($CMD, ..., {..., shell: true, ...})'
+      - metavariable-pattern:
+          metavariable: $CMD
+          patterns:
+            - pattern-not: '"..."'
+  - id: aisrf-at-eval-runtime-js
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: Runtime data is evaluated as code; in an AI tool this is reachable through prompt injection (AISRF-AT-002)
+    metadata:
+      aisrf_rule: AISRF-AT-002
+      pack: agent_tool_abuse
+      severity: CRITICAL
+      confidence: "0.55"
+      cwe: CWE-95
+      owasp: [LLM06, LLM05]
+      category: tool_abuse
+    patterns:
+      - pattern-either:
+          - pattern: eval($X)
+          - pattern: new Function(..., $X)
+          - pattern: vm.runInNewContext($X, ...)
+          - pattern: vm.runInThisContext($X, ...)
+      - metavariable-pattern:
+          metavariable: $X
+          patterns:
+            - pattern-not: '"..."'
+  - id: aisrf-at-delegation-without-limits-py
+    languages: [python]
+    severity: WARNING
+    message: Agent delegation is enabled without a round or depth limit (AISRF-AT-018)
+    metadata:
+      aisrf_rule: AISRF-AT-018
+      pack: agent_tool_abuse
+      severity: MEDIUM
+      confidence: "0.6"
+      cwe: CWE-284
+      owasp: [LLM06]
+      category: excessive_agency
+    patterns:
+      - pattern-either:
+          - pattern: GroupChat(...)
+          - pattern: $X(..., allow_delegation=True, ...)
+          - pattern: create_supervisor(...)
+      - pattern-not: GroupChat(..., max_round=..., ...)
+      - pattern-not: $X(..., allow_delegation=True, ..., max_iter=..., ...)
+      - pattern-not: $X(..., max_iter=..., ..., allow_delegation=True, ...)

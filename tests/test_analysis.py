@@ -5,8 +5,8 @@ import re
 
 import pytest
 
-from airt.analysis import analyze_request, analyze_response
-from airt.analysis.analyzers import (
+from aisrf.analysis import analyze_request, analyze_response
+from aisrf.analysis.analyzers import (
     anomaly,
     data_exfil,
     harmful_content,
@@ -17,9 +17,9 @@ from airt.analysis.analyzers import (
     secrets,
     tool_abuse,
 )
-from airt.analysis.analyzers.common import mask_value, normalize_text
-from airt.analysis.analyzers.pii import card_ok, iban_ok, luhn_ok, scan_pii, ssn_ok
-from airt.analysis.analyzers.response_analyzers import (
+from aisrf.analysis.analyzers.common import mask_value, normalize_text
+from aisrf.analysis.analyzers.pii import card_ok, iban_ok, luhn_ok, scan_pii, ssn_ok
+from aisrf.analysis.analyzers.response_analyzers import (
     canary_leak,
     exfil_markers_in_response,
     harmful_compliance,
@@ -29,8 +29,8 @@ from airt.analysis.analyzers.response_analyzers import (
     secrets_leak,
     system_prompt_leak,
 )
-from airt.analysis.analyzers.secrets import scan_secrets
-from airt.analysis.base import Severity
+from aisrf.analysis.analyzers.secrets import scan_secrets
+from aisrf.analysis.base import Severity
 
 # valid test card (Luhn-valid Visa test number) and clearly fake-but-format-valid values
 VALID_CARD = "4111 1111 1111 1111"

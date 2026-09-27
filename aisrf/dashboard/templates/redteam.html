@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head">
+  <h1>Red team</h1>
+  <span class="hint">adversarial probe campaigns against a target model through an agent identity</span>
+  <span class="spacer"></span>
+  <button class="btn primary" id="new-campaign-btn">New campaign</button>
+</div>
+<div class="card pad-0">
+  <div class="card-head"><h2>Campaigns</h2><span class="hint" id="campaign-status"></span></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Name</th><th>Agent</th><th>Target</th><th>Status</th><th>Progress</th><th>Vulnerable</th><th>Created</th><th>By</th><th></th></tr></thead>
+      <tbody id="campaign-rows"></tbody>
+    </table>
+  </div>
+</div>
+<div class="card mt pad-0">
+  <div class="card-head"><h2>Comparison groups</h2><span class="hint">the same probe set run in parallel against several targets</span><span class="grow"></span><span class="hint" id="group-status"></span></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Name</th><th>Targets</th><th>Statuses</th><th>Created</th><th></th></tr></thead>
+      <tbody id="group-rows"></tbody>
+    </table>
+  </div>
+</div>
+<div class="card mt hidden" id="create-card">
+  <div class="card-head"><h2 id="create-title">Create campaign</h2>
+    <div class="tabs" style="margin:0;border:none">
+      <button type="button" class="active" data-mode="single" id="mode-single">Single target</button>
+      <button type="button" data-mode="compare" id="mode-compare">Compare models</button>
+    </div>
+    <span class="grow"></span><button class="btn ghost sm" id="cancel-create">Cancel</button></div>
+  <form id="campaign-form" class="form-grid">
+    <label class="field">Name *<input type="text" name="name" required></label>
+    <label class="field mode-single">Agent *<select name="agent_id" id="c-agent"></select></label>
+    <label class="field mode-single">Target model<input type="text" name="target_model" placeholder="gpt-4o-mini"></label>
+    <div class="field span-2 mode-compare hidden">
+      <div class="flex between"><span>Targets (minimum 2, each runs as its own campaign)</span><button type="button" class="btn xs" id="t-add">Add target</button></div>
+      <div id="targets" class="stack"></div>
+    </div>
+    <label class="field">Path<input type="text" name="path" placeholder="/v1/chat/completions"></label>
+    <label class="field">Max probes (0 = all)<input type="number" name="max_probes" min="0" value="50"></label>
+    <label class="field">Concurrency<input type="number" name="concurrency" min="1" max="32" value="4"></label>
+    <label class="field">Seed<input type="number" name="seed" placeholder="random"></label>
+    <label class="field">Mutators<div id="c-mutators" class="chips"></div></label>
+    <div class="field span-2">
+      <div class="flex between"><span>Categories (empty = all)</span><span class="flex"><input type="search" id="c-cat-search" placeholder="filter categories"><button type="button" class="btn xs" id="c-cat-all">All</button><button type="button" class="btn xs" id="c-cat-none">None</button></span></div>
+      <div id="c-categories" class="cat-list"></div>
+    </div>
+    <label class="field span-2">Techniques (empty = all)<div id="c-techniques" class="chips"></div></label>
+    <label class="field span-2">System prompt for the target (optional)<textarea name="system_prompt" rows="3"></textarea></label>
+    <label class="field span-2">Extra request body (JSON, optional)<input type="text" name="extra_body" placeholder='{"temperature": 0}'></label>
+    <label class="check"><input type="checkbox" name="auto_start" checked> Start immediately</label>
+    <div class="span-2 flex"><button type="submit" class="btn primary" id="c-submit">Create campaign</button><span class="hint" id="c-summary"></span></div>
+  </form>
+</div>
+<div class="card mt">
+  <div class="card-head">
+    <h2>Corpus browser</h2>
+    <select id="p-category"><option value="">All categories</option></select>
+    <select id="p-severity"><option value="">Any severity</option><option>LOW</option><option>MEDIUM</option><option>HIGH</option><option>CRITICAL</option></select>
+    <input type="search" id="p-search" placeholder="Search probes">
+    <span class="hint" id="p-count"></span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>ID</th><th>Category</th><th>Technique</th><th>Severity</th><th>Name</th><th>Prompt</th></tr></thead>
+      <tbody id="probe-rows"></tbody>
+    </table>
+  </div>
+  <div class="flex mt" id="p-pager"></div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/redteam.js"></script>{% endblock %}

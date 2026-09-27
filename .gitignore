@@ -39,3 +39,6 @@ sdk/node/package-lock.json
 
 # mitmproxy
 .mitmproxy/
+
+# private knowledge base, never publish
+Code_review_Data/

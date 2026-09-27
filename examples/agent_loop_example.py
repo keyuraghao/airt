@@ -1,4 +1,4 @@
-"""A small autonomous tool-using agent whose every model call goes through the AIRT gateway.
+"""A small autonomous tool-using agent whose every model call goes through the AISRF gateway.
 
 The loop is the classic ReAct style: the model may call tools (a fake file reader and a fake
 shell), the tool results are fed back, and the loop ends when the model answers without a tool
@@ -10,7 +10,7 @@ Tool results are where indirect prompt injection usually enters an agent; the ga
 analyzers scan them like any other message (see the ticket findings in the dashboard).
 
     pip install openai
-    export AIRT_GATEWAY_URL=http://localhost:8080 AIRT_AGENT_KEY=airt_...
+    export AISRF_GATEWAY_URL=http://localhost:8080 AISRF_AGENT_KEY=aisrf_...
     python examples/agent_loop_example.py
 """
 
@@ -23,8 +23,8 @@ import uuid
 
 from openai import APIStatusError, OpenAI
 
-GATEWAY = os.environ.get("AIRT_GATEWAY_URL", "http://localhost:8080").rstrip("/")
-AGENT_KEY = os.environ.get("AIRT_AGENT_KEY") or sys.exit("set AIRT_AGENT_KEY")
+GATEWAY = os.environ.get("AISRF_GATEWAY_URL", "http://localhost:8080").rstrip("/")
+AGENT_KEY = os.environ.get("AISRF_AGENT_KEY") or sys.exit("set AISRF_AGENT_KEY")
 MODEL = os.environ.get("MODEL", "gpt-4o-mini")
 MAX_STEPS = 6
 RUN_ID = "agent-loop-" + uuid.uuid4().hex[:8]
@@ -73,7 +73,7 @@ def run_tool(name: str, args: dict) -> str:
 client = OpenAI(
     base_url=f"{GATEWAY}/v1",
     api_key=AGENT_KEY,
-    default_headers={"X-AIRT-Source": "sdk", "X-AIRT-Correlation-Id": RUN_ID},
+    default_headers={"X-AISRF-Source": "sdk", "X-AISRF-Correlation-Id": RUN_ID},
     timeout=330.0,
     max_retries=0,
 )
@@ -102,7 +102,7 @@ for step in range(1, MAX_STEPS + 1):
         sys.exit(1)
     completion = raw.parse()
     msg = completion.choices[0].message
-    print(f"step {step}: ticket {raw.headers.get('X-AIRT-Ticket')} approved")
+    print(f"step {step}: ticket {raw.headers.get('X-AISRF-Ticket')} approved")
     messages.append(
         {
             "role": "assistant",

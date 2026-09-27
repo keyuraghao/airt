@@ -1,15 +1,15 @@
 export interface InstallOptions {
-  /** Base URL of the AIRT gateway, e.g. "http://localhost:8080". Falls back to AIRT_GATEWAY_URL. */
+  /** Base URL of the AISRF gateway, e.g. "http://localhost:8080". Falls back to AISRF_GATEWAY_URL. */
   gatewayUrl?: string;
-  /** Agent key issued by AIRT ("airt_..."). Falls back to AIRT_AGENT_KEY. */
+  /** Agent key issued by AISRF ("aisrf_..."). Falls back to AISRF_AGENT_KEY. */
   agentKey?: string;
   /** Hosts (host or host:port) to intercept. Defaults to DEFAULT_HOSTS. */
   hosts?: string[];
-  /** Send X-AIRT-Async: 1 so the gateway returns 202 immediately; poll with waitForTicket(). */
+  /** Send X-AISRF-Async: 1 so the gateway returns 202 immediately; poll with waitForTicket(). */
   asyncMode?: boolean;
-  /** X-AIRT-Source value: "sdk" (default), "gateway", "mitm" or "redteam". */
+  /** X-AISRF-Source value: "sdk" (default), "gateway", "mitm" or "redteam". */
   source?: "sdk" | "gateway" | "mitm" | "redteam";
-  /** Optional X-AIRT-Correlation-Id applied to every intercepted request. */
+  /** Optional X-AISRF-Correlation-Id applied to every intercepted request. */
   correlationId?: string;
   /** Remove Authorization / x-api-key / api-key / x-goog-api-key before sending (default true). */
   stripProviderAuth?: boolean;

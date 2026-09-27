@@ -1,14 +1,14 @@
-# airt-intercept
+# aisrf-intercept
 
 Zero-dependency Node 18+ package that routes `fetch` based LLM SDK traffic through an
-[AIRT](../../README.md) human-in-the-loop gateway. Every request to a provider host becomes a
+[AISRF](../../README.md) human-in-the-loop gateway. Every request to a provider host becomes a
 reviewable ticket on the gateway; the real provider credentials stay on the gateway.
 
 ## Install
 
 ```bash
-npm install airt-intercept          # once published
-npm install /path/to/AIRT/sdk/node  # from a checkout
+npm install aisrf-intercept          # once published
+npm install /path/to/AISRF/sdk/node  # from a checkout
 ```
 
 ## Usage
@@ -16,10 +16,10 @@ npm install /path/to/AIRT/sdk/node  # from a checkout
 ### 1. Wrap global fetch (works for the openai, @anthropic-ai/sdk, @google/generative-ai, groq-sdk packages and plain fetch)
 
 ```js
-const airt = require("airt-intercept");
-airt.install({
+const aisrf = require("aisrf-intercept");
+aisrf.install({
   gatewayUrl: "http://localhost:8080",
-  agentKey: process.env.AIRT_AGENT_KEY,   // "airt_..." created in the AIRT dashboard or CLI
+  agentKey: process.env.AISRF_AGENT_KEY,   // "aisrf_..." created in the AISRF dashboard or CLI
   // hosts: ["api.openai.com", "llm.internal:8443"],  optional, see DEFAULT_HOSTS
   // asyncMode: true,                                  202 + polling instead of blocking
   // correlationId: "run-42",                          groups tickets in the dashboard
@@ -31,26 +31,26 @@ const r = await client.chat.completions.create({ model: "gpt-4o-mini", messages:
 ```
 
 `https://api.openai.com/v1/chat/completions` is sent to `http://localhost:8080/proxy/v1/chat/completions`
-with `X-AIRT-Key`, `X-AIRT-Source: sdk` and (optionally) `X-AIRT-Async: 1`. The call blocks until a
+with `X-AISRF-Key`, `X-AISRF-Source: sdk` and (optionally) `X-AISRF-Async: 1`. The call blocks until a
 reviewer approves or denies the ticket (or the gateway's approval timeout elapses).
 
 ### 2. Configure the SDK explicitly (no monkeypatching)
 
 ```js
-const { configureOpenAI, configureAnthropic } = require("airt-intercept");
-const client = new OpenAI(configureOpenAI({ gatewayUrl: "http://localhost:8080", agentKey: "airt_..." }));
-// { baseURL: "http://localhost:8080/v1", apiKey: "airt_...", defaultHeaders: { "X-AIRT-Key": ..., "X-AIRT-Source": "sdk" } }
-const anthropic = new Anthropic(configureAnthropic({ gatewayUrl: "http://localhost:8080", agentKey: "airt_..." }));
+const { configureOpenAI, configureAnthropic } = require("aisrf-intercept");
+const client = new OpenAI(configureOpenAI({ gatewayUrl: "http://localhost:8080", agentKey: "aisrf_..." }));
+// { baseURL: "http://localhost:8080/v1", apiKey: "aisrf_...", defaultHeaders: { "X-AISRF-Key": ..., "X-AISRF-Source": "sdk" } }
+const anthropic = new Anthropic(configureAnthropic({ gatewayUrl: "http://localhost:8080", agentKey: "aisrf_..." }));
 ```
 
 ### 3. Asynchronous mode
 
 ```js
-airt.install({ gatewayUrl, agentKey, asyncMode: true });
+aisrf.install({ gatewayUrl, agentKey, asyncMode: true });
 const res = await fetch("https://api.openai.com/v1/chat/completions", { method: "POST", body: JSON.stringify(payload) });
 if (res.status === 202) {
   const { ticket_id } = await res.json();
-  const result = await airt.waitForTicket(ticket_id, { pollIntervalMs: 2000 });
+  const result = await aisrf.waitForTicket(ticket_id, { pollIntervalMs: 2000 });
   // result.status: COMPLETED | DENIED | EXPIRED | FAILED, result.body: upstream JSON
 }
 ```

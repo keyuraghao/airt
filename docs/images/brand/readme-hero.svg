@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 400" width="1600" height="400" role="img" aria-label="Airt, AI Security &amp; Research Framework">
-  <title>Airt README hero</title>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 400" width="1600" height="400" role="img" aria-label="AISRF, AI Security &amp; Research Framework">
+  <title>AISRF README hero</title>
   <defs>
     <radialGradient id="glow" cx="0.18" cy="0.5" r="0.5">
       <stop offset="0" stop-color="#22D3EE" stop-opacity="0.14"/>
@@ -10,38 +10,22 @@
   <rect width="1600" height="400" fill="url(#glow)"/>
   <!-- Ghost mark on the right for texture -->
   <g transform="translate(1180 -40) scale(7.5)" opacity="0.07">
-    <rect x="5" y="5" width="54" height="54" rx="13" fill="none" stroke="#FFFFFF" stroke-width="5"/>
-    <g fill="#FFFFFF">
-      <polygon points="18,6 22,6 22,12 20,16 18,12"/>
-      <polygon points="30,6 34,6 34,12 32,16 30,12"/>
-      <polygon points="42,6 46,6 46,12 44,16 42,12"/>
-    </g>
-    <g transform="translate(32 37) rotate(45)">
-      <polygon points="0,-20 -8.5,0 8.5,0" fill="#22D3EE"/>
-      <polygon points="0,20 -8.5,0 8.5,0" fill="#F59E0B"/>
-    </g>
-    <circle cx="32" cy="37" r="5.8" fill="#0B1220"/>
-    <path d="M29 37.2 L31.3 39.5 L35.2 35.1" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- The beam: a request in flight, with a human-shaped notch cut out of it -->
+    <path fill="#FFFFFF" fill-rule="evenodd" d="M9 15 H55 A4 4 0 0 1 59 19 V45 A4 4 0 0 1 55 49 H9 A4 4 0 0 1 5 45 V19 A4 4 0 0 1 9 15 Z M21.5 49 V43 A10.5 10.5 0 0 1 42.5 43 V49 Z"/>
+    <!-- The human standing in the beam -->
+    <circle cx="32" cy="25" r="5.4" fill="#F59E0B"/>
   </g>
-  <!-- Mark, 192 px -->
-  <g transform="translate(120 104) scale(3)">
-    <rect x="5" y="5" width="54" height="54" rx="13" fill="none" stroke="#FFFFFF" stroke-width="5"/>
-    <g fill="#FFFFFF">
-      <polygon points="18,6 22,6 22,12 20,16 18,12"/>
-      <polygon points="30,6 34,6 34,12 32,16 30,12"/>
-      <polygon points="42,6 46,6 46,12 44,16 42,12"/>
-    </g>
-    <g transform="translate(32 37) rotate(45)">
-      <polygon points="0,-20 -8.5,0 8.5,0" fill="#22D3EE"/>
-      <polygon points="0,20 -8.5,0 8.5,0" fill="#F59E0B"/>
-    </g>
-    <circle cx="32" cy="37" r="5.8" fill="#0B1220"/>
-    <path d="M29 37.2 L31.3 39.5 L35.2 35.1" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Mark, 224 px box -->
+  <g transform="translate(110 88) scale(3.5)">
+    <!-- The beam: a request in flight, with a human-shaped notch cut out of it -->
+    <path fill="#FFFFFF" fill-rule="evenodd" d="M9 15 H55 A4 4 0 0 1 59 19 V45 A4 4 0 0 1 55 49 H9 A4 4 0 0 1 5 45 V19 A4 4 0 0 1 9 15 Z M21.5 49 V43 A10.5 10.5 0 0 1 42.5 43 V49 Z"/>
+    <!-- The human standing in the beam -->
+    <circle cx="32" cy="25" r="5.4" fill="#F59E0B"/>
   </g>
   <g font-family="Inter, 'Segoe UI', 'Noto Sans', Roboto, Helvetica, Arial, sans-serif">
-    <text x="360" y="212" font-size="120" font-weight="700" letter-spacing="2" fill="#FFFFFF">Airt</text>
-    <text x="366" y="256" font-size="20" font-weight="600" letter-spacing="4.5" fill="#22D3EE">AI SECURITY &amp; RESEARCH FRAMEWORK</text>
-    <text x="366" y="306" font-size="27" font-weight="500" fill="#FFFFFF" fill-opacity="0.82">Every AI request, reviewed by a human before it reaches your backend</text>
+    <text x="372" y="212" font-size="120" font-weight="700" letter-spacing="5" fill="#FFFFFF">AISRF</text>
+    <text x="378" y="256" font-size="20" font-weight="600" letter-spacing="4.5" fill="#22D3EE">AI SECURITY &amp; RESEARCH FRAMEWORK</text>
+    <text x="378" y="306" font-size="27" font-weight="500" fill="#FFFFFF" fill-opacity="0.82">Every AI request, reviewed by a human before it reaches your backend</text>
   </g>
   <rect x="0" y="394" width="1600" height="6" fill="#1E293B"/>
 </svg>

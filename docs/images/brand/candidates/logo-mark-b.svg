@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="AISRF mark, candidate B: checkpoint arrow">
+  <title>AISRF candidate B: checkpoint arrow</title>
+  <!-- Shaft: the request -->
+  <rect x="4" y="25" width="24" height="14" rx="2" fill="#22D3EE"/>
+  <!-- Bar: the human checkpoint -->
+  <rect x="34" y="15" width="7" height="34" rx="3.5" fill="#F59E0B"/>
+  <!-- Head: the backend side -->
+  <polygon points="47,15 61,32 47,49" fill="#22D3EE"/>
+</svg>

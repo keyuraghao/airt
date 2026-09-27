@@ -1,20 +1,20 @@
 "use strict";
 /**
- * airt-intercept: route fetch based LLM traffic through an AIRT gateway.
+ * aisrf-intercept: route fetch based LLM traffic through an AISRF gateway.
  *
  * Zero dependencies, Node 18+ (needs the global fetch / Request / Headers WHATWG classes).
  *
- *   const airt = require("airt-intercept");
- *   airt.install({ gatewayUrl: "http://localhost:8080", agentKey: "airt_..." });
+ *   const aisrf = require("aisrf-intercept");
+ *   aisrf.install({ gatewayUrl: "http://localhost:8080", agentKey: "aisrf_..." });
  *   // every fetch("https://api.openai.com/v1/chat/completions", ...) now goes to
- *   // http://localhost:8080/proxy/v1/chat/completions with X-AIRT-Key / X-AIRT-Source headers.
+ *   // http://localhost:8080/proxy/v1/chat/completions with X-AISRF-Key / X-AISRF-Source headers.
  *
- * Gateway contract (see airt/gateway/router.py in the AIRT repository):
- *   X-AIRT-Key            agent key (also accepted as Authorization: Bearer airt_...)
- *   X-AIRT-Source         gateway | sdk | mitm | redteam
- *   X-AIRT-Async: 1       return 202 {ticket_id, status: "PENDING", poll_url} instead of blocking
- *   X-AIRT-Correlation-Id optional grouping id
- *   X-AIRT-Ticket         response header on every relayed upstream response
+ * Gateway contract (see aisrf/gateway/router.py in the AISRF repository):
+ *   X-AISRF-Key            agent key (also accepted as Authorization: Bearer aisrf_...)
+ *   X-AISRF-Source         gateway | sdk | mitm | redteam
+ *   X-AISRF-Async: 1       return 202 {ticket_id, status: "PENDING", poll_url} instead of blocking
+ *   X-AISRF-Correlation-Id optional grouping id
+ *   X-AISRF-Ticket         response header on every relayed upstream response
  */
 
 const DEFAULT_HOSTS = Object.freeze([
@@ -35,12 +35,12 @@ let state = null; // { options, originalFetch, originalUndiciFetch, undici }
 
 function normalizeOptions(options) {
   if (!options || typeof options !== "object") {
-    throw new TypeError("airt-intercept: install(options) requires an object");
+    throw new TypeError("aisrf-intercept: install(options) requires an object");
   }
-  const gatewayUrl = String(options.gatewayUrl || process.env.AIRT_GATEWAY_URL || "").replace(/\/+$/, "");
-  const agentKey = String(options.agentKey || process.env.AIRT_AGENT_KEY || "");
-  if (!gatewayUrl) throw new TypeError("airt-intercept: gatewayUrl is required (or set AIRT_GATEWAY_URL)");
-  if (!agentKey) throw new TypeError("airt-intercept: agentKey is required (or set AIRT_AGENT_KEY)");
+  const gatewayUrl = String(options.gatewayUrl || process.env.AISRF_GATEWAY_URL || "").replace(/\/+$/, "");
+  const agentKey = String(options.agentKey || process.env.AISRF_AGENT_KEY || "");
+  if (!gatewayUrl) throw new TypeError("aisrf-intercept: gatewayUrl is required (or set AISRF_GATEWAY_URL)");
+  if (!agentKey) throw new TypeError("aisrf-intercept: agentKey is required (or set AISRF_AGENT_KEY)");
   const hosts = (options.hosts && options.hosts.length ? options.hosts : DEFAULT_HOSTS).map((h) => String(h).toLowerCase());
   return {
     gatewayUrl,
@@ -86,9 +86,9 @@ function rewriteUrl(originalUrl, options) {
 }
 
 function airtHeaders(opts) {
-  const headers = { "X-AIRT-Key": opts.agentKey, "X-AIRT-Source": opts.source };
-  if (opts.asyncMode) headers["X-AIRT-Async"] = "1";
-  if (opts.correlationId) headers["X-AIRT-Correlation-Id"] = opts.correlationId;
+  const headers = { "X-AISRF-Key": opts.agentKey, "X-AISRF-Source": opts.source };
+  if (opts.asyncMode) headers["X-AISRF-Async"] = "1";
+  if (opts.correlationId) headers["X-AISRF-Correlation-Id"] = opts.correlationId;
   return headers;
 }
 
@@ -148,7 +148,7 @@ function install(options) {
     return uninstall;
   }
   if (typeof globalThis.fetch !== "function") {
-    throw new Error("airt-intercept: globalThis.fetch is not available (Node 18+ required)");
+    throw new Error("aisrf-intercept: globalThis.fetch is not available (Node 18+ required)");
   }
   state = { options: opts, originalFetch: globalThis.fetch, originalUndiciFetch: null, undici: null };
   globalThis.fetch = wrapFetch(state.originalFetch);
@@ -185,7 +185,7 @@ function isInstalled() {
  *   const client = new OpenAI(configureOpenAI({ gatewayUrl, agentKey }));
  */
 function configureOpenAI(options) {
-  const opts = normalizeOptions(Object.assign({}, options || {}, { agentKey: (options && options.agentKey) || process.env.AIRT_AGENT_KEY }));
+  const opts = normalizeOptions(Object.assign({}, options || {}, { agentKey: (options && options.agentKey) || process.env.AISRF_AGENT_KEY }));
   return { baseURL: `${opts.gatewayUrl}/v1`, apiKey: opts.agentKey, defaultHeaders: airtHeaders(opts) };
 }
 
@@ -194,7 +194,7 @@ function configureOpenAI(options) {
  *   const client = new Anthropic(configureAnthropic({ gatewayUrl, agentKey }));
  */
 function configureAnthropic(options) {
-  const opts = normalizeOptions(Object.assign({}, options || {}, { agentKey: (options && options.agentKey) || process.env.AIRT_AGENT_KEY }));
+  const opts = normalizeOptions(Object.assign({}, options || {}, { agentKey: (options && options.agentKey) || process.env.AISRF_AGENT_KEY }));
   return { baseURL: opts.gatewayUrl, apiKey: opts.agentKey, defaultHeaders: airtHeaders(opts) };
 }
 
@@ -204,13 +204,13 @@ function configureAnthropic(options) {
  */
 async function waitForTicket(ticketId, options) {
   const o = Object.assign({ pollIntervalMs: 2000, maxWaitMs: 900000 }, options || {});
-  const gatewayUrl = String(o.gatewayUrl || (state && state.options.gatewayUrl) || process.env.AIRT_GATEWAY_URL || "").replace(/\/+$/, "");
-  const agentKey = o.agentKey || (state && state.options.agentKey) || process.env.AIRT_AGENT_KEY;
+  const gatewayUrl = String(o.gatewayUrl || (state && state.options.gatewayUrl) || process.env.AISRF_GATEWAY_URL || "").replace(/\/+$/, "");
+  const agentKey = o.agentKey || (state && state.options.agentKey) || process.env.AISRF_AGENT_KEY;
   const doFetch = o.fetch || (state ? state.originalFetch : globalThis.fetch);
   const deadline = Date.now() + o.maxWaitMs;
   let last = null;
   while (Date.now() < deadline) {
-    const res = await doFetch(`${gatewayUrl}/gateway/tickets/${ticketId}`, { headers: { "X-AIRT-Key": agentKey, "X-AIRT-Source": (state && state.options.source) || "sdk" } });
+    const res = await doFetch(`${gatewayUrl}/gateway/tickets/${ticketId}`, { headers: { "X-AISRF-Key": agentKey, "X-AISRF-Source": (state && state.options.source) || "sdk" } });
     const text = await res.text();
     let body = null;
     try {
@@ -221,12 +221,12 @@ async function waitForTicket(ticketId, options) {
     const envelope = body && typeof body === "object" && body.ticket_id && TICKET_STATUSES.includes(body.status);
     if (envelope) {
       last = { ticketId: body.ticket_id, status: body.status, httpStatus: body.response_status || res.status, body: body.response !== undefined ? body.response : body, decidedBy: body.decided_by || null, decisionNote: body.decision_note || "" };
-    } else if (body && typeof body === "object" && body.error && body.error.type === "airt_gateway") {
+    } else if (body && typeof body === "object" && body.error && body.error.type === "aisrf_gateway") {
       const code = String(body.error.code || "").toLowerCase();
       last = { ticketId: body.error.ticket_id || ticketId, status: code === "denied" ? "DENIED" : code === "expired" ? "EXPIRED" : "FAILED", httpStatus: res.status, body, decidedBy: body.error.decided_by || null, decisionNote: body.error.message || "" };
     } else {
       // the poll forwarded an APPROVED ticket and relayed the upstream response
-      last = { ticketId: res.headers.get("x-airt-ticket") || ticketId, status: res.status >= 500 ? "FAILED" : "COMPLETED", httpStatus: res.status, body, decidedBy: null, decisionNote: "" };
+      last = { ticketId: res.headers.get("x-aisrf-ticket") || ticketId, status: res.status >= 500 ? "FAILED" : "COMPLETED", httpStatus: res.status, body, decidedBy: null, decisionNote: "" };
     }
     if (FINAL_TICKET_STATUSES.includes(last.status)) return last;
     await new Promise((resolve) => setTimeout(resolve, o.pollIntervalMs));

@@ -1,0 +1,275 @@
+# AISRF LLM output handling rules for semgrep. Source: model responses. Sinks: HTML, DOM, eval, SQL, redirects.
+rules:
+  - id: aisrf-lo-output-to-html-py
+    mode: taint
+    languages: [python]
+    severity: ERROR
+    message: Model output is rendered as HTML without escaping (AISRF-LO-001)
+    metadata:
+      aisrf_rule: AISRF-LO-001
+      pack: llm_output
+      severity: CRITICAL
+      confidence: "0.75"
+      cwe: CWE-79
+      owasp: [LLM05]
+      category: output_handling
+      taint: true
+    pattern-sources:
+      - pattern: $C.chat.completions.create(...)
+      - pattern: $C.messages.create(...)
+      - pattern: $C.responses.create(...)
+      - pattern: $M.generate_content(...)
+      - pattern: $LLM.invoke(...)
+      - pattern: $LLM.predict(...)
+      - pattern: litellm.completion(...)
+      - pattern: ollama.chat(...)
+    pattern-sanitizers:
+      - pattern: escape(...)
+      - pattern: html.escape(...)
+      - pattern: markupsafe.escape(...)
+      - pattern: bleach.clean(...)
+      - pattern: nh3.clean(...)
+    pattern-sinks:
+      - pattern: render_template_string(...)
+      - pattern: Markup(...)
+      - pattern: mark_safe(...)
+      - pattern: HTMLResponse(...)
+      - pattern: format_html(...)
+  - id: aisrf-lo-output-to-exec-py
+    mode: taint
+    languages: [python]
+    severity: ERROR
+    message: Model output is executed as code or as a shell command (AISRF-LO-004)
+    metadata:
+      aisrf_rule: AISRF-LO-004
+      pack: llm_output
+      severity: CRITICAL
+      confidence: "0.8"
+      cwe: CWE-94
+      owasp: [LLM05]
+      category: output_handling
+      taint: true
+    pattern-sources:
+      - pattern: $C.chat.completions.create(...)
+      - pattern: $C.messages.create(...)
+      - pattern: $C.responses.create(...)
+      - pattern: $M.generate_content(...)
+      - pattern: $LLM.invoke(...)
+      - pattern: $LLM.predict(...)
+      - pattern: litellm.completion(...)
+    pattern-sinks:
+      - pattern: eval(...)
+      - pattern: exec(...)
+      - pattern: compile(...)
+      - pattern: os.system(...)
+      - pattern: os.popen(...)
+      - pattern: subprocess.run(...)
+      - pattern: subprocess.Popen(...)
+      - pattern: subprocess.check_output(...)
+      - pattern: subprocess.call(...)
+      - pattern: $REPL.run(...)
+  - id: aisrf-lo-output-to-sql-py
+    mode: taint
+    languages: [python]
+    severity: ERROR
+    message: Model output is used inside a SQL statement (AISRF-LO-005)
+    metadata:
+      aisrf_rule: AISRF-LO-005
+      pack: llm_output
+      severity: CRITICAL
+      confidence: "0.8"
+      cwe: CWE-89
+      owasp: [LLM05]
+      category: output_handling
+      taint: true
+    pattern-sources:
+      - pattern: $C.chat.completions.create(...)
+      - pattern: $C.messages.create(...)
+      - pattern: $C.responses.create(...)
+      - pattern: $M.generate_content(...)
+      - pattern: $LLM.invoke(...)
+      - pattern: $LLM.predict(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern-inside: $CUR.execute($Q, ...)
+              - pattern-inside: $CUR.executemany($Q, ...)
+              - pattern-inside: $CUR.executescript($Q)
+              - pattern-inside: $DB.query($Q, ...)
+              - pattern-inside: $DB.raw($Q, ...)
+              - pattern-inside: text($Q)
+              - pattern-inside: pd.read_sql($Q, ...)
+              - pattern-inside: pd.read_sql_query($Q, ...)
+          - pattern: $Q
+  - id: aisrf-lo-output-to-redirect-py
+    mode: taint
+    languages: [python]
+    severity: WARNING
+    message: A model-supplied URL is used as a redirect target (AISRF-LO-011)
+    metadata:
+      aisrf_rule: AISRF-LO-011
+      pack: llm_output
+      severity: HIGH
+      confidence: "0.7"
+      cwe: CWE-601
+      owasp: [LLM05]
+      category: output_handling
+      taint: true
+    pattern-sources:
+      - pattern: $C.chat.completions.create(...)
+      - pattern: $C.messages.create(...)
+      - pattern: $LLM.invoke(...)
+    pattern-sinks:
+      - pattern: redirect(...)
+      - pattern: RedirectResponse(...)
+      - pattern: HttpResponseRedirect(...)
+      - pattern: webbrowser.open(...)
+  - id: aisrf-lo-json-loads-output-py
+    languages: [python]
+    severity: WARNING
+    message: Model output is parsed as JSON and used without schema validation (AISRF-LO-007)
+    metadata:
+      aisrf_rule: AISRF-LO-007
+      pack: llm_output
+      severity: MEDIUM
+      confidence: "0.4"
+      cwe: CWE-20
+      owasp: [LLM05]
+      category: output_handling
+    patterns:
+      - pattern-either:
+          - pattern: json.loads($R.choices[0].message.content)
+          - pattern: json.loads($R.content[0].text)
+          - pattern: json.loads($R.output_text)
+          - pattern: json.loads($R.text)
+      - pattern-not-inside: |
+          $MODEL.model_validate(...)
+      - pattern-not-inside: |
+          validate(...)
+  - id: aisrf-lo-output-to-dom-js
+    mode: taint
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: Model output is written to the DOM as HTML (AISRF-LO-002)
+    metadata:
+      aisrf_rule: AISRF-LO-002
+      pack: llm_output
+      severity: CRITICAL
+      confidence: "0.75"
+      cwe: CWE-79
+      owasp: [LLM05]
+      category: output_handling
+      taint: true
+    pattern-sources:
+      - pattern: await $C.chat.completions.create(...)
+      - pattern: await $C.messages.create(...)
+      - pattern: await generateText(...)
+      - pattern: await streamText(...)
+      - pattern: await $M.invoke(...)
+      - pattern: await $M.generateContent(...)
+      - pattern: $R.choices[0].message.content
+      - pattern: $R.content[0].text
+      - pattern: $DATA.answer
+      - pattern: $DATA.completion
+      - pattern: $DATA.reply
+    pattern-sanitizers:
+      - pattern: DOMPurify.sanitize(...)
+      - pattern: sanitize(...)
+      - pattern: sanitizeHtml(...)
+      - pattern: escapeHtml(...)
+      - pattern: xss(...)
+    pattern-sinks:
+      - pattern: $EL.innerHTML = $X
+      - pattern: $EL.outerHTML = $X
+      - pattern: $EL.insertAdjacentHTML(..., $X)
+      - pattern: document.write($X)
+      - pattern: '{__html: $X}'
+      - pattern: marked($X)
+      - pattern: marked.parse($X)
+  - id: aisrf-lo-output-to-eval-js
+    mode: taint
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: Model output is executed as code or as a shell command (AISRF-LO-004)
+    metadata:
+      aisrf_rule: AISRF-LO-004
+      pack: llm_output
+      severity: CRITICAL
+      confidence: "0.8"
+      cwe: CWE-94
+      owasp: [LLM05]
+      category: output_handling
+      taint: true
+    pattern-sources:
+      - pattern: await $C.chat.completions.create(...)
+      - pattern: await $C.messages.create(...)
+      - pattern: await generateText(...)
+      - pattern: await $M.invoke(...)
+      - pattern: $R.choices[0].message.content
+      - pattern: $R.content[0].text
+    pattern-sinks:
+      - pattern: eval(...)
+      - pattern: new Function(...)
+      - pattern: vm.runInNewContext(...)
+      - pattern: vm.runInThisContext(...)
+      - pattern: exec(...)
+      - pattern: execSync(...)
+      - pattern: spawn(...)
+      - pattern: spawnSync(...)
+  - id: aisrf-lo-output-to-sql-or-redirect-js
+    mode: taint
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: Model output reaches a SQL query or a redirect target (AISRF-LO-005)
+    metadata:
+      aisrf_rule: AISRF-LO-005
+      pack: llm_output
+      severity: CRITICAL
+      confidence: "0.75"
+      cwe: CWE-89
+      owasp: [LLM05]
+      category: output_handling
+      taint: true
+    pattern-sources:
+      - pattern: await $C.chat.completions.create(...)
+      - pattern: await $C.messages.create(...)
+      - pattern: await generateText(...)
+      - pattern: await $M.invoke(...)
+      - pattern: $R.choices[0].message.content
+      - pattern: $R.content[0].text
+    pattern-sinks:
+      - pattern: $DB.query($Q, ...)
+      - pattern: $DB.execute($Q, ...)
+      - pattern: $DB.raw($Q, ...)
+      - pattern: $PRISMA.$queryRawUnsafe($Q, ...)
+      - pattern: $PRISMA.$executeRawUnsafe($Q, ...)
+      - pattern: res.redirect($U)
+      - pattern: window.location = $U
+      - pattern: window.location.href = $U
+      - pattern: location.assign($U)
+  - id: aisrf-lo-install-runtime-package-py
+    languages: [python]
+    severity: ERROR
+    message: A package manager installs a package whose name is computed at runtime (AISRF-LO-012)
+    metadata:
+      aisrf_rule: AISRF-LO-012
+      pack: llm_output
+      severity: HIGH
+      confidence: "0.6"
+      cwe: CWE-829
+      owasp: [LLM03, LLM05]
+      category: supply_chain
+    patterns:
+      - pattern-either:
+          - pattern: $SP.run(["pip", "install", $PKG, ...], ...)
+          - pattern: $SP.run(["pip3", "install", $PKG, ...], ...)
+          - pattern: $SP.run([$PY, "-m", "pip", "install", $PKG, ...], ...)
+          - pattern: $SP.check_call(["pip", "install", $PKG, ...], ...)
+          - pattern: $SP.run(["npm", "install", $PKG, ...], ...)
+          - pattern: os.system("pip install " + $PKG)
+          - pattern: os.system(f"pip install {$PKG}")
+          - pattern: importlib.import_module($PKG)
+      - metavariable-pattern:
+          metavariable: $PKG
+          patterns:
+            - pattern-not: '"..."'

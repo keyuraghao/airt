@@ -1,7 +1,7 @@
-"""LangChain through the AIRT gateway: only base_url / api_key change.
+"""LangChain through the AISRF gateway: only base_url / api_key change.
 
     pip install langchain-openai        # or langchain-anthropic
-    export AIRT_GATEWAY_URL=http://localhost:8080 AIRT_AGENT_KEY=airt_...
+    export AISRF_GATEWAY_URL=http://localhost:8080 AISRF_AGENT_KEY=aisrf_...
     python examples/langchain_example.py
 
 Every model invocation (including each step of an agent or chain) becomes its own ticket. Use a
@@ -14,8 +14,8 @@ import os
 import sys
 import uuid
 
-GATEWAY = os.environ.get("AIRT_GATEWAY_URL", "http://localhost:8080").rstrip("/")
-AGENT_KEY = os.environ.get("AIRT_AGENT_KEY") or sys.exit("set AIRT_AGENT_KEY")
+GATEWAY = os.environ.get("AISRF_GATEWAY_URL", "http://localhost:8080").rstrip("/")
+AGENT_KEY = os.environ.get("AISRF_AGENT_KEY") or sys.exit("set AISRF_AGENT_KEY")
 RUN_ID = "langchain-" + uuid.uuid4().hex[:8]
 
 # Option A: explicit arguments
@@ -28,13 +28,13 @@ llm = ChatOpenAI(
     model=os.environ.get("MODEL", "gpt-4o-mini"),
     base_url=f"{GATEWAY}/v1",
     api_key=AGENT_KEY,
-    default_headers={"X-AIRT-Source": "sdk", "X-AIRT-Correlation-Id": RUN_ID},
+    default_headers={"X-AISRF-Source": "sdk", "X-AISRF-Correlation-Id": RUN_ID},
     timeout=330,
     max_retries=0,
 )
 
 # Option B: environment variables, then ChatOpenAI() with no arguments
-#   from airt.integrations import configure
+#   from aisrf.integrations import configure
 #   configure(GATEWAY, AGENT_KEY)          # sets OPENAI_BASE_URL / OPENAI_API_KEY (and the Anthropic ones)
 #   llm = ChatOpenAI(model="gpt-4o-mini")
 #

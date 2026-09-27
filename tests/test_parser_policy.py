@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import json
 
-from airt.gateway.parser import extract_response_text, normalize
-from airt.gateway.policy import evaluate
-from airt.models import Agent
-from airt.security import decrypt_secret, encrypt_secret, hash_password, redact_headers, verify_password
+from aisrf.gateway.parser import extract_response_text, normalize
+from aisrf.gateway.policy import evaluate
+from aisrf.models import Agent
+from aisrf.security import decrypt_secret, encrypt_secret, hash_password, redact_headers, verify_password
 
 
 def test_normalize_openai_chat_with_parts_and_tools():

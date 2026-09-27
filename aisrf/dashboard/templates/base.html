@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}{{ page_title }}{% endblock %} - {{ app_name }}</title>
+<link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+<link rel="apple-touch-icon" href="/static/icon-192.png">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body data-page="{{ page }}" data-principal="{{ principal.model_dump_json() if principal else 'null' }}" {% block body_attrs %}{% endblock %}>
+{% if principal %}
+<nav class="nav">
+  <a class="brand" href="/" title="{{ app_name }} v{{ version }}">
+    <img class="brand-mark brand-mark-dark" src="/static/logo-mark-dark.svg" alt="" aria-hidden="true">
+    <img class="brand-mark brand-mark-light" src="/static/logo-mark.svg" alt="" aria-hidden="true">
+    <span class="brand-name">AISRF</span>
+  </a>
+  <div class="links">
+    <a href="/" class="{{ 'active' if page == 'overview' else '' }}">Overview</a>
+    <a href="/tickets" class="{{ 'active' if page in ('tickets', 'ticket') else '' }}">Queue <span id="nav-pending" class="pill zero">0</span></a>
+    <a href="/agents" class="{{ 'active' if page in ('agents', 'agent') else '' }}">Agents</a>
+    <a href="/logs" class="{{ 'active' if page == 'logs' else '' }}">Logs</a>
+    <a href="/redteam" class="{{ 'active' if page in ('redteam', 'campaign', 'group') else '' }}">Red team</a>
+    <a href="/codereview" class="{{ 'active' if page in ('codereview', 'codereview_run') else '' }}">Code review</a>
+    <a href="/reports" class="{{ 'active' if page == 'reports' else '' }}">Reports</a>
+    <a href="/audit" class="{{ 'active' if page == 'audit' else '' }}">Audit</a>
+    <a href="/settings" class="{{ 'active' if page == 'settings' else '' }}">Settings</a>
+  </div>
+  <div class="user">
+    <span id="nav-conn" class="conn" title="Live stream"></span>
+    <span class="nowrap">{{ principal.username }} <span class="badge role">{{ principal.role }}</span></span>
+    <button id="nav-theme" class="btn ghost sm" title="Toggle light / dark theme" aria-label="Toggle theme">Theme</button>
+    <button id="nav-logout" class="btn ghost sm">Logout</button>
+  </div>
+</nav>
+{% endif %}
+<main class="main">
+{% block content %}{% endblock %}
+</main>
+{% if principal %}
+<div class="footer">{{ app_name }} v{{ version }} &middot; {{ environment }} &middot; approval timeout {{ approval_timeout }}s</div>
+{% endif %}
+<script src="/static/app.js"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

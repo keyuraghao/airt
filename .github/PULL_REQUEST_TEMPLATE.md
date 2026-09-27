@@ -24,4 +24,4 @@ handling, the audit log or what a reviewer sees. Write "none" otherwise. -->
 - [ ] No em dash characters anywhere (use a hyphen or a comma) and no unnecessary blank lines
 - [ ] No secrets, agent keys, provider keys, tokens or personal data in code, tests, fixtures or logs
 - [ ] New analyzers have a positive and a benign sample; new probes have unique ids and a category
-- [ ] Privileged actions go through `airt.audit.service.record`
+- [ ] Privileged actions go through `aisrf.audit.service.record`

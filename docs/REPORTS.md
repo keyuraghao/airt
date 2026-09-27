@@ -1,8 +1,8 @@
 # Reports
 
-Reports are built from the database into a format-agnostic document (`airt/reports/model.py`:
+Reports are built from the database into a format-agnostic document (`aisrf/reports/model.py`:
 `Report` with `KeyValueSection`, `TableSection`, `TextSection`, `FindingsSection`, `ChartSection`)
-and rendered by `airt/reports/renderers.py` into any supported format. The same report therefore
+and rendered by `aisrf/reports/renderers.py` into any supported format. The same report therefore
 looks consistent as a PDF for management, SARIF for a code scanning dashboard or CSV for a
 spreadsheet.
 
@@ -39,7 +39,7 @@ admin bearer token (`viewer` role is enough).
 | `junit` | `application/xml` | JUnit XML: each probe result or ticket is a test case |
 
 Aliases: `yml`, `markdown`, `text`, `excel`, `junitxml`. Responses carry
-`Content-Disposition: attachment; filename="airt-<kind>-<timestamp>.<ext>"` (`?inline=true` for
+`Content-Disposition: attachment; filename="aisrf-<kind>-<timestamp>.<ext>"` (`?inline=true` for
 inline display), `X-Report-Kind` and `X-Report-Format`.
 
 ## Examples
@@ -48,11 +48,11 @@ inline display), `X-Report-Kind` and `X-Report-Format`.
 # management summary of the last week as PDF
 curl -b jar -o weekly.pdf "http://localhost:8080/api/reports/summary?format=pdf&since=2026-09-19T00:00:00Z"
 # high risk tickets as SARIF for GitHub code scanning
-curl -b jar "http://localhost:8080/api/reports/tickets?format=sarif&min_risk=60" > airt.sarif
+curl -b jar "http://localhost:8080/api/reports/tickets?format=sarif&min_risk=60" > aisrf.sarif
 # campaign as JUnit for CI gating
-airt report campaign/cmp_123 --format junit --out results.xml --url http://localhost:8080 --token "$AIRT_ADMIN_API_TOKEN"
+aisrf report campaign/cmp_123 --format junit --out results.xml --url http://localhost:8080 --token "$AISRF_ADMIN_API_TOKEN"
 # audit trail as Excel
-airt report audit -f xlsx -o audit.xlsx
+aisrf report audit -f xlsx -o audit.xlsx
 ```
 
 From the dashboard: `/reports` offers every kind and format with the same filters. From MCP:
@@ -60,7 +60,7 @@ From the dashboard: `/reports` offers every kind and format with the same filter
 
 ## CI integration
 
-* `junit`: run `airt redteam run ... --wait` then `airt report campaign/<id> -f junit -o results.xml`;
+* `junit`: run `aisrf redteam run ... --wait` then `aisrf report campaign/<id> -f junit -o results.xml`;
   a `VULNERABLE` probe becomes a failed test case, so the pipeline fails when the model regresses.
 * `sarif`: upload with `github/codeql-action/upload-sarif` to see findings in the Security tab.
 * `json`: pipe into jq for thresholds (`.sections[] | select(.title == "Verdicts")`).

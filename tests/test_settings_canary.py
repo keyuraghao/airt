@@ -36,7 +36,7 @@ async def test_settings_schema_update_reset_and_export(client, admin_headers):
         json={"changes": {"approval_timeout_seconds": "42", "notify_events": "created, expired"}},
     )
     assert r.status_code == 200, r.text
-    from airt.config import get_settings
+    from aisrf.config import get_settings
 
     assert get_settings().approval_timeout_seconds == 42
     assert get_settings().notify_events == ["created", "expired"]
@@ -76,9 +76,9 @@ async def test_settings_persist_across_restart(client, admin_headers):
     await client.put(
         "/api/settings/core", headers=admin_headers, json={"changes": {"ticket_retention_days": 7}}
     )
-    from airt import settings_store
-    from airt.config import get_settings, reset_settings_cache
-    from airt.db import get_sessionmaker
+    from aisrf import settings_store
+    from aisrf.config import get_settings, reset_settings_cache
+    from aisrf.db import get_sessionmaker
 
     reset_settings_cache()
     assert get_settings().ticket_retention_days != 7
@@ -112,7 +112,7 @@ async def test_custom_rules_flag_and_deny(client, admin_headers, agent):
         },
     ]
     await client.put("/api/settings/ns/rules", headers=admin_headers, json={"custom": rules})
-    h = {"Authorization": f"Bearer {agent['api_key']}", "X-AIRT-Async": "1"}
+    h = {"Authorization": f"Bearer {agent['api_key']}", "X-AISRF-Async": "1"}
     r = await client.post(
         "/v1/chat/completions",
         json={"model": "m", "messages": [{"role": "user", "content": "status of Project Bluebird?"}]},
@@ -158,7 +158,7 @@ async def test_analyzer_disable_and_severity_override(client, admin_headers, age
         headers=admin_headers,
         json={"severity_overrides": {"policy": "CRITICAL"}},
     )
-    h = {"Authorization": f"Bearer {agent['api_key']}", "X-AIRT-Async": "1"}
+    h = {"Authorization": f"Bearer {agent['api_key']}", "X-AISRF-Async": "1"}
     body = {"model": "m", "messages": [{"role": "user", "content": "bluebird"}]}
     r = await client.post("/v1/chat/completions", json=body, headers=h)
     t = (await client.get(f"/api/tickets/{r.json()['ticket_id']}", headers=admin_headers)).json()
@@ -187,15 +187,15 @@ async def test_canary_injection_detects_and_blocks_system_prompt_leak(client, ad
     r = await client.post("/v1/chat/completions", json=CHAT, headers=h)
     assert r.status_code == 403, r.text
     assert r.json()["error"]["code"] == "response_withheld"
-    t = (await client.get(f"/api/tickets/{r.headers['x-airt-ticket']}", headers=admin_headers)).json()
-    assert t["normalized"]["canary"].startswith("AIRT-CANARY-")
-    assert t["normalized"]["canary"] not in t["request_body"] or "AIRT-CANARY" in t["request_body"]
+    t = (await client.get(f"/api/tickets/{r.headers['x-aisrf-ticket']}", headers=admin_headers)).json()
+    assert t["normalized"]["canary"].startswith("AISRF-CANARY-")
+    assert t["normalized"]["canary"] not in t["request_body"] or "AISRF-CANARY" in t["request_body"]
     assert any(f["category"] == "canary_leak" and f["severity"] == "CRITICAL" for f in t["response_findings"])
     assert any(e["event_type"] == "withheld" for e in t["events"])
     await client.put("/api/settings/ns/policy", headers=admin_headers, json={"block_on_canary_leak": False})
     r = await client.post("/v1/chat/completions", json=CHAT, headers=h)
     assert r.status_code == 200
-    assert "AIRT-CANARY-" in r.json()["choices"][0]["message"]["content"]
+    assert "AISRF-CANARY-" in r.json()["choices"][0]["message"]["content"]
     await client.post("/api/settings/ns/policy/reset", headers=admin_headers)
 
 
@@ -208,6 +208,6 @@ async def test_canary_not_flagged_when_model_keeps_secret(client, admin_headers,
     h = {"Authorization": f"Bearer {agent['api_key']}"}
     r = await client.post("/v1/chat/completions", json=CHAT, headers=h)
     assert r.status_code == 200
-    t = (await client.get(f"/api/tickets/{r.headers['x-airt-ticket']}", headers=admin_headers)).json()
+    t = (await client.get(f"/api/tickets/{r.headers['x-aisrf-ticket']}", headers=admin_headers)).json()
     assert "canary" in t["normalized"]
     assert not any(f["category"] == "canary_leak" for f in t["response_findings"])

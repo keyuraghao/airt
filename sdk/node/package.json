@@ -1,7 +1,7 @@
 {
-  "name": "airt-intercept",
+  "name": "aisrf-intercept",
   "version": "1.0.0",
-  "description": "Route fetch based LLM SDK traffic (OpenAI, Anthropic, Gemini, Mistral, Groq, ...) through an AIRT human-in-the-loop gateway",
+  "description": "Route fetch based LLM SDK traffic (OpenAI, Anthropic, Gemini, Mistral, Groq, ...) through an AISRF human-in-the-loop gateway",
   "main": "index.js",
   "types": "index.d.ts",
   "files": [
@@ -13,7 +13,7 @@
     "test": "node test.js"
   },
   "keywords": [
-    "airt",
+    "aisrf",
     "llm",
     "gateway",
     "red-team",

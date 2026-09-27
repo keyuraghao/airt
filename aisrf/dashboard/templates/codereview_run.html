@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block body_attrs %}data-run-id="{{ run_id }}"{% endblock %}
+{% block content %}
+<div class="page-head">
+  <a class="btn ghost sm" href="/codereview">&larr; Runs</a>
+  <h1 id="title">Code review run</h1>
+  <span id="head-badges" class="flex wrap"></span>
+  <span class="spacer"></span>
+  <span id="controls" class="flex wrap"></span>
+</div>
+<div class="tiles" id="tiles"></div>
+<div class="card mt">
+  <div class="card-head"><h2>Progress</h2><span class="hint" id="progress-text"></span></div>
+  <div class="progress" id="progress"><span style="width:0%"></span></div>
+  <div class="error-box mt hidden" id="run-error"></div>
+</div>
+<div class="grid side mt">
+  <div class="stack">
+    <div class="card pad-0">
+      <div class="card-head"><h2>Findings</h2><span class="hint" id="f-count"></span></div>
+      <div class="filters" style="padding:0 16px">
+        <select id="f-severity"><option value="">Any severity</option><option>CRITICAL</option><option>HIGH</option><option>MEDIUM</option><option>LOW</option><option>INFO</option></select>
+        <select id="f-pack"><option value="">All packs</option></select>
+        <select id="f-engine"><option value="">All engines</option><option>rules</option><option>semgrep</option><option>bandit</option><option>llm</option></select>
+        <select id="f-status"><option value="">Any status</option><option value="open">open</option><option value="false_positive">false positive</option><option value="accepted">accepted</option></select>
+        <input type="search" id="f-file" placeholder="File path">
+        <input type="search" id="f-search" placeholder="Search rule, title, snippet">
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th></th><th>Severity</th><th>Rule</th><th>Title</th><th>File</th><th class="right">Line</th><th>Engine</th><th class="right">Conf.</th><th>Status</th></tr></thead>
+          <tbody id="finding-rows"></tbody>
+        </table>
+      </div>
+      <div class="flex" id="f-pager" style="padding:10px 16px"></div>
+    </div>
+    <div class="card hidden" id="file-card">
+      <div class="card-head"><h2>File</h2><span class="hint mono" id="file-path"></span><span class="grow"></span><button class="btn ghost sm" id="file-close">Close</button></div>
+      <div class="code-lines" id="file-view"></div>
+    </div>
+  </div>
+  <div class="stack">
+    <div class="card">
+      <div class="card-head"><h2>Open findings</h2></div>
+      <div id="sev-bars"></div>
+      <div id="pack-bars" class="mt"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>OWASP LLM Top 10</h2><span class="hint">open findings mapped to each item</span></div>
+      <div id="owasp-chips" class="chips"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Inventory</h2></div>
+      <dl class="kv" id="inventory"></dl>
+      <div id="inventory-lists" class="mt stack"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Engines</h2></div>
+      <div class="table-wrap"><table><thead><tr><th>Engine</th><th class="right">Findings</th><th class="right">Seconds</th><th>Note</th></tr></thead><tbody id="engine-rows"></tbody></table></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Details</h2></div>
+      <dl class="kv" id="details"></dl>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Reports</h2><span class="hint">SARIF can be uploaded to GitHub code scanning</span></div>
+      <div id="reports"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/codereview_run.js"></script>{% endblock %}

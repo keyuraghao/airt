@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Generate the Airt (AI Security & Research Framework) architecture diagrams (SVG + 2x PNG) in docs/images/.
+"""Generate the AISRF (AI Security & Research Framework) architecture diagrams (SVG + 2x PNG) in docs/images/.
 
 Usage (from the repository root):
 
@@ -7,7 +7,7 @@ Usage (from the repository root):
 
 The SVGs are hand-authored through a small builder so that the diagrams are reproducible and
 diff-friendly. PNGs are rendered with cairosvg at 2x scale so GitHub renders them reliably.
-The taxonomy matrix is produced from ``airt.taxonomy.CATEGORY_MAP`` so it never drifts from the code.
+The taxonomy matrix is produced from ``aisrf.taxonomy.CATEGORY_MAP`` so it never drifts from the code.
 """
 from __future__ import annotations
 
@@ -130,7 +130,7 @@ class SVG:
             ty += 2
             ty = self.lines(tx, ty, blines, body_size, "#d1d5db", anchor, family=fam)
         last_baseline = ty - (body_size if body else title_size) * 1.35
-        if last_baseline + body_size * 0.3 > y + h - 6:
+        if last_baseline + body_size * 0.3 > y + h - 3:
             print(f"WARNING overflow in {self.title!r}: box {title!r} needs ~{ty - y:.0f}px, has {h}px")
         return (x, y, w, h)
 
@@ -243,18 +243,18 @@ class SVG:
 # 1. High-level architecture
 # ======================================================================================
 def architecture() -> None:
-    s = SVG(1700, 1080, "Airt architecture",
-            "Airt, AI Security & Research Framework: human-in-the-loop interception, analysis and red teaming of LLM traffic. One FastAPI process, one port.")
+    s = SVG(1700, 1080, "AISRF architecture",
+            "AISRF, AI Security & Research Framework: human-in-the-loop interception, analysis and red teaming of LLM traffic. One FastAPI process, one port.")
 
     PH = 570  # height of the three top panels
     # --- clients ------------------------------------------------------------------------
-    s.panel(32, 92, 290, PH, "Applications and agents", "no provider key on the client, only airt_... keys")
+    s.panel(32, 92, 290, PH, "Applications and agents", "no provider key on the client, only aisrf_... keys")
     cl = [
         ("OpenAI / Anthropic SDK", "base_url = http://gw:8080/v1"),
-        ("Python SDK", "patch_httpx(), patch_requests(), AirtClient"),
-        ("Node package", "airt-intercept: global fetch / undici hook"),
-        ("curl / httpx / fetch", "POST /proxy/<provider path> + X-AIRT-Key"),
-        ("mitmproxy transparent", "mitm_addon.py, X-AIRT-Source: mitm"),
+        ("Python SDK", "patch_httpx(), patch_requests(), AISRFClient"),
+        ("Node package", "aisrf-intercept: global fetch / undici hook"),
+        ("curl / httpx / fetch", "POST /proxy/<provider path> + X-AISRF-Key"),
+        ("mitmproxy transparent", "mitm_addon.py, X-AISRF-Source: mitm"),
         ("Autonomous agents", "LangChain, LlamaIndex, tool loops"),
     ]
     y = 150
@@ -264,7 +264,7 @@ def architecture() -> None:
 
     # --- gateway --------------------------------------------------------------------------
     gx, gy, gw, gh = 400, 92, 850, PH
-    s.panel(gx, gy, gw, gh, "Airt gateway", "airt.main.create_app: gateway + reviewer API + dashboard + MCP on port 8080", accent="#2dd4bf")
+    s.panel(gx, gy, gw, gh, "AISRF Gateway", "aisrf.main.create_app: gateway + reviewer API + dashboard + MCP on port 8080", accent="#2dd4bf")
 
     row1 = gy + 62
     bw, bh = 190, 150
@@ -295,7 +295,7 @@ def architecture() -> None:
           ["asyncio.Event per waiting", "ticket (in-process fast path)", "DB polling fallback", "timeout -> EXPIRED (504)", "sync wait or async 202 + poll"],
           "gateway", body_size=11)
     s.box(xs[2], row2, bw, bh, "Canary injection",
-          ["Rebuff-style AIRT-CANARY-*", "token appended to the", "system prompt of every", "forwarded request;", "leak => CRITICAL finding"],
+          ["Rebuff-style AISRF-CANARY-*", "token appended to the", "system prompt of every", "forwarded request;", "leak => CRITICAL finding"],
           "gateway", body_size=11)
     s.box(xs[3], row2, bw, bh, "Forwarder",
           ["swap in encrypted upstream", "key, strip client credentials,", "relay JSON or SSE stream;", "scan response: prompt leak,", "refusal, canary, PII ->", "withhold or relay"],
@@ -309,7 +309,7 @@ def architecture() -> None:
     s.text(gx + 16, row2 + bh + 30, "Denied / expired tickets never reach the provider. Every step: ticket timeline, per-agent log, audit entry for human decisions.", 11, MUTED)
 
     # clients -> gateway
-    s.arrow([(306, 340), (gx, 340)], ["HTTPS", "X-AIRT-Key", "sync or async"], "#60a5fa", label_dy=-24, label_size=10.5)
+    s.arrow([(306, 340), (gx, 340)], ["HTTPS", "X-AISRF-Key", "sync or async"], "#60a5fa", label_dy=-24, label_size=10.5)
 
     # --- upstream --------------------------------------------------------------------------
     ux = 1290
@@ -328,16 +328,16 @@ def architecture() -> None:
         s.box(ux + 16, yy, 346, 58, title, body, "upstream", body_size=11)
     s.arrow([(gx + gw, ay), (ux + 16, ay)], "", "#a78bfa")
     s.text(ux + 16, ay - 22, "forward after approval", 11.5, TEXT)
-    s.text(ux + 16, ay - 7, "reply carries X-AIRT-Ticket", 11.5, TEXT)
+    s.text(ux + 16, ay - 7, "reply carries X-AISRF-Ticket", 11.5, TEXT)
 
     # --- reviewers -------------------------------------------------------------------------
     ry = 712
     s.panel(gx, ry, gw, 176, "Human reviewers", "viewer < reviewer < admin roles; only PENDING tickets can be decided; every decision is audited", accent="#fbbf24")
     rv = [
         ("Dashboard", "/tickets /agents /logs /redteam /reports /audit, live SSE"),
-        ("MCP server", "/mcp streamable HTTP or `airt mcp` stdio: Claude Desktop / Claude Code"),
-        ("CLI", "airt tickets list | show | approve | deny | watch"),
-        ("Webhooks / Slack", "AIRT_NOTIFY_WEBHOOK_URLS on created / expired / failed"),
+        ("MCP server", "/mcp streamable HTTP or `aisrf mcp` stdio: Claude Desktop / Claude Code"),
+        ("CLI", "aisrf tickets list | show | approve | deny | watch"),
+        ("Webhooks / Slack", "AISRF_NOTIFY_WEBHOOK_URLS on created / expired / failed"),
     ]
     for (title, body), x in zip(rv, xs):
         s.box(x, ry + 56, bw, 100, title, body, "human", body_size=11)
@@ -345,16 +345,16 @@ def architecture() -> None:
     s.arrow([(tsx - 30, row2 + bh), (tsx - 30, ry)], ["SSE ticket.created", "notification"], "#fbbf24", label_dy=-4, label_dx=-12, label_anchor="end")
     s.arrow([(tsx + 30, ry), (tsx + 30, row2 + bh)], ["approve / deny", "-> hold resolved"], "#fbbf24", label_dy=-4, label_dx=12, label_anchor="start")
     s.text(32, 780, "Browser, Claude (MCP client),", 12, MUTED)
-    s.text(32, 796, "airt CLI, CI automation with", 12, MUTED)
-    s.text(32, 812, "AIRT_ADMIN_API_TOKEN", 12, MUTED)
+    s.text(32, 796, "aisrf CLI, CI automation with", 12, MUTED)
+    s.text(32, 812, "AISRF_ADMIN_API_TOKEN", 12, MUTED)
     s.arrow([(215, 800), (gx, 800)], "", "#fbbf24")
 
     # --- side components -------------------------------------------------------------------
     sy = 920
-    s.panel(32, sy, 1636, 136, "Storage, observability and engines", "SQLAlchemy async, structlog, hash-chained audit, reports, red-team engines, runtime settings")
+    s.panel(32, sy, 1636, 146, "Storage, observability and engines", "SQLAlchemy async, structlog, hash-chained audit, reports, red-team engines, runtime settings")
     side = [
         ("SQLite / PostgreSQL", "tickets, events, agents, audit, campaigns, probe results, scan tokens, settings"),
-        ("Structured logs", "logs/airt.jsonl + logs/agents/<agent_id>.jsonl, X-Request-ID on every line"),
+        ("Structured logs", "logs/aisrf.jsonl + logs/agents/<agent_id>.jsonl, X-Request-ID on every line"),
         ("Audit chain", "SHA-256 hash chain per privileged action, GET /api/audit/verify"),
         ("Reports engine", "12 formats: json yaml csv tsv md html pdf xlsx txt xml sarif junit"),
         ("Red-team engines", "native corpus (300+ probes), garak, promptfoo, PyRIT, PyRIT-Ship via scan tokens"),
@@ -362,7 +362,7 @@ def architecture() -> None:
     ]
     x = 48
     for title, body in side:
-        s.box(x, sy + 50, 258, 76, title, body, "store", body_size=10.5)
+        s.box(x, sy + 50, 258, 86, title, body, "store", body_size=10.5)
         x += 270
     s.arrow([(gx + 200, ry + 176), (gx + 200, sy)], "", "#9ca3af", dash="5 4")
     s.arrow([(gx + 700, ry + 176), (gx + 700, sy)], "", "#9ca3af", dash="5 4")
@@ -377,145 +377,157 @@ def architecture() -> None:
 # 2. Request lifecycle (sequence)
 # ======================================================================================
 def request_lifecycle() -> None:
-    W, H = 1600, 1560
-    s = SVG(W, H, "Airt request lifecycle",
+    W = 1600
+    s = SVG(W, 10, "AISRF request lifecycle",
             "One intercepted call, from client request to COMPLETED ticket. Sync mode blocks; async mode returns 202 and polls.")
     lanes = {
         "client": (150, "Client / agent", "client"),
-        "gateway": (470, "Airt gateway", "gateway"),
+        "gateway": (470, "AISRF Gateway", "gateway"),
         "analysis": (760, "Analyzers + policy", "gateway"),
         "reviewer": (1050, "Reviewer", "human"),
         "upstream": (1400, "Upstream provider", "upstream"),
     }
-    top, bottom = 92, H - 60
-    for key, (x, name, role) in lanes.items():
-        fill, stroke = ROLE[role]
-        s.rect(x - 95, top, 190, 40, fill, stroke, r=10)
-        s.text(x, top + 26, name, 14, TEXT, "middle", weight="bold")
-        s.path(f"M {x} {top + 40} L {x} {bottom}", LINE_DIM, 1.2, dash="4 6", arrow=False)
+    top = 92
+    lane_index = len(s.parts)  # lifelines are inserted here once the final height is known
 
     def X(k: str) -> float:
         return lanes[k][0]
 
     def msg(y: float, a: str, b: str, label: str | list[str], color: str = LINE, dash: str | None = None) -> None:
         xa, xb = X(a), X(b)
-        s.arrow([(xa, y), (xb, y)], label, color, dash=dash, label_dy=-6)
+        if b == "client":
+            s.arrow([(xa, y), (xb, y)], label, color, dash=dash, label_dy=-7, label_pos=1.0, label_dx=16, label_anchor="start")
+        elif a == "client":
+            s.arrow([(xa, y), (xb, y)], label, color, dash=dash, label_dy=-7, label_pos=0.0, label_dx=16, label_anchor="start")
+        else:
+            s.arrow([(xa, y), (xb, y)], label, color, dash=dash, label_dy=-7)
 
-    def note(y: float, k: str, lines: list[str], role: str = "gateway", w: float = 250, h: float | None = None) -> float:
-        h = h or (16 + 15 * len(lines))
+    def note(y: float, k: str, lines: list[str], role: str = "gateway", w: float = 250, chip: str | None = None, chip_role: str = "warn") -> float:
+        h = 16 + 15 * len(lines)
         x = X(k)
         fill, stroke = ROLE[role]
         s.rect(x - w / 2, y, w, h, fill, stroke, r=8)
         s.lines(x - w / 2 + 10, y + 15, lines, 11.5, TEXT, lh=15)
+        if chip:
+            s.chip(x + w / 2 + 12, y + h / 2 - 10, chip, chip_role)
         return y + h
 
-    def status(y: float, label: str, role: str) -> None:
-        s.chip(X("gateway") + 150, y - 12, label, role)
+    def status(y: float, label: str, role: str, x: float | None = None) -> None:
+        s.chip(x if x is not None else X("gateway") + 150, y - 12, label, role)
 
     def frame(y1: float, y2: float, title: str, color: str, x1: float = 40, x2: float = W - 40) -> None:
         s.rect(x1, y1, x2 - x1, y2 - y1, "none", color, r=8, sw=1.4, dash="6 4")
         s.rect(x1, y1, text_width(title, 12) + 22, 22, color, color, r=6, sw=0, opacity=0.9)
         s.text(x1 + 11, y1 + 15, title, 12, "#0b1220", weight="bold")
 
-    y = 170
-    msg(y, "client", "gateway", ["POST /v1/chat/completions   (or /proxy/<path>)", "X-AIRT-Key: airt_...   optional X-AIRT-Async: 1"], "#60a5fa")
-    y += 30
+    F = 46  # vertical room reserved under a frame title
+    y = 176
+    msg(y, "client", "gateway", ["POST /v1/chat/completions   (or /proxy/<path>)", "X-AISRF-Key: aisrf_...   optional X-AISRF-Async: 1"], "#60a5fa")
+    y += 28
     y = note(y, "gateway", ["1. authenticate agent key (SHA-256 lookup, inactive -> 401)", "2. rate limit per minute (429), body size limit (413)",
-                            "3. normalize body: provider, model, messages, tools, stream", "4. create ticket PENDING, redacted headers, expires_at = now + 300 s"], w=380)
-    status(y - 40, "ticket PENDING", "warn")
-    y += 26
+                            "3. normalize body: provider, model, messages, tools, stream", "4. create ticket PENDING, redacted headers, expires_at = now + 300 s"],
+             w=380, chip="ticket PENDING")
+    y += 30
     msg(y, "gateway", "analysis", "analyze_request(normalized): 10 analyzers + guardrail integrations, concurrent", "#2dd4bf")
-    y += 26
+    y += 28
     msg(y, "analysis", "gateway", "findings + risk score 0..100 (NONE / LOW / MEDIUM / HIGH / CRITICAL)", "#2dd4bf")
-    y += 26
+    y += 28
     msg(y, "gateway", "analysis", "policy.evaluate(agent, normalized, path, risk, findings)", "#2dd4bf")
-    y += 26
+    y += 28
     msg(y, "analysis", "gateway", "PolicyDecision: deny | approve | review  (+ reasons, matched rules)", "#2dd4bf")
-    y += 20
+    y += 22
 
     # deny branch
     f1 = y
-    y += 32
+    y += F
     msg(y, "gateway", "client", "403 {error: denied, ticket_id, risk_score}   nothing is sent upstream", "#f87171")
     status(y, "DENIED", "danger")
     y += 18
     frame(f1, y, "alt  policy: deny", "#f87171")
-    y += 26
+    y += 28
 
-    # review branch (sync + async)
+    # review branch
     f2 = y
-    y += 32
+    y += F
     msg(y, "gateway", "reviewer", "SSE ticket.created on /api/stream/tickets, webhook / Slack notification", "#fbbf24")
-    y += 22
-    # async sub-branch
+    y += 24
     f3 = y
-    y += 32
+    y += F
     msg(y, "gateway", "client", "202 {ticket_id, status: PENDING, poll_url: /gateway/tickets/{id}, expires_at}", "#60a5fa")
-    y += 26
+    y += 28
     msg(y, "client", "gateway", "GET /gateway/tickets/{id} with the agent key, repeated: 202 while PENDING", "#60a5fa", dash="5 4")
     y += 18
-    frame(f3, y, "alt  async mode (X-AIRT-Async: 1)", "#60a5fa", x1=70, x2=880)
-    y += 26
-    # sync sub-branch
+    frame(f3, y, "alt  async mode (X-AISRF-Async: 1)", "#60a5fa", x1=70, x2=880)
+    y += 28
     f4 = y
-    y += 32
-    y = note(y, "gateway", ["hold_registry.wait(ticket_id): asyncio.Event fast path,", "DB poll every AIRT_HOLD_POLL_INTERVAL_SECONDS (1 s) for", "decisions made in another process"], w=380)
-    y += 6
+    y += F - 10
+    y = note(y, "gateway", ["hold_registry.wait(ticket_id): asyncio.Event fast path,", "DB poll every AISRF_HOLD_POLL_INTERVAL_SECONDS (1 s) for", "decisions made in another process"], w=380)
+    y += 8
     frame(f4, y, "alt  sync mode (default): the HTTP call blocks", "#2dd4bf", x1=70, x2=880)
-    y += 30
+    y += 32
     msg(y, "reviewer", "gateway", "approve / deny with note: dashboard, MCP tool, CLI, REST (audit entry written)", "#fbbf24")
     y += 26
-    y = note(y, "gateway", ["decide(): PENDING -> APPROVED or DENIED, hold resolved,", "ticket_events row, agent log, SSE update"], w=380)
-    status(y - 24, "APPROVED", "ok")
+    y = note(y, "gateway", ["decide(): PENDING -> APPROVED or DENIED, hold resolved,", "ticket_events row, agent log, SSE update"], w=380, chip="APPROVED", chip_role="ok")
     y += 26
-    # timeout
     f5 = y
-    y += 32
-    msg(y, "gateway", "client", "504 {error: expired}   sweeper (5 s) or hold timeout after AIRT_APPROVAL_TIMEOUT_SECONDS; nothing sent upstream", "#f87171")
-    status(y, "EXPIRED", "danger")
+    y += F
+    msg(y, "gateway", "client", ["504 {error: expired}   sweeper (5 s) or the hold wait past AISRF_APPROVAL_TIMEOUT_SECONDS;", "nothing is sent upstream"], "#f87171")
+    status(y, "EXPIRED", "danger", X("reviewer") - 60)
     y += 18
     frame(f5, y, "alt  no decision before the deadline", "#fb923c", x1=70, x2=1230)
-    y += 26
+    y += 28
     f6 = y
-    y += 32
-    msg(y, "gateway", "client", "403 {error: denied, decided_by}   nothing sent upstream", "#f87171")
+    y += F
+    msg(y, "gateway", "client", "403 {error: denied, decided_by}   nothing is sent upstream", "#f87171")
     status(y, "DENIED", "danger")
     y += 18
     frame(f6, y, "alt  reviewer: deny", "#f87171", x1=70, x2=1230)
-    y += 18
+    y += 20
     frame(f2, y, "alt  policy: review (human needed)", "#fbbf24")
-    y += 30
+    y += 32
 
     # forwarding
     y = note(y, "gateway", ["forward_ticket(): mark FORWARDING (sync: immediately; async: on the first poll after approval)",
-                            "inject canary AIRT-CANARY-<hex> into the system prompt when agent.inject_canary",
-                            "swap in the agent's Fernet-decrypted upstream key, strip client credential headers"], w=560)
-    status(y - 30, "FORWARDING", "warn")
-    y += 26
+                            "inject canary AISRF-CANARY-<hex> into the system prompt when agent.inject_canary",
+                            "swap in the agent's Fernet-decrypted upstream key, strip client credential headers"], w=560, chip="FORWARDING")
+    y += 30
     msg(y, "gateway", "upstream", "forward request with upstream credentials (shared httpx client, 120 s timeout)", "#a78bfa")
-    y += 26
+    y += 28
     msg(y, "upstream", "gateway", "200 JSON or SSE stream (relayed chunk by chunk, first 512 KB captured)", "#a78bfa")
-    y += 26
+    y += 28
     msg(y, "gateway", "analysis", "analyze_response(): system prompt leak, refusal, canary leak, PII, guardrail output scanners", "#2dd4bf")
-    y += 26
+    y += 28
     msg(y, "analysis", "gateway", "response findings", "#2dd4bf")
-    y += 20
+    y += 22
     f7 = y
-    y += 32
-    msg(y, "gateway", "client", "403 {error: response_withheld} + X-AIRT-Ticket   (policy.block_on_canary_leak, default on)", "#f87171")
+    y += F
+    msg(y, "gateway", "client", "403 {error: response_withheld} + X-AISRF-Ticket   (policy.block_on_canary_leak, default on)", "#f87171")
     y += 18
     frame(f7, y, "alt  canary leaked in the model output", "#f87171", x1=70, x2=1230)
-    y += 30
-    msg(y, "gateway", "client", "upstream body + X-AIRT-Ticket header  (async: relayed on that poll, later polls return {status: COMPLETED, response})", "#4ade80")
-    status(y, "COMPLETED", "ok")
-    y += 26
+    y += 34
+    msg(y, "gateway", "client", ["upstream body + X-AISRF-Ticket header", "(async: relayed on that poll; later polls return {status: COMPLETED, response})"], "#4ade80")
+    status(y, "COMPLETED", "ok", X("reviewer") - 60)
+    y += 28
     y = note(y, "gateway", ["mark_completed(): COMPLETED when upstream status < 500, otherwise FAILED (client gets 502);",
-                            "network errors -> FAILED. Metrics, per-agent log and ticket timeline updated."], w=560, h=46)
-    status(y - 24, "FAILED on 5xx / network error", "danger")
+                            "network errors -> FAILED. Metrics, per-agent log and ticket timeline updated."], w=560, chip="FAILED on 5xx / network error", chip_role="danger")
+    y += 24
 
-    s.legend(40, H - 52, [("line:#60a5fa", "client traffic"), ("line:#2dd4bf", "in-process gateway work"), ("line:#fbbf24", "human decision"),
-                          ("line:#a78bfa", "upstream call"), ("line:#f87171", "blocked / error reply"), ("line:#4ade80", "relayed response")],
+    # lifelines and lane headers, now that the height is known
+    bottom = y
+    lane_parts: list[str] = []
+    saved = s.parts
+    s.parts = lane_parts
+    for key, (x, name, role) in lanes.items():
+        fill, stroke = ROLE[role]
+        s.path(f"M {x} {top + 40} L {x} {bottom}", LINE_DIM, 1.2, dash="4 6", arrow=False)
+        s.rect(x - 95, top, 190, 40, fill, stroke, r=10)
+        s.text(x, top + 26, name, 14, TEXT, "middle", weight="bold")
+    s.parts = saved[:lane_index] + lane_parts + saved[lane_index:]
+
+    s.legend(40, bottom + 16, [("line:#60a5fa", "client traffic"), ("line:#2dd4bf", "in-process gateway work"), ("line:#fbbf24", "human decision"),
+                               ("line:#a78bfa", "upstream call"), ("line:#f87171", "blocked / error reply"), ("line:#4ade80", "relayed response")],
              cols=6, col_w=245, title="Arrows")
+    s.h = int(bottom + 16 + 52 + 24)
     s.save("request-lifecycle")
 
 
@@ -523,30 +535,48 @@ def request_lifecycle() -> None:
 # 3. Ticket state machine
 # ======================================================================================
 def ticket_state_machine() -> None:
-    s = SVG(1500, 760, "Airt ticket state machine",
-            "airt.models.TicketStatus and the transitions in airt/tickets/service.py. Only PENDING tickets can be decided (409 otherwise).")
+    s = SVG(1500, 780, "AISRF ticket state machine",
+            "aisrf.models.TicketStatus and the transitions in aisrf/tickets/service.py. Only PENDING tickets can be decided (409 otherwise).")
 
-    def state(cx: float, cy: float, name: str, sub: list[str], role: str, w: float = 190, h: float = 74) -> tuple[float, float, float, float]:
+    def state(cx: float, cy: float, name: str, sub: list[str], role: str, w: float = 190, h: float = 74) -> None:
         fill, stroke = ROLE[role]
         s.rect(cx - w / 2, cy - h / 2, w, h, fill, stroke, r=16, sw=2)
         s.text(cx, cy - h / 2 + 26, name, 17, TEXT, "middle", weight="bold")
         s.lines(cx, cy - h / 2 + 44, sub, 11, "#d1d5db", "middle", lh=14)
-        return (cx - w / 2, cy - h / 2, w, h)
 
     C_POLICY, C_HUMAN, C_TIME, C_UP, C_GW = "#2dd4bf", "#fbbf24", "#fb923c", "#a78bfa", "#cbd5e1"
 
-    P = (330, 330)
-    A = (720, 200)
-    D = (720, 460)
-    E = (330, 590)
-    F = (1010, 200)
-    C = (1330, 120)
-    X = (1330, 300)
+    P = (300, 330)
+    A = (740, 170)
+    D = (740, 520)
+    E = (300, 610)
+    F = (1080, 170)
+    C = (1360, 90)
+    X = (1360, 270)
 
     # entry
-    s.rect(60, P[1] - 20, 130, 40, PANEL, PANEL_STROKE, r=20)
-    s.text(125, P[1] + 5, "request received", 12, TEXT, "middle")
-    s.arrow([(190, P[1]), (P[0] - 95, P[1])], "ticket created", C_GW, label_dy=-8)
+    s.rect(50, P[1] - 20, 130, 40, PANEL, PANEL_STROKE, r=20)
+    s.text(115, P[1] + 5, "request received", 12, TEXT, "middle")
+    s.arrow([(180, P[1]), (P[0] - 95, P[1])], "", C_GW)
+
+    # edges first, labels next, nodes last so nothing sits on top of a state box
+    s.arrow([(P[0] + 95, P[1] - 20), (A[0] - 95, A[1])], "", C_POLICY)
+    s.arrow([(P[0] + 95, P[1] + 5), (A[0] - 95, A[1] + 25)], "", C_HUMAN)
+    s.arrow([(P[0] + 95, P[1] + 20), (D[0] - 95, D[1] - 15)], "", C_POLICY)
+    s.arrow([(P[0] + 80, P[1] + 37), (D[0] - 95, D[1] + 10)], "", C_HUMAN)
+    s.arrow([(P[0], P[1] + 37), (E[0], E[1] - 37)], "", C_TIME)
+    s.arrow([(A[0] + 95, A[1]), (F[0] - 95, F[1])], "", C_GW)
+    s.arrow([(F[0] + 95, F[1] - 14), (C[0] - 95, C[1] + 14)], "", C_UP)
+    s.arrow([(F[0] + 95, F[1] + 14), (X[0] - 95, X[1] - 14)], "", C_UP)
+
+    s.label(380, 160, ["policy: approve", "require_approval=false or", "risk < auto_approve_below_risk"], 11, "start")
+    s.label(560, 285, ["reviewer: approve", "dashboard / MCP / CLI"], 11, "start")
+    s.label(560, 380, ["policy: deny", "path/model not allowed, deny regex,", "custom deny rule, risk >= auto_deny_at_risk"], 11, "start")
+    s.label(430, 520, ["reviewer: deny (with note)"], 11, "start")
+    s.label(285, 470, ["timeout: background sweeper (every 5 s)", "or the hold wait reaching expires_at"], 11, "end")
+    s.label(910, 138, ["forward_ticket()", "sync: now; async:", "on the first poll"], 10.5, "middle")
+    s.label(1200, 95, ["upstream answered"], 11, "middle")
+    s.label(1180, 275, ["upstream error / 5xx"], 11, "middle")
 
     state(*P, "PENDING", ["waiting for a decision", "expires_at = now + 300 s"], "warn")
     state(*A, "APPROVED", ["decided, not yet forwarded"], "ok")
@@ -556,35 +586,8 @@ def ticket_state_machine() -> None:
     state(*C, "COMPLETED", ["upstream status < 500", "response analysed, relayed"], "ok")
     state(*X, "FAILED", ["network error or status >= 500", "client gets 502"], "danger")
 
-    # PENDING -> APPROVED (policy) and (reviewer)
-    s.arrow([(P[0] + 95, P[1] - 20), (A[0] - 95, A[1] - 12)], "", C_POLICY)
-    s.label(500, 214, ["policy: approve", "require_approval=false or", "risk < auto_approve_below_risk"], 11, "start")
-    s.arrow([(P[0] + 95, P[1] + 2), (A[0] - 95, A[1] + 22)], "", C_HUMAN)
-    s.label(590, 300, ["reviewer: approve", "dashboard / MCP / CLI"], 11, "start")
-
-    # PENDING -> DENIED (policy) and (reviewer)
-    s.arrow([(P[0] + 95, P[1] + 22), (D[0] - 95, D[1] - 20)], "", C_POLICY)
-    s.label(432, 402, ["policy: deny", "path/model not allowed, deny regex,", "custom deny rule, risk >= auto_deny_at_risk"], 11, "start")
-    s.arrow([(P[0] + 60, P[1] + 37), (D[0] - 95, D[1] + 18)], "", C_HUMAN)
-    s.label(438, 492, ["reviewer: deny (with note)"], 11, "start")
-
-    # PENDING -> EXPIRED
-    s.arrow([(P[0], P[1] + 37), (E[0], E[1] - 37)], "", C_TIME)
-    s.label(345, 470, ["timeout: background sweeper (every 5 s)", "or the hold wait reaching expires_at"], 11, "start")
-
-    # APPROVED -> FORWARDING
-    s.arrow([(A[0] + 95, A[1]), (F[0] - 95, F[1])], "", C_GW)
-    s.label(865, 178, ["gateway: forward_ticket()", "sync: at once; async: first poll"], 11, "middle")
-
-    # FORWARDING -> COMPLETED / FAILED
-    s.arrow([(F[0] + 95, F[1] - 14), (C[0] - 95, C[1] + 6)], "", C_UP)
-    s.label(1170, 130, ["upstream answered"], 11, "middle")
-    s.arrow([(F[0] + 95, F[1] + 14), (X[0] - 95, X[1] - 6)], "", C_UP)
-    s.label(1170, 288, ["upstream error / 5xx"], 11, "middle")
-
-    # notes
-    nx, ny = 900, 400
-    s.rect(nx, ny, 560, 190, PANEL, PANEL_STROKE, r=12)
+    nx, ny = 880, 340
+    s.rect(nx, ny, 580, 200, PANEL, PANEL_STROKE, r=12)
     s.text(nx + 16, ny + 26, "Invariants", 14, TEXT, weight="bold")
     s.lines(nx + 16, ny + 50, [
         "- decide() raises InvalidTransition (HTTP 409) unless the ticket is PENDING.",
@@ -592,13 +595,13 @@ def ticket_state_machine() -> None:
         "- Every transition writes a ticket_events row, a per-agent log line and an SSE event;",
         "  human decisions also append a hash-chained audit entry.",
         "- hold_registry.resolve() wakes a blocked sync request in-process; other processes see the",
-        "  new status on their next DB poll (AIRT_HOLD_POLL_INTERVAL_SECONDS).",
+        "  new status on their next DB poll (AISRF_HOLD_POLL_INTERVAL_SECONDS).",
         "- Async clients poll /gateway/tickets/{id}: 202 PENDING, 403 DENIED / EXPIRED, 502 FAILED,",
         "  200 {status: COMPLETED, response} once relayed.",
         "- Red-team probes are ordinary tickets (source=redteam) and follow the same machine.",
     ], 11.5, "#d1d5db", lh=15)
 
-    s.legend(32, 690, [("line:" + C_POLICY, "policy engine"), ("line:" + C_HUMAN, "human reviewer"), ("line:" + C_TIME, "timeout sweeper / hold deadline"),
+    s.legend(32, 700, [("line:" + C_POLICY, "policy engine"), ("line:" + C_HUMAN, "human reviewer"), ("line:" + C_TIME, "timeout sweeper / hold deadline"),
                        ("line:" + C_GW, "gateway"), ("line:" + C_UP, "upstream result")], cols=5, col_w=250, title="Who triggers the transition")
     s.save("ticket-state-machine")
 
@@ -607,11 +610,11 @@ def ticket_state_machine() -> None:
 # 4. Red-team flow
 # ======================================================================================
 def redteam_flow() -> None:
-    s = SVG(1700, 980, "Airt red-team campaign flow",
+    s = SVG(1700, 980, "AISRF red-team campaign flow",
             "Every probe is a reviewable ticket through the same gateway pipeline; external scanners join through short-lived scan tokens.")
 
     # row 1: campaign creation
-    s.panel(32, 90, 1636, 250, "1. Campaign creation", "airt redteam run / POST /api/redteam/campaigns / MCP create_campaign / dashboard /redteam", accent="#fb923c")
+    s.panel(32, 90, 1636, 250, "1. Campaign creation", "aisrf redteam run / POST /api/redteam/campaigns / MCP create_campaign / dashboard /redteam", accent="#fb923c")
     bx, by, bw, bh = 48, 150, 300, 170
     s.box(bx, by, bw, bh, "Probe corpus (YAML, 300+ probes)",
           ["16 categories: prompt_injection, jailbreak,", "system_prompt_extraction, data_exfiltration,", "pii_leakage, tool_abuse, harmful_content,",
@@ -625,7 +628,7 @@ def redteam_flow() -> None:
           "warn", body_size=11)
     s.box(bx + 920, by, 340, bh, "Comparison group: N targets in parallel",
           ["one campaign per target (agent, model,", "system prompt), same probe set and seed;", "start_group() runs them concurrently;",
-           "AIRT_REDTEAM_CONCURRENCY probes in flight", "per campaign, campaign state:", "CREATED RUNNING PAUSED COMPLETED FAILED CANCELLED"],
+           "AISRF_REDTEAM_CONCURRENCY probes in flight", "per campaign, campaign state:", "CREATED RUNNING PAUSED COMPLETED FAILED CANCELLED"],
           "warn", body_size=11)
     s.box(bx + 1280, by, 328, bh, "Materialized campaign",
           ["campaigns row + probe_results rows", "config: categories, mutators, seed,", "target, concurrency; SSE progress on", "/api/stream/campaigns; pause / resume /", "cancel at any time"],
@@ -634,13 +637,13 @@ def redteam_flow() -> None:
         s.arrow([(x0, by + bh / 2), (x0 + 20, by + bh / 2)], "", "#fb923c")
 
     # row 2: pipeline through the gateway
-    s.panel(32, 370, 1636, 230, "2. Probes through the human-in-the-loop pipeline", "airt.gateway.pipeline.submit(source=redteam, campaign_id, probe_id): identical to an HTTP call", accent="#2dd4bf")
+    s.panel(32, 370, 1636, 230, "2. Probes through the human-in-the-loop pipeline", "aisrf.gateway.pipeline.submit(source=redteam, campaign_id, probe_id): identical to an HTTP call", accent="#2dd4bf")
     py = 428
     cols = [
         ("pipeline.submit()", ["build provider body from", "probe messages + mutator,", "normalize, create ticket", "PENDING with campaign_id", "and probe_id"], "gateway"),
         ("Analyzers + policy", ["same 10 request analyzers", "and guardrail integrations;", "agent policy may auto-deny", "(verdict BLOCKED) or", "auto-approve"], "gateway"),
-        ("Human approval", ["ticket held for a reviewer", "(dashboard / MCP / CLI);", "auto-runs when", "AIRT_REQUIRE_APPROVAL_FOR_", "REDTEAM_PROBES=false"], "human"),
-        ("Target model", ["forwarder swaps in the", "upstream key, canary", "injected in the system", "prompt, per-probe timeout", "AIRT_REDTEAM_PROBE_TIMEOUT"], "upstream"),
+        ("Human approval", ["ticket held for a reviewer", "(dashboard / MCP / CLI);", "auto-runs when", "AISRF_REQUIRE_APPROVAL_FOR_", "REDTEAM_PROBES=false"], "human"),
+        ("Target model", ["forwarder swaps in the", "upstream key, canary", "injected in the system", "prompt, per-probe timeout", "AISRF_REDTEAM_PROBE_TIMEOUT"], "upstream"),
         ("Evaluators", ["refusal detector,", "canary leak (strongest),", "success_indicators regexes,", "harmful / guardrail findings,", "optional LLM judge"], "gateway"),
         ("Verdicts", ["VULNERABLE  RESISTED", "BLOCKED  ERROR", "INCONCLUSIVE", "+ confidence + evidence", "+ ticket_id, latency_ms"], "ok"),
     ]
@@ -656,10 +659,10 @@ def redteam_flow() -> None:
     s.arrow([(bx + 1444, by + bh), (bx + 1444, 370)], "", "#fb923c")
     s.arrow([(48 + cw / 2, 340), (48 + cw / 2, 370)], "", "#fb923c")
     s.path(f"M {bx + 1444} 355 L {48 + cw / 2} 355", "#fb923c", 1.8, arrow=False)
-    s.label(860, 359, "start(): one submit() per probe entry, AIRT_REDTEAM_CONCURRENCY at a time", 11)
+    s.label(860, 359, "start(): one submit() per probe entry, AISRF_REDTEAM_CONCURRENCY at a time", 11)
 
     # row 3: summary and reports + external engines
-    s.panel(32, 630, 1010, 262, "3. Summary and reports", "engine.build_summary(), compare_group(), airt/reports builders + renderers", accent="#4ade80")
+    s.panel(32, 630, 1010, 262, "3. Summary and reports", "engine.build_summary(), compare_group(), aisrf/reports builders + renderers", accent="#4ade80")
     s.box(48, 688, 300, 136, "Campaign summary",
           ["by_verdict totals, vulnerability rate,", "per-category and per-technique rates,", "per-severity breakdown, benign over-refusal", "rate, OWASP LLM Top 10 coverage", "(taxonomy.coverage), duration"],
           "ok", body_size=11)
@@ -667,11 +670,11 @@ def redteam_flow() -> None:
           ["category x target: vulnerable / tested /", "rate; per-probe verdict rows across", "targets; ranking by vulnerability rate;", "verdict totals per campaign"],
           "ok", body_size=11)
     s.box(688, 688, 338, 136, "Reports (12 formats)",
-          ["/api/reports/campaign/{id}?format=...", "json yaml csv tsv md html pdf xlsx txt xml", "sarif (code scanning) junit (CI gating);", "airt report campaign/ID -f sarif -o out.sarif;", "MCP generate_report"],
+          ["/api/reports/campaign/{id}?format=...", "json yaml csv tsv md html pdf xlsx txt xml", "sarif (code scanning) junit (CI gating);", "aisrf report campaign/ID -f sarif -o out.sarif;", "MCP generate_report"],
           "store", body_size=11)
     s.arrow([(348, 756), (368, 756)], "", "#4ade80")
     s.arrow([(668, 756), (688, 756)], "", "#4ade80")
-    s.arrow([(48 + 5 * (cw + 22) + cw / 2, py + ch), (48 + 5 * (cw + 22) + cw / 2, 615), (198, 615), (198, 630)], "verdicts aggregated", "#4ade80", label_pos=0.5)
+    s.arrow([(48 + 5 * (cw + 22) + cw / 2, py + ch), (48 + 5 * (cw + 22) + cw / 2, 612), (198, 612), (198, 630)], "verdicts aggregated", "#4ade80", label_pos=0.5)
 
     s.panel(1070, 630, 598, 262, "External engines through the same gateway", "short-lived scan tokens (scn_, TTL, revocable, bound to a campaign) let a scanner act as the agent", accent="#a78bfa")
     eng = [
@@ -687,7 +690,8 @@ def redteam_flow() -> None:
         yy += 44
     s.lines(1086, 876, ["Scanner base_url -> gw /v1 or /proxy + token: every request is a ticket (source=redteam, campaign_id),",
                         "analysed, policy-checked, human-approved and response-scanned; findings share the taxonomy in reports."], 11, MUTED, lh=14)
-    s.arrow([(1370, 630), (1370, 600)], "scan token traffic enters the pipeline in row 2", "#a78bfa", label_dy=-12, label_pos=1.0)
+    s.arrow([(1370, 630), (1370, 600)], "", "#a78bfa")
+    s.label(1382, 617, "scanner traffic joins row 2", 11, "start")
 
     s.legend(32, 916, [("warn", "campaign setup"), ("gateway", "gateway pipeline"), ("human", "human decision"), ("upstream", "target / external engine"),
                        ("ok", "results"), ("store", "persistence / reports")], cols=6, col_w=170, title="Legend")
@@ -698,60 +702,59 @@ def redteam_flow() -> None:
 # 5. Deployment topology
 # ======================================================================================
 def deployment() -> None:
-    s = SVG(1600, 860, "Airt deployment topology",
+    s = SVG(1600, 860, "AISRF deployment topology",
             "docker compose up -d (SQLite volume) or docker compose --profile postgres up -d; TLS terminates in a reverse proxy in front of the gateway.")
 
     # left: actors
-    s.panel(32, 92, 300, 500, "Actors", "outside the compose network")
-    s.box(48, 150, 268, 70, "Applications and agents", ["SDK base_url, /proxy, mitmproxy", "X-AIRT-Key, sync or async"], "client", body_size=11)
-    s.box(48, 236, 268, 70, "Reviewers (browser)", ["dashboard, SSE live queues", "signed HttpOnly session cookie"], "human", body_size=11)
-    s.box(48, 322, 268, 70, "MCP clients over HTTP", ["Claude Desktop / Claude Code", "POST /mcp + Bearer admin token"], "human", body_size=11)
-    s.box(48, 408, 268, 86, "MCP clients over stdio", ["`airt mcp --url https://gw --token ...`", "runs beside the client and calls", "the REST API (separate process)"], "human", body_size=11)
-    s.box(48, 510, 268, 66, "CLI and CI", ["airt tickets / report / audit verify", "AIRT_URL + AIRT_ADMIN_API_TOKEN"], "human", body_size=11)
+    s.panel(32, 92, 300, 520, "Actors", "outside the compose network")
+    s.box(48, 150, 268, 78, "Applications and agents", ["SDK base_url, /proxy, mitmproxy", "X-AISRF-Key, sync or async"], "client", body_size=11)
+    s.box(48, 240, 268, 78, "Reviewers (browser)", ["dashboard, SSE live queues", "signed HttpOnly session cookie"], "human", body_size=11)
+    s.box(48, 330, 268, 78, "MCP clients over HTTP", ["Claude Desktop / Claude Code", "POST /mcp + Bearer admin token"], "human", body_size=11)
+    s.box(48, 420, 268, 92, "MCP clients over stdio", ["`aisrf mcp --url https://gw --token ...`", "runs beside the client and calls", "the REST API (separate process)"], "human", body_size=11)
+    s.box(48, 524, 268, 76, "CLI and CI", ["aisrf tickets / report / audit verify", "AISRF_URL + AISRF_ADMIN_API_TOKEN"], "human", body_size=11)
 
     # reverse proxy
     s.box(390, 250, 220, 150, "Reverse proxy (TLS)", ["nginx / Caddy / Traefik", "TLS termination", "proxy_read_timeout > 300 s", "no buffering for SSE", "and streamed relays", "forwards X-Request-ID"], "neutral", body_size=11)
-    for yy in (185, 271, 357, 543):
+    for yy in (189, 279, 369, 466, 562):
         s.arrow([(316, yy), (390, 325)], "", "#94a3b8")
-    s.arrow([(316, 451), (390, 325)], "", "#94a3b8")
     s.text(325, 240, "HTTPS", 11, MUTED)
 
     # compose network
-    s.panel(660, 92, 620, 620, "docker compose network", "image airt:latest, multi-stage python:3.12-slim, non-root user, HEALTHCHECK GET /healthz", accent="#2dd4bf")
-    s.box(680, 150, 580, 250, "airt-gateway container  (127.0.0.1:8080 -> 8080)",
-          ["uvicorn, AIRT_WORKERS=1 (default): one process serves gateway /v1 /proxy /gateway/tickets,",
+    s.panel(660, 92, 620, 620, "docker compose network", "image aisrf:latest, multi-stage python:3.12-slim, non-root user, HEALTHCHECK GET /healthz", accent="#2dd4bf")
+    s.box(680, 150, 580, 250, "aisrf-gateway container  (127.0.0.1:8080 -> 8080)",
+          ["uvicorn, AISRF_WORKERS=1 (default): one process serves gateway /v1 /proxy /gateway/tickets,",
            "reviewer API /api/*, dashboard, MCP /mcp, /metrics, /healthz, /readyz",
            "",
            "in-process state:  hold registry (asyncio.Event per waiting ticket)  |  rate limiter  |",
            "SSE broadcaster  |  metrics  |  background sweeper (expire PENDING every 5 s, purge old tickets)",
            "",
-           "env: .env + AIRT_* (AIRT_DATABASE_URL, AIRT_SECRET_KEY / AIRT_ENCRYPTION_KEY, AIRT_ADMIN_API_TOKEN,",
-           "AIRT_NOTIFY_WEBHOOK_URLS, AIRT_APPROVAL_TIMEOUT_SECONDS, AIRT_HOLD_POLL_INTERVAL_SECONDS)"],
+           "env: .env + AISRF_* (AISRF_DATABASE_URL, AISRF_SECRET_KEY / AISRF_ENCRYPTION_KEY, AISRF_ADMIN_API_TOKEN,",
+           "AISRF_NOTIFY_WEBHOOK_URLS, AISRF_APPROVAL_TIMEOUT_SECONDS, AISRF_HOLD_POLL_INTERVAL_SECONDS)"],
           "gateway", body_size=11)
     s.arrow([(610, 325), (680, 325)], "HTTP :8080", "#94a3b8", label_dy=-8)
 
-    s.box(680, 430, 270, 92, "volume airt-data -> /app/data", ["airt.db (SQLite, default)", "Fernet-encrypted upstream keys live", "in the agents table, never on disk in clear"], "store", body_size=10.5)
-    s.box(990, 430, 270, 92, "volume airt-logs -> /app/logs", ["airt.jsonl (50 MB x 10)", "agents/<agent_id>.jsonl (20 MB x 5)", "JSON console output too"], "store", body_size=10.5)
+    s.box(680, 430, 270, 92, "volume aisrf-data -> /app/data", ["aisrf.db (SQLite, default)", "Fernet-encrypted upstream keys live", "in the agents table, never on disk in clear"], "store", body_size=10.5)
+    s.box(990, 430, 270, 92, "volume aisrf-logs -> /app/logs", ["aisrf.jsonl (50 MB x 10)", "agents/<agent_id>.jsonl (20 MB x 5)", "JSON console output too"], "store", body_size=10.5)
     s.arrow([(815, 400), (815, 430)], "", "#9ca3af")
     s.arrow([(1125, 400), (1125, 430)], "", "#9ca3af")
 
-    s.box(680, 560, 580, 130, "airt-postgres container  (profile: postgres, optional)",
-          ["postgres:16-alpine, volume airt-pgdata -> /var/lib/postgresql/data, pg_isready healthcheck",
-           "AIRT_DATABASE_URL=postgresql+asyncpg://airt:airt@postgres:5432/airt  (pip install \"airt[postgres]\")",
+    s.box(680, 560, 580, 130, "aisrf-postgres container  (profile: postgres, optional)",
+          ["postgres:16-alpine, volume aisrf-pgdata -> /var/lib/postgresql/data, pg_isready healthcheck",
+           "AISRF_DATABASE_URL=postgresql+asyncpg://aisrf:aisrf@postgres:5432/aisrf  (pip install \"aisrf[postgres]\")",
            "gateway depends_on postgres with required: false; without the profile the gateway uses SQLite"],
           "store", body_size=11)
     s.arrow([(815, 522), (815, 560)], "or", "#9ca3af", dash="5 4", label_dx=14, label_anchor="start", label_dy=4)
 
     # right: outbound
     s.panel(1320, 92, 248, 620, "Outbound", "egress from the gateway only")
-    s.box(1336, 150, 216, 120, "Upstream providers", ["OpenAI, Anthropic, Gemini,", "Mistral, Groq, Ollama,", "custom HTTP APIs", "credentials injected by", "the gateway"], "upstream", body_size=11)
-    s.box(1336, 300, 216, 96, "Webhooks", ["Slack or generic JSON", "on ticket created /", "expired / failed", "(AIRT_NOTIFY_*)"], "human", body_size=11)
-    s.box(1336, 426, 216, 96, "LLM judge / guardrail APIs", ["optional: AIRT_JUDGE_*,", "Lakera Guard endpoint,", "LLM Guard / NeMo local"], "upstream", body_size=11)
-    s.box(1336, 552, 216, 96, "Prometheus / SIEM", ["scrape /metrics,", "ship logs/*.jsonl,", "verify audit chain"], "store", body_size=11)
-    s.arrow([(1260, 210), (1336, 210)], "", "#a78bfa")
-    s.arrow([(1260, 348), (1336, 348)], "", "#fbbf24")
-    s.arrow([(1260, 474), (1336, 474)], "", "#a78bfa")
-    s.arrow([(1336, 600), (1260, 600)], "", "#9ca3af", dash="5 4")
+    s.box(1336, 150, 216, 124, "Upstream providers", ["OpenAI, Anthropic, Gemini,", "Mistral, Groq, Ollama,", "custom HTTP APIs", "credentials injected by", "the gateway"], "upstream", body_size=11)
+    s.box(1336, 292, 216, 104, "Webhooks", ["Slack or generic JSON", "on ticket created /", "expired / failed", "(AISRF_NOTIFY_*)"], "human", body_size=11)
+    s.box(1336, 412, 216, 104, "LLM judge / guardrail APIs", ["optional: AISRF_JUDGE_*,", "Lakera Guard endpoint,", "LLM Guard / NeMo local"], "upstream", body_size=11)
+    s.box(1336, 532, 216, 96, "Prometheus / SIEM", ["scrape /metrics,", "ship logs/*.jsonl,", "verify audit chain"], "store", body_size=11)
+    s.arrow([(1260, 212), (1336, 212)], "", "#a78bfa")
+    s.arrow([(1260, 344), (1336, 344)], "", "#fbbf24")
+    s.arrow([(1260, 464), (1336, 464)], "", "#a78bfa")
+    s.arrow([(1336, 580), (1260, 580)], "", "#9ca3af", dash="5 4")
 
     # note
     s.rect(390, 430, 250, 282, PANEL, "#fb923c", r=12)
@@ -759,21 +762,21 @@ def deployment() -> None:
     s.lines(406, 480, wrap(
         "A synchronous request blocks on an asyncio.Event inside the gateway process. A decision taken in the same process "
         "(dashboard, /mcp, REST) wakes it instantly: the fast path. A decision written by another process (a second uvicorn "
-        "worker, the stdio MCP host, a direct DB write) is noticed on the next DB poll, every AIRT_HOLD_POLL_INTERVAL_SECONDS "
-        "(1 s). Keep AIRT_WORKERS=1 and scale by adding gateways per agent group until the Redis / LISTEN-NOTIFY registry lands.",
+        "worker, the stdio MCP host, a direct DB write) is noticed on the next DB poll, every AISRF_HOLD_POLL_INTERVAL_SECONDS "
+        "(1 s). Keep AISRF_WORKERS=1 and scale by adding gateways per agent group until the Redis / LISTEN-NOTIFY registry lands.",
         11.5, 220), 11.5, "#d1d5db", lh=15)
 
-    s.legend(32, 760, [("client", "application traffic"), ("human", "reviewer / operator surface"), ("gateway", "Airt container"),
+    s.legend(32, 760, [("client", "application traffic"), ("human", "reviewer / operator surface"), ("gateway", "AISRF container"),
                        ("store", "storage / data"), ("upstream", "external API"), ("neutral", "infrastructure")], cols=6, col_w=230, title="Legend")
-    s.text(32, 830, "Single container alternative: docker run -d -p 127.0.0.1:8080:8080 --env-file .env -v airt-data:/app/data -v airt-logs:/app/logs airt", 11.5, MUTED)
+    s.text(32, 830, "Single container alternative: docker run -d -p 127.0.0.1:8080:8080 --env-file .env -v aisrf-data:/app/data -v aisrf-logs:/app/logs aisrf", 11.5, MUTED)
     s.save("deployment")
 
 
 # ======================================================================================
-# 6. Taxonomy matrix (generated from airt.taxonomy)
+# 6. Taxonomy matrix (generated from aisrf.taxonomy)
 # ======================================================================================
 def taxonomy() -> None:
-    from airt import taxonomy as tx
+    from aisrf import taxonomy as tx
 
     owasp = list(tx.OWASP_LLM_TOP10.keys())
     greshake = list(tx.GRESHAKE_THREATS.keys()) + ["hidden"]  # "hidden" is a Greshake delivery method used by obfuscation categories
@@ -792,8 +795,8 @@ def taxonomy() -> None:
     grid_top = top + header_h
     H = grid_top + len(mapped) * row_h + 40 + 140
 
-    s = SVG(int(W), int(H), "Airt taxonomy matrix",
-            "airt.taxonomy.CATEGORY_MAP: finding and probe categories mapped to OWASP LLM Top 10 (2025), Greshake et al. threat classes and Thacker technique classes.")
+    s = SVG(int(W), int(H), "AISRF taxonomy matrix",
+            "aisrf.taxonomy.CATEGORY_MAP: finding and probe categories mapped to OWASP LLM Top 10 (2025), Greshake et al. threat classes and Thacker technique classes.")
 
     group_color = {"owasp": "#2dd4bf", "greshake": "#fbbf24", "thacker": "#a78bfa"}
     group_label = {"owasp": "OWASP LLM Top 10 (2025)", "greshake": "Greshake et al. threats (+ hidden delivery)", "thacker": "Thacker technique classes"}
@@ -844,11 +847,11 @@ def taxonomy() -> None:
     half = (len(items) + 1) // 2
     s.lines(left + 90, fy, items[:half], 11.5, "#d1d5db", lh=16)
     s.lines(left + 90 + 340, fy, items[half:], 11.5, "#d1d5db", lh=16)
-    s.text(left + 800, fy, "Greshake: " + ", ".join(tx.GRESHAKE_THREATS) + "; hidden = concealed delivery (white text, encodings, multi-stage payloads).", 11.5, "#d1d5db")
+    s.text(left + 800, fy, "Greshake threats: " + ", ".join(tx.GRESHAKE_THREATS) + "; hidden = concealed delivery.", 11.5, "#d1d5db")
     s.text(left + 800, fy + 16, "Thacker: " + ", ".join(t.replace("_", " ") for t in thacker) + ".", 11.5, "#d1d5db")
     s.text(left + 800, fy + 32, "Control / meta categories with no mapping: " + ", ".join(unmapped) + ".", 11.5, "#d1d5db")
     s.text(left + 800, fy + 48, "Findings carry owasp / greshake / thacker fields (taxonomy.enrich); campaign summaries report OWASP coverage.", 11.5, "#d1d5db")
-    s.text(left, fy + 96, "Regenerate with docs/images/generate_diagrams.py after editing airt/taxonomy.py; this diagram is built from CATEGORY_MAP at generation time.", 11, MUTED)
+    s.text(left, fy + 96, "Regenerate with docs/images/generate_diagrams.py after editing aisrf/taxonomy.py; this diagram is built from CATEGORY_MAP at generation time.", 11, MUTED)
     s.save("taxonomy")
 
 

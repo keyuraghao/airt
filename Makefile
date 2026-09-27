@@ -2,7 +2,7 @@
 PY ?= .venv/bin/python
 UV ?= uv
 PORT ?= 8080
-IMAGE ?= airt:latest
+IMAGE ?= aisrf:latest
 
 .PHONY: help venv install dev run test lint style bump fmt node-test docker-build docker-run compose-up compose-down clean
 
@@ -18,8 +18,8 @@ install: venv  ## Install the package (runtime deps only)
 dev: venv  ## Install with dev, postgres and mitm extras
 	$(UV) pip install --python $(PY) -e ".[dev,postgres,mitm]"
 
-run:  ## Start the gateway (airt serve)
-	$(PY) -m airt.cli serve --port $(PORT)
+run:  ## Start the gateway (aisrf serve)
+	$(PY) -m aisrf.cli serve --port $(PORT)
 
 test:  ## Run the Python test suite
 	$(PY) -m pytest -q
@@ -27,9 +27,9 @@ test:  ## Run the Python test suite
 node-test:  ## Run the Node SDK self-test
 	node sdk/node/test.js
 
-lint:  ## Ruff check, format check (integrations, examples, scripts) and the style guard
-	$(PY) -m ruff check airt tests examples scripts
-	$(PY) -m ruff format --check airt/integrations examples
+lint:  ## Ruff check (aisrf, tests, examples, scripts), format check (integrations, examples) and the style guard
+	$(PY) -m ruff check aisrf tests examples scripts
+	$(PY) -m ruff format --check aisrf/integrations examples
 	$(PY) scripts/check_style.py
 
 style:  ## Style guard only (em dashes, merge markers)
@@ -40,14 +40,14 @@ bump:  ## Bump the version everywhere: make bump VERSION=1.2.3 (DRY=1 to preview
 	$(PY) scripts/bump_version.py $(if $(DRY),--dry-run,) $(VERSION)
 
 fmt:  ## Ruff format and autofix
-	$(PY) -m ruff format airt tests examples scripts
-	$(PY) -m ruff check --fix airt tests examples scripts
+	$(PY) -m ruff format aisrf tests examples scripts
+	$(PY) -m ruff check --fix aisrf tests examples scripts
 
 docker-build:  ## Build the container image
 	docker build -t $(IMAGE) .
 
 docker-run: docker-build  ## Run the image with .env, data and logs mounted
-	docker run --rm -it -p $(PORT):8080 --env-file .env -v airt-data:/app/data -v airt-logs:/app/logs $(IMAGE)
+	docker run --rm -it -p $(PORT):8080 --env-file .env -v aisrf-data:/app/data -v aisrf-logs:/app/logs $(IMAGE)
 
 compose-up:  ## docker compose up (add PROFILE=postgres for PostgreSQL)
 	docker compose $(if $(PROFILE),--profile $(PROFILE),) up -d --build

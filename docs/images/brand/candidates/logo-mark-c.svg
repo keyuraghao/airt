@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="AISRF mark, candidate C: seam">
+  <title>AISRF candidate C: seam</title>
+  <defs>
+    <clipPath id="ul"><polygon points="0,0 59.5,0 0,59.5"/></clipPath>
+    <clipPath id="lr"><polygon points="4.5,64 64,4.5 64,64"/></clipPath>
+  </defs>
+  <!-- The system, cut cleanly along the seam -->
+  <rect x="8" y="8" width="48" height="48" rx="11" fill="#22D3EE" clip-path="url(#ul)"/>
+  <rect x="8" y="8" width="48" height="48" rx="11" fill="#22D3EE" clip-path="url(#lr)"/>
+  <!-- The human at the seam -->
+  <circle cx="32" cy="32" r="7" fill="#F59E0B"/>
+</svg>

@@ -1,5 +1,5 @@
 name: Bug report
-description: Something in Airt (the gateway, analyzers, red team engine, reports, dashboard, CLI, MCP server or SDKs) does not behave as documented.
+description: Something in AISRF (the gateway, analyzers, red team engine, reports, dashboard, CLI, MCP server or SDKs) does not behave as documented.
 title: "[bug]: "
 labels: [bug, needs-info]
 body:
@@ -10,9 +10,9 @@ body:
   - type: input
     id: version
     attributes:
-      label: Airt version
-      description: Output of `airt version` (or the image tag / commit SHA).
-      placeholder: airt 1.0.0
+      label: AISRF version
+      description: Output of `aisrf version` (or the image tag / commit SHA).
+      placeholder: aisrf 1.0.0
     validations:
       required: true
   - type: dropdown
@@ -28,8 +28,8 @@ body:
         - Dashboard
         - CLI
         - MCP server
-        - Python integration (patch_httpx, AirtClient, mitmproxy addon)
-        - Node SDK (airt-intercept)
+        - Python integration (patch_httpx, AISRFClient, mitmproxy addon)
+        - Node SDK (aisrf-intercept)
         - Runtime settings / guardrail or scanner integrations
         - Docker / deployment
         - Other
@@ -54,7 +54,7 @@ body:
     id: logs
     attributes:
       label: Logs and ticket details
-      description: Relevant lines from `logs/airt.jsonl`, the ticket timeline or findings. Redact secrets and PII.
+      description: Relevant lines from `logs/aisrf.jsonl`, the ticket timeline or findings. Redact secrets and PII.
       render: text
   - type: input
     id: environment

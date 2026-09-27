@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-"""Bump the Airt version in every place that carries it.
+"""Bump the AISRF version in every place that carries it.
 
-Updates `__version__` in airt/__init__.py, `[project] version` in pyproject.toml and turns the
+Updates `__version__` in `<package>/__init__.py` (the package named in pyproject.toml, `aisrf`), `[project] version` in pyproject.toml and turns the
 `## [Unreleased]` section of CHANGELOG.md into `## [X.Y.Z] - YYYY-MM-DD` (adding a fresh empty
 Unreleased section and the compare links at the bottom). The Node package in sdk/node is versioned
 independently and is not touched.
@@ -24,10 +24,21 @@ from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-INIT_FILE = ROOT / "airt" / "__init__.py"
 PYPROJECT = ROOT / "pyproject.toml"
+
+
+def _package_dir() -> Path:
+    """The import package is named after [project].name in pyproject.toml (`aisrf`)."""
+    try:
+        name = tomllib.loads(PYPROJECT.read_text(encoding="utf-8"))["project"]["name"]
+    except (OSError, KeyError, tomllib.TOMLDecodeError):
+        name = "aisrf"
+    return ROOT / name.replace("-", "_")
+
+
+INIT_FILE = _package_dir() / "__init__.py"
 CHANGELOG = ROOT / "CHANGELOG.md"
-REPO_URL = "https://github.com/keyuraghao/airt"
+REPO_URL = "https://github.com/keyuraghao/aisrf"
 # Semantic Versioning 2.0.0 (https://semver.org), with optional prerelease and build metadata.
 SEMVER = re.compile(
     r"^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)"
@@ -152,16 +163,16 @@ def main(argv: list[str] | None = None) -> int:
         if args.check:
             problems = []
             if init_version != new:
-                problems.append(f"airt/__init__.py has {init_version}")
+                problems.append(f"{INIT_FILE.relative_to(ROOT)} has {init_version}")
             if pyproject_version != new:
                 problems.append(f"pyproject.toml has {pyproject_version}")
             if problems:
                 raise BumpError(f"version mismatch for {new}: " + ", ".join(problems))
-            print(f"version {new} is consistent across airt/__init__.py and pyproject.toml")
+            print(f"version {new} is consistent across {INIT_FILE.relative_to(ROOT)} and pyproject.toml")
             return 0
         if init_version != pyproject_version:
             raise BumpError(
-                f"current versions disagree: airt/__init__.py={init_version}, pyproject.toml={pyproject_version}"
+                f"current versions disagree: {INIT_FILE.relative_to(ROOT)}={init_version}, pyproject.toml={pyproject_version}"
             )
         if parse_semver(new) <= parse_semver(init_version) and not args.force:
             raise BumpError(

@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version to release (must match airt.__version__ and pyproject.toml, e.g. 1.2.3). The tag v<version> must already exist."
+        description: "Version to release (must match aisrf.__version__ and pyproject.toml, e.g. 1.2.3). The tag v<version> must already exist."
         required: true
         type: string
 
@@ -21,7 +21,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  IMAGE: ghcr.io/keyuraghao/airt
+  IMAGE: ghcr.io/keyuraghao/aisrf
   PYTHON_VERSION: "3.12"
 
 jobs:
@@ -82,13 +82,13 @@ jobs:
           uv venv .venv --python ${{ env.PYTHON_VERSION }}
           uv pip install --python .venv/bin/python -e ".[dev]"
       - name: Ruff
-        run: .venv/bin/ruff check airt tests examples
+        run: .venv/bin/ruff check aisrf tests examples
       - name: Style guard
         run: .venv/bin/python scripts/check_style.py
       - name: Pytest
         env:
-          AIRT_SECRET_KEY: release-only-secret-key-not-for-production
-          AIRT_LOG_JSON_CONSOLE: "true"
+          AISRF_SECRET_KEY: release-only-secret-key-not-for-production
+          AISRF_LOG_JSON_CONSOLE: "true"
         run: .venv/bin/python -m pytest -q
       - name: Node SDK self-test
         run: node sdk/node/test.js
@@ -112,17 +112,17 @@ jobs:
           ls -l dist
       - name: Verify the built version
         run: |
-          python -m pip install --quiet dist/airt-${{ needs.verify.outputs.version }}-py3-none-any.whl
-          INSTALLED="$(python -c 'import airt; print(airt.__version__)')"
+          python -m pip install --quiet dist/aisrf-${{ needs.verify.outputs.version }}-py3-none-any.whl
+          INSTALLED="$(python -c 'import aisrf; print(aisrf.__version__)')"
           test "$INSTALLED" = "${{ needs.verify.outputs.version }}" || { echo "::error::wheel reports $INSTALLED"; exit 1; }
-          airt version
+          aisrf version
       - name: Generate CycloneDX SBOM
         run: |
           python -m pip install --quiet cyclonedx-bom
           python -m venv /tmp/sbom-env
-          /tmp/sbom-env/bin/pip install --quiet dist/airt-${{ needs.verify.outputs.version }}-py3-none-any.whl
-          cyclonedx-py environment /tmp/sbom-env --of JSON -o dist/airt-${{ needs.verify.outputs.version }}.cyclonedx.json
-          python -c "import json; d=json.load(open('dist/airt-${{ needs.verify.outputs.version }}.cyclonedx.json')); print(d['bomFormat'], d['specVersion'], len(d.get('components', [])), 'components')"
+          /tmp/sbom-env/bin/pip install --quiet dist/aisrf-${{ needs.verify.outputs.version }}-py3-none-any.whl
+          cyclonedx-py environment /tmp/sbom-env --of JSON -o dist/aisrf-${{ needs.verify.outputs.version }}.cyclonedx.json
+          python -c "import json; d=json.load(open('dist/aisrf-${{ needs.verify.outputs.version }}.cyclonedx.json')); print(d['bomFormat'], d['specVersion'], len(d.get('components', [])), 'components')"
       - name: Checksums
         working-directory: dist
         run: |
@@ -164,8 +164,8 @@ jobs:
             type=raw,value=${{ needs.verify.outputs.version }}
             type=raw,value=${{ needs.verify.outputs.major_minor }},enable=${{ needs.verify.outputs.prerelease == 'false' }}
           labels: |
-            org.opencontainers.image.title=Airt
-            org.opencontainers.image.description=Airt, the AI Security & Research Framework: human-in-the-loop interception, analysis and red teaming for LLM traffic
+            org.opencontainers.image.title=AISRF
+            org.opencontainers.image.description=AISRF, the AI Security & Research Framework: human-in-the-loop interception, analysis and red teaming for LLM traffic
             org.opencontainers.image.licenses=Apache-2.0
             org.opencontainers.image.version=${{ needs.verify.outputs.version }}
       - name: Build and push
@@ -225,7 +225,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.verify.outputs.tag }}
-          name: Airt ${{ needs.verify.outputs.version }}
+          name: AISRF ${{ needs.verify.outputs.version }}
           body_path: release-notes.md
           generate_release_notes: ${{ steps.notes.outputs.generate == 'true' }}
           prerelease: ${{ needs.verify.outputs.prerelease == 'true' }}
@@ -238,7 +238,7 @@ jobs:
             dist/SHA256SUMS.txt
 
   # PyPI publishing via trusted publishing (OIDC, no API token). To enable:
-  #   1. On pypi.org, add a "pending publisher" for project `airt`: owner keyuraghao, repository airt,
+  #   1. On pypi.org, add a "pending publisher" for project `aisrf`: owner keyuraghao, repository aisrf,
   #      workflow release.yml, environment pypi.
   #   2. Create a GitHub environment named `pypi` (Settings > Environments) with required reviewers.
   #   3. Uncomment the job below. `id-token: write` is already granted at the workflow level.
@@ -251,7 +251,7 @@ jobs:
   #   if: needs.verify.outputs.prerelease == 'false'
   #   environment:
   #     name: pypi
-  #     url: https://pypi.org/project/airt/${{ needs.verify.outputs.version }}/
+  #     url: https://pypi.org/project/aisrf/${{ needs.verify.outputs.version }}/
   #   permissions:
   #     id-token: write
   #     contents: read

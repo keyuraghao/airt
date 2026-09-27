@@ -1,14 +1,15 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "airt"
+name = "aisrf"
 version = "1.0.0"
-description = "AIRT - AI Security & Research Framework: human-in-the-loop interception, analysis and red teaming for LLM traffic"
+description = "AISRF - AI Security & Research Framework: human-in-the-loop interception, analysis and red teaming for LLM traffic"
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "Apache-2.0" }
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 dependencies = [
   "fastapi>=0.115",
   "uvicorn[standard]>=0.30",
@@ -27,7 +28,7 @@ dependencies = [
   "orjson>=3.10",
   "pyyaml>=6",
   "cryptography>=42",
-  "mcp>=2.0",
+  "mcp>=1.10",
   "reportlab>=4",
   "openpyxl>=3.1",
 ]
@@ -37,17 +38,18 @@ postgres = ["asyncpg>=0.29"]
 mitm = ["mitmproxy>=10"]
 guardrails = ["llm-guard>=0.3", "nemoguardrails>=0.10", "rebuff>=0.0.5"]
 scanners = ["garak>=0.10", "pyrit>=0.5"]
-all = ["asyncpg>=0.29", "mitmproxy>=10", "llm-guard>=0.3", "nemoguardrails>=0.10", "rebuff>=0.0.5", "garak>=0.10", "pyrit>=0.5"]
+codereview = ["semgrep>=1.100", "bandit>=1.7"]
+all = ["asyncpg>=0.29", "mitmproxy>=10", "llm-guard>=0.3", "nemoguardrails>=0.10", "rebuff>=0.0.5", "garak>=0.10", "pyrit>=0.5", "semgrep>=1.100", "bandit>=1.7"]
 dev = ["pytest>=8", "pytest-asyncio>=0.23", "ruff>=0.5", "asgi-lifespan>=2"]
 
 [project.scripts]
-airt = "airt.cli:app"
+aisrf = "aisrf.cli:app"
 
 [tool.setuptools.packages.find]
-include = ["airt*"]
+include = ["aisrf*"]
 
 [tool.setuptools.package-data]
-airt = ["dashboard/templates/*.html", "dashboard/static/*", "redteam/corpus/*.yaml"]
+aisrf = ["dashboard/templates/*.html", "dashboard/static/*", "redteam/corpus/*.yaml", "guardrails/nemo_default/*"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -74,4 +76,4 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["E402", "F401", "B011", "F841", "RUF018", "SIM117", "PIE"]
 "examples/*" = ["E402", "T20"]
-"airt/analysis/analyzers/*" = ["RUF001", "RUF002", "RUF003", "E741", "PLE2515"]
+"aisrf/analysis/analyzers/*" = ["RUF001", "RUF002", "RUF003", "E741", "PLE2515"]

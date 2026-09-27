@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="1634" height="1142" viewBox="0 0 1634 1142" font-family="Liberation Sans, Arial, Helvetica, sans-serif">
-<title>Airt taxonomy matrix</title>
+<title>AISRF taxonomy matrix</title>
 <defs></defs>
 <rect x="0" y="0" width="1634" height="1142" rx="18" ry="18" fill="#0f172a"/>
-<text x="32" y="44" font-size="24" font-weight="bold" fill="#e5e7eb">Airt taxonomy matrix</text>
-<text x="32" y="66" font-size="13" fill="#a3adbd">airt.taxonomy.CATEGORY_MAP: finding and probe categories mapped to OWASP LLM Top 10 (2025), Greshake et al. threat classes and Thacker technique classes.</text>
+<text x="32" y="44" font-size="24" font-weight="bold" fill="#e5e7eb">AISRF taxonomy matrix</text>
+<text x="32" y="66" font-size="13" fill="#a3adbd">aisrf.taxonomy.CATEGORY_MAP: finding and probe categories mapped to OWASP LLM Top 10 (2025), Greshake et al. threat classes and Thacker technique classes.</text>
 <rect x="282.0" y="92.0" width="516.0" height="26.0" rx="6" ry="6" fill="#2dd4bf" stroke="#2dd4bf" stroke-width="0" opacity="0.9"/>
 <text x="540.0" y="110.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#0b1220" text-anchor="middle" font-weight="bold" opacity="1.0">OWASP LLM Top 10 (2025)</text>
 <rect x="802.0" y="92.0" width="360.0" height="26.0" rx="6" ry="6" fill="#fbbf24" stroke="#fbbf24" stroke-width="0" opacity="0.9"/>
@@ -230,9 +230,9 @@
 <text x="462.0" y="1018.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">LLM08 Vector and Embedding Weaknesses</text>
 <text x="462.0" y="1034.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">LLM09 Misinformation</text>
 <text x="462.0" y="1050.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">LLM10 Unbounded Consumption</text>
-<text x="832.0" y="986.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">Greshake: information_gathering, fraud, intrusion, malware, manipulated_content, availability; hidden = concealed delivery (white text, encodings, multi-stage payloads).</text>
+<text x="832.0" y="986.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">Greshake threats: information_gathering, fraud, intrusion, malware, manipulated_content, availability; hidden = concealed delivery.</text>
 <text x="832.0" y="1002.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">Thacker: direct injection, indirect injection, context leak, data exfiltration, privilege escalation, persistence, obfuscation, social engineering.</text>
 <text x="832.0" y="1018.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">Control / meta categories with no mapping: policy, benign_control, refusal.</text>
 <text x="832.0" y="1034.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">Findings carry owasp / greshake / thacker fields (taxonomy.enrich); campaign summaries report OWASP coverage.</text>
-<text x="32.0" y="1082.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#a3adbd" text-anchor="start" font-weight="normal" opacity="1.0">Regenerate with docs/images/generate_diagrams.py after editing airt/taxonomy.py; this diagram is built from CATEGORY_MAP at generation time.</text>
+<text x="32.0" y="1082.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#a3adbd" text-anchor="start" font-weight="normal" opacity="1.0">Regenerate with docs/images/generate_diagrams.py after editing aisrf/taxonomy.py; this diagram is built from CATEGORY_MAP at generation time.</text>
 </svg>

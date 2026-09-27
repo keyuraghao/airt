@@ -1,0 +1,163 @@
+# AISRF model security and supply chain rules for semgrep.
+rules:
+  - id: aisrf-ms-torch-load-unsafe
+    languages: [python]
+    severity: ERROR
+    message: torch.load without weights_only=True unpickles arbitrary objects from the checkpoint (AISRF-MS-001)
+    metadata:
+      aisrf_rule: AISRF-MS-001
+      pack: model_supply_chain
+      severity: CRITICAL
+      confidence: "0.85"
+      cwe: CWE-502
+      owasp: [LLM03]
+      category: supply_chain
+    patterns:
+      - pattern: torch.load(...)
+      - pattern-not: torch.load(..., weights_only=True, ...)
+  - id: aisrf-ms-pickle-family-load
+    languages: [python]
+    severity: ERROR
+    message: Pickle-family deserialization executes code embedded in the file (AISRF-MS-002)
+    metadata:
+      aisrf_rule: AISRF-MS-002
+      pack: model_supply_chain
+      severity: CRITICAL
+      confidence: "0.8"
+      cwe: CWE-502
+      owasp: [LLM03]
+      category: supply_chain
+    pattern-either:
+      - pattern: pickle.load(...)
+      - pattern: pickle.loads(...)
+      - pattern: cPickle.load(...)
+      - pattern: dill.load(...)
+      - pattern: dill.loads(...)
+      - pattern: cloudpickle.load(...)
+      - pattern: cloudpickle.loads(...)
+      - pattern: joblib.load(...)
+      - pattern: shelve.open(...)
+      - pattern: marshal.loads(...)
+      - pattern: numpy.load(..., allow_pickle=True, ...)
+      - pattern: np.load(..., allow_pickle=True, ...)
+      - pattern: torch.jit.load(...)
+      - pattern: yaml.load($X, Loader=yaml.Loader)
+      - pattern: yaml.load($X, Loader=yaml.UnsafeLoader)
+      - pattern: yaml.unsafe_load(...)
+      - pattern: $F(..., allow_dangerous_deserialization=True, ...)
+      - pattern: load_model(..., safe_mode=False, ...)
+  - id: aisrf-ms-trust-remote-code
+    languages: [python]
+    severity: ERROR
+    message: trust_remote_code=True executes Python shipped inside the model repository (AISRF-MS-003)
+    metadata:
+      aisrf_rule: AISRF-MS-003
+      pack: model_supply_chain
+      severity: HIGH
+      confidence: "0.9"
+      cwe: CWE-829
+      owasp: [LLM03]
+      category: supply_chain
+    pattern: $F(..., trust_remote_code=True, ...)
+  - id: aisrf-ms-unpinned-hub-revision
+    languages: [python]
+    severity: WARNING
+    message: Hub artifact loaded by name without a pinned revision; the default branch can change under you (AISRF-MS-004)
+    metadata:
+      aisrf_rule: AISRF-MS-004
+      pack: model_supply_chain
+      severity: MEDIUM
+      confidence: "0.6"
+      cwe: CWE-494
+      owasp: [LLM03]
+      category: supply_chain
+    patterns:
+      - pattern-either:
+          - pattern: $M.from_pretrained("$NAME", ...)
+          - pattern: hf_hub_download(repo_id="$NAME", ...)
+          - pattern: hf_hub_download("$NAME", ...)
+          - pattern: snapshot_download(repo_id="$NAME", ...)
+          - pattern: snapshot_download("$NAME", ...)
+          - pattern: load_dataset("$NAME", ...)
+          - pattern: SentenceTransformer("$NAME", ...)
+      - pattern-not: $M.from_pretrained(..., revision=..., ...)
+      - pattern-not: hf_hub_download(..., revision=..., ...)
+      - pattern-not: snapshot_download(..., revision=..., ...)
+      - pattern-not: load_dataset(..., revision=..., ...)
+      - pattern-not: SentenceTransformer(..., revision=..., ...)
+      - metavariable-regex:
+          metavariable: $NAME
+          regex: ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$
+  - id: aisrf-ms-plaintext-model-download
+    languages: [generic]
+    severity: ERROR
+    message: Model weights or archives are fetched over plain HTTP (AISRF-MS-005)
+    metadata:
+      aisrf_rule: AISRF-MS-005
+      pack: model_supply_chain
+      severity: HIGH
+      confidence: "0.75"
+      cwe: CWE-319
+      owasp: [LLM03]
+      category: supply_chain
+    pattern-regex: 'http://[^\s''"`)]+\.(pt|pth|bin|pkl|pickle|ckpt|safetensors|gguf|onnx|h5|tar\.gz|tgz|zip|whl)\b'
+    paths:
+      exclude:
+        - "*.md"
+  - id: aisrf-ms-state-dict-url-no-hash
+    languages: [python]
+    severity: WARNING
+    message: Checkpoint downloaded from a URL without check_hash=True (AISRF-MS-006)
+    metadata:
+      aisrf_rule: AISRF-MS-006
+      pack: model_supply_chain
+      severity: MEDIUM
+      confidence: "0.7"
+      cwe: CWE-494
+      owasp: [LLM03]
+      category: supply_chain
+    patterns:
+      - pattern-either:
+          - pattern: torch.hub.load_state_dict_from_url(...)
+          - pattern: load_state_dict_from_url(...)
+      - pattern-not: torch.hub.load_state_dict_from_url(..., check_hash=True, ...)
+      - pattern-not: load_state_dict_from_url(..., check_hash=True, ...)
+  - id: aisrf-ms-public-bucket-acl
+    languages: [python]
+    severity: ERROR
+    message: Storage object or bucket made public; model artifacts stored there can be read or replaced by anyone (AISRF-MS-009)
+    metadata:
+      aisrf_rule: AISRF-MS-009
+      pack: model_supply_chain
+      severity: HIGH
+      confidence: "0.7"
+      cwe: CWE-284
+      owasp: [LLM03]
+      category: supply_chain
+    pattern-either:
+      - pattern: $S3.$M(..., ACL="public-read", ...)
+      - pattern: $S3.$M(..., ACL="public-read-write", ...)
+      - pattern: '$S3.$M(..., ExtraArgs={..., "ACL": "public-read", ...}, ...)'
+      - pattern: $BLOB.make_public(...)
+      - pattern: $BUCKET.make_public(...)
+  - id: aisrf-ms-from-pretrained-no-safetensors
+    languages: [python]
+    severity: INFO
+    message: Model loaded from a hub repository without use_safetensors=True (AISRF-MS-014)
+    metadata:
+      aisrf_rule: AISRF-MS-014
+      pack: model_supply_chain
+      severity: LOW
+      confidence: "0.45"
+      cwe: CWE-502
+      owasp: [LLM03]
+      category: supply_chain
+    patterns:
+      - pattern: $M.from_pretrained("$NAME", ...)
+      - pattern-not: $M.from_pretrained(..., use_safetensors=True, ...)
+      - metavariable-regex:
+          metavariable: $M
+          regex: .*(Model|ForCausalLM|ForSequenceClassification|ForSeq2SeqLM).*
+      - metavariable-regex:
+          metavariable: $NAME
+          regex: ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$

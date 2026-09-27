@@ -1,0 +1,246 @@
+# AISRF RAG poisoning and data exfiltration rules for semgrep.
+rules:
+  - id: aisrf-rg-filter-from-request-py
+    mode: taint
+    languages: [python]
+    severity: ERROR
+    message: A vector store filter, namespace or where clause is built from request data (AISRF-RG-003)
+    metadata:
+      aisrf_rule: AISRF-RG-003
+      pack: rag_poisoning_exfil
+      severity: HIGH
+      confidence: "0.8"
+      cwe: CWE-639
+      owasp: [LLM08, LLM04]
+      category: rag_poisoning
+      taint: true
+    pattern-sources:
+      - pattern: request.args.get(...)
+      - pattern: request.args[...]
+      - pattern: request.json[...]
+      - pattern: request.json.get(...)
+      - pattern: request.get_json(...)
+      - pattern: request.form[...]
+      - pattern: request.form.get(...)
+      - pattern: await $REQ.json()
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern-inside: $VS.similarity_search(..., filter=$F, ...)
+              - pattern-inside: $VS.similarity_search_with_score(..., filter=$F, ...)
+              - pattern-inside: $VS.max_marginal_relevance_search(..., filter=$F, ...)
+              - pattern-inside: $VS.as_retriever(..., search_kwargs=$F, ...)
+              - pattern-inside: $IDX.query(..., filter=$F, ...)
+              - pattern-inside: $IDX.query(..., namespace=$F, ...)
+              - pattern-inside: $COL.query(..., where=$F, ...)
+              - pattern-inside: $CL.search(..., query_filter=$F, ...)
+              - pattern-inside: $CL.search(..., filter=$F, ...)
+              - pattern-inside: $CL.search(..., expr=$F, ...)
+          - pattern: $F
+  - id: aisrf-rg-filter-from-request-js
+    mode: taint
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: A vector store filter or namespace is built from request data (AISRF-RG-003)
+    metadata:
+      aisrf_rule: AISRF-RG-003
+      pack: rag_poisoning_exfil
+      severity: HIGH
+      confidence: "0.8"
+      cwe: CWE-639
+      owasp: [LLM08, LLM04]
+      category: rag_poisoning
+      taint: true
+    pattern-sources:
+      - pattern: req.body
+      - pattern: req.query
+      - pattern: req.params
+      - pattern: await $REQ.json()
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern-inside: $VS.similaritySearch($Q, $K, $F)
+              - pattern-inside: $VS.similaritySearchWithScore($Q, $K, $F)
+              - pattern-inside: '$IDX.query({..., filter: $F, ...})'
+              - pattern-inside: $IDX.namespace($F)
+              - pattern-inside: '$COL.query({..., where: $F, ...})'
+          - pattern: $F
+  - id: aisrf-rg-unscoped-similarity-search-py
+    languages: [python]
+    severity: WARNING
+    message: Similarity search runs against the whole collection with no filter, namespace or tenant scope (AISRF-RG-002)
+    metadata:
+      aisrf_rule: AISRF-RG-002
+      pack: rag_poisoning_exfil
+      severity: HIGH
+      confidence: "0.45"
+      cwe: CWE-284
+      owasp: [LLM08, LLM04]
+      category: rag_poisoning
+    patterns:
+      - pattern-either:
+          - pattern: $VS.similarity_search(...)
+          - pattern: $VS.similarity_search_with_score(...)
+          - pattern: $VS.max_marginal_relevance_search(...)
+          - pattern: $VS.as_retriever()
+          - pattern: $VS.as_retriever(search_type=...)
+          - pattern: '$VS.as_retriever(search_kwargs={"k": ...})'
+      - pattern-not: $VS.similarity_search(..., filter=..., ...)
+      - pattern-not: $VS.similarity_search(..., namespace=..., ...)
+      - pattern-not: $VS.similarity_search(..., where=..., ...)
+      - pattern-not: $VS.similarity_search_with_score(..., filter=..., ...)
+      - pattern-not: $VS.similarity_search_with_score(..., namespace=..., ...)
+      - pattern-not: $VS.max_marginal_relevance_search(..., filter=..., ...)
+  - id: aisrf-rg-prompt-or-response-logged-py
+    languages: [python]
+    severity: WARNING
+    message: Full prompts, messages or model responses are written to logs (AISRF-RG-007)
+    metadata:
+      aisrf_rule: AISRF-RG-007
+      pack: rag_poisoning_exfil
+      severity: MEDIUM
+      confidence: "0.6"
+      cwe: CWE-532
+      owasp: [LLM02]
+      category: pii
+    patterns:
+      - pattern-either:
+          - pattern: $LOG.$M(..., $ARG, ...)
+          - pattern: print(..., $ARG, ...)
+      - metavariable-regex:
+          metavariable: $M
+          regex: ^(info|debug|warning|warn|error|exception|log)$
+      - metavariable-regex:
+          metavariable: $ARG
+          regex: ^(prompt|full_prompt|system_prompt|messages|user_message|user_input|user_query|completion|answer|conversation|transcript|raw_response|llm_response|chat_history|history|response\.choices\[0\]\.message\.content|response\.content|response\.text)$
+  - id: aisrf-rg-cached-retrieval-py
+    languages: [python]
+    severity: WARNING
+    message: Retrieval or model results are memoised by query text only; answers leak across users (AISRF-RG-008)
+    metadata:
+      aisrf_rule: AISRF-RG-008
+      pack: rag_poisoning_exfil
+      severity: MEDIUM
+      confidence: "0.6"
+      cwe: CWE-524
+      owasp: [LLM02, LLM05]
+      category: data_exfiltration
+    patterns:
+      - pattern-either:
+          - pattern: |
+              @lru_cache(...)
+              def $F(...):
+                ...
+                $VS.similarity_search(...)
+                ...
+          - pattern: |
+              @lru_cache
+              def $F(...):
+                ...
+                $VS.similarity_search(...)
+                ...
+          - pattern: |
+              @functools.lru_cache(...)
+              def $F(...):
+                ...
+                $VS.similarity_search(...)
+                ...
+          - pattern: |
+              @cache
+              def $F(...):
+                ...
+                $VS.similarity_search(...)
+                ...
+          - pattern: |
+              @lru_cache(...)
+              def $F(...):
+                ...
+                $C.chat.completions.create(...)
+                ...
+          - pattern: |
+              @cache
+              def $F(...):
+                ...
+                $C.chat.completions.create(...)
+                ...
+          - pattern: set_llm_cache(...)
+  - id: aisrf-rg-shared-memory-module-level-py
+    languages: [python]
+    severity: WARNING
+    message: Conversation memory is created once at module level and shared by every user (AISRF-RG-012)
+    metadata:
+      aisrf_rule: AISRF-RG-012
+      pack: rag_poisoning_exfil
+      severity: MEDIUM
+      confidence: "0.6"
+      cwe: CWE-668
+      owasp: [LLM02, LLM05]
+      category: data_exfiltration
+    patterns:
+      - pattern-either:
+          - pattern: $VAR = ConversationBufferMemory(...)
+          - pattern: $VAR = ConversationBufferWindowMemory(...)
+          - pattern: $VAR = ConversationSummaryMemory(...)
+          - pattern: $VAR = ChatMessageHistory(...)
+          - pattern: $VAR = InMemoryChatMessageHistory(...)
+      - pattern-not-inside: |
+          def $F(...):
+            ...
+      - pattern-not-inside: |
+          class $C:
+            ...
+  - id: aisrf-rg-vector-client-no-auth-py
+    languages: [python]
+    severity: WARNING
+    message: Vector database client connects to a remote host without credentials (AISRF-RG-004)
+    metadata:
+      aisrf_rule: AISRF-RG-004
+      pack: rag_poisoning_exfil
+      severity: MEDIUM
+      confidence: "0.65"
+      cwe: CWE-306
+      owasp: [LLM08, LLM04]
+      category: rag_poisoning
+    patterns:
+      - pattern-either:
+          - pattern: QdrantClient(url="$U", ...)
+          - pattern: QdrantClient(host="$U", ...)
+          - pattern: chromadb.HttpClient(host="$U", ...)
+          - pattern: weaviate.Client("$U", ...)
+          - pattern: weaviate.Client(url="$U", ...)
+          - pattern: weaviate.connect_to_custom(http_host="$U", ...)
+          - pattern: MilvusClient(uri="$U", ...)
+      - pattern-not: QdrantClient(..., api_key=..., ...)
+      - pattern-not: chromadb.HttpClient(..., headers=..., ...)
+      - pattern-not: chromadb.HttpClient(..., settings=..., ...)
+      - pattern-not: weaviate.Client(..., auth_client_secret=..., ...)
+      - pattern-not: weaviate.connect_to_custom(..., auth_credentials=..., ...)
+      - pattern-not: MilvusClient(..., token=..., ...)
+      - pattern-not: MilvusClient(..., password=..., ...)
+      - metavariable-regex:
+          metavariable: $U
+          regex: ^"(?!localhost|127\.0\.0\.1|0\.0\.0\.0|::1)[^"]+"$
+  - id: aisrf-rg-metadata-in-prompt-py
+    languages: [python]
+    severity: WARNING
+    message: Document metadata (file names, titles, sources) is formatted into the prompt next to the instructions (AISRF-RG-014)
+    metadata:
+      aisrf_rule: AISRF-RG-014
+      pack: rag_poisoning_exfil
+      severity: MEDIUM
+      confidence: "0.5"
+      cwe: CWE-74
+      owasp: [LLM01, LLM08]
+      category: indirect_prompt_injection
+    patterns:
+      - pattern-either:
+          - pattern: f"...{$D.metadata[...]}..."
+          - pattern: f"...{$D.metadata.get(...)}..."
+          - pattern: f"...{$F.filename}..."
+      - pattern-either:
+          - pattern-inside: |
+              $PROMPT = f"..."
+          - pattern-inside: $LLM.$M(...)
+      - metavariable-regex:
+          metavariable: $PROMPT
+          regex: (?i).*(prompt|context|instruction|message).*

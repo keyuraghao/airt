@@ -1,0 +1,228 @@
+# AISRF prompt injection rules for semgrep. Taint mode: HTTP request data as the source, model calls as the sink.
+rules:
+  - id: aisrf-pi-request-to-model-py
+    mode: taint
+    languages: [python]
+    severity: ERROR
+    message: HTTP request data flows into a model call without validation or structuring (AISRF-PI-003)
+    metadata:
+      aisrf_rule: AISRF-PI-003
+      pack: prompt_injection
+      severity: HIGH
+      confidence: "0.7"
+      cwe: CWE-20
+      owasp: [LLM01]
+      category: prompt_injection
+      taint: true
+    pattern-sources:
+      - pattern: request.args.get(...)
+      - pattern: request.args[...]
+      - pattern: request.form.get(...)
+      - pattern: request.form[...]
+      - pattern: request.json[...]
+      - pattern: request.json.get(...)
+      - pattern: request.get_json(...)
+      - pattern: request.data
+      - pattern: request.values.get(...)
+      - pattern: request.GET.get(...)
+      - pattern: request.POST.get(...)
+      - pattern: await $REQ.json()
+      - pattern: await $REQ.body()
+      - pattern: await $REQ.form()
+    pattern-sanitizers:
+      - pattern: sanitize(...)
+      - pattern: $S.sanitize(...)
+      - pattern: validate_input(...)
+      - pattern: screen_input(...)
+      - pattern: preprocess_user_input(...)
+      - pattern: escape(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern-inside: $C.chat.completions.create(...)
+              - pattern-inside: $C.messages.create(...)
+              - pattern-inside: $C.responses.create(...)
+              - pattern-inside: $M.generate_content(...)
+              - pattern-inside: $LLM.invoke(...)
+              - pattern-inside: $LLM.ainvoke(...)
+              - pattern-inside: $LLM.predict(...)
+              - pattern-inside: litellm.completion(...)
+              - pattern-inside: ollama.chat(...)
+          - pattern: $X
+  - id: aisrf-pi-request-to-model-js
+    mode: taint
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: HTTP request data flows into a model call without validation or structuring (AISRF-PI-003)
+    metadata:
+      aisrf_rule: AISRF-PI-003
+      pack: prompt_injection
+      severity: HIGH
+      confidence: "0.7"
+      cwe: CWE-20
+      owasp: [LLM01]
+      category: prompt_injection
+      taint: true
+    pattern-sources:
+      - pattern: req.body
+      - pattern: req.query
+      - pattern: req.params
+      - pattern: request.body
+      - pattern: await $REQ.json()
+      - pattern: await $REQ.formData()
+      - pattern: $REQ.nextUrl.searchParams.get(...)
+    pattern-sanitizers:
+      - pattern: sanitize(...)
+      - pattern: validateInput(...)
+      - pattern: $S.parse(...)
+      - pattern: $S.safeParse(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern-inside: $C.chat.completions.create(...)
+              - pattern-inside: $C.messages.create(...)
+              - pattern-inside: $C.responses.create(...)
+              - pattern-inside: generateText(...)
+              - pattern-inside: streamText(...)
+              - pattern-inside: generateObject(...)
+              - pattern-inside: $M.invoke(...)
+              - pattern-inside: $M.generateContent(...)
+          - pattern: $X
+  - id: aisrf-pi-system-role-dynamic-py
+    languages: [python]
+    severity: ERROR
+    message: The system role content is built at runtime from variables (AISRF-PI-002)
+    metadata:
+      aisrf_rule: AISRF-PI-002
+      pack: prompt_injection
+      severity: HIGH
+      confidence: "0.7"
+      cwe: CWE-74
+      owasp: [LLM01]
+      category: prompt_injection
+    patterns:
+      - pattern-either:
+          - pattern: '{"role": "system", "content": f"...", ...}'
+          - pattern: '{"role": "developer", "content": f"...", ...}'
+          - pattern: '{"role": "system", "content": $T.format(...), ...}'
+          - pattern: '{"role": "system", "content": $A + $B, ...}'
+          - pattern: '{"role": "system", "content": $A % $B, ...}'
+          - pattern: SystemMessage(content=f"...")
+          - pattern: SystemMessage(f"...")
+  - id: aisrf-pi-system-role-dynamic-js
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: The system role content is built at runtime from variables (AISRF-PI-002)
+    metadata:
+      aisrf_rule: AISRF-PI-002
+      pack: prompt_injection
+      severity: HIGH
+      confidence: "0.6"
+      cwe: CWE-74
+      owasp: [LLM01]
+      category: prompt_injection
+    patterns:
+      - pattern-either:
+          - pattern: '{role: "system", content: $C, ...}'
+          - pattern: '{role: "developer", content: $C, ...}'
+      - metavariable-pattern:
+          metavariable: $C
+          patterns:
+            - pattern-not: '"..."'
+            - pattern-not: $CONST
+            - pattern-either:
+                - pattern: $A + $B
+                - pattern: '`...`'
+                - pattern: $F(...)
+  - id: aisrf-pi-messages-from-client-py
+    languages: [python]
+    severity: ERROR
+    message: The whole message list, including roles, is taken from the client (AISRF-PI-012)
+    metadata:
+      aisrf_rule: AISRF-PI-012
+      pack: prompt_injection
+      severity: HIGH
+      confidence: "0.8"
+      cwe: CWE-602
+      owasp: [LLM01]
+      category: prompt_injection
+    patterns:
+      - pattern-either:
+          - pattern: $C.chat.completions.create(..., messages=request.json[...], ...)
+          - pattern: $C.chat.completions.create(..., messages=request.get_json()[...], ...)
+          - pattern: $C.chat.completions.create(..., messages=$BODY["messages"], ...)
+          - pattern: $C.chat.completions.create(..., messages=$BODY.get("messages"), ...)
+          - pattern: $C.chat.completions.create(..., messages=$BODY.messages, ...)
+          - pattern: $C.messages.create(..., messages=$BODY["messages"], ...)
+          - pattern: $C.messages.create(..., messages=$BODY.messages, ...)
+          - pattern: $C.messages.create(..., messages=request.json[...], ...)
+  - id: aisrf-pi-messages-from-client-js
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: The whole message list, including roles, is taken from the client (AISRF-PI-012)
+    metadata:
+      aisrf_rule: AISRF-PI-012
+      pack: prompt_injection
+      severity: HIGH
+      confidence: "0.8"
+      cwe: CWE-602
+      owasp: [LLM01]
+      category: prompt_injection
+    patterns:
+      - pattern-either:
+          - pattern: '$C.chat.completions.create({..., messages: req.body.messages, ...})'
+          - pattern: '$C.chat.completions.create({..., messages: $BODY.messages, ...})'
+          - pattern: '$C.messages.create({..., messages: $BODY.messages, ...})'
+          - pattern: 'streamText({..., messages: $BODY.messages, ...})'
+          - pattern: 'generateText({..., messages: $BODY.messages, ...})'
+      - pattern-not: '$C.chat.completions.create({..., messages: messages, ...})'
+  - id: aisrf-pi-template-from-variable-py
+    languages: [python]
+    severity: ERROR
+    message: A template engine compiles a runtime string (server side template injection on top of prompt injection) (AISRF-PI-005)
+    metadata:
+      aisrf_rule: AISRF-PI-005
+      pack: prompt_injection
+      severity: HIGH
+      confidence: "0.75"
+      cwe: CWE-1336
+      owasp: [LLM01]
+      category: prompt_injection
+    patterns:
+      - pattern-either:
+          - pattern: jinja2.Template($X)
+          - pattern: Template($X)
+          - pattern: $ENV.from_string($X)
+          - pattern: render_template_string(f"...")
+          - pattern: render_template_string($A + $B)
+          - pattern: render_template_string($T.format(...))
+          - pattern: PromptTemplate.from_template($X)
+          - pattern: ChatPromptTemplate.from_template($X)
+      - pattern-not: jinja2.Template("...")
+      - pattern-not: Template("...")
+      - pattern-not: $ENV.from_string("...")
+      - pattern-not: PromptTemplate.from_template("...")
+      - pattern-not: ChatPromptTemplate.from_template("...")
+  - id: aisrf-pi-user-media-to-model-py
+    languages: [python]
+    severity: WARNING
+    message: User-controlled image or file content is attached to the model request (AISRF-PI-014)
+    metadata:
+      aisrf_rule: AISRF-PI-014
+      pack: prompt_injection
+      severity: MEDIUM
+      confidence: "0.55"
+      cwe: CWE-20
+      owasp: [LLM01, LLM08]
+      category: indirect_prompt_injection
+    patterns:
+      - pattern-either:
+          - pattern: '{"type": "image_url", "image_url": {"url": $U, ...}, ...}'
+          - pattern: '{"type": "input_image", "image_url": $U, ...}'
+          - pattern: '{"type": "image", "source": {..., "data": $U, ...}, ...}'
+          - pattern: '{"type": "document", "source": {..., "data": $U, ...}, ...}'
+      - metavariable-pattern:
+          metavariable: $U
+          patterns:
+            - pattern-not: '"..."'
+            - pattern-not: f"..."

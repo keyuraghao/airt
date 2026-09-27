@@ -1,6 +1,6 @@
 # Security policy
 
-AIRT sits in the request path between applications and model providers and holds provider
+AISRF sits in the request path between applications and model providers and holds provider
 credentials, so its own security matters. This document covers how to report vulnerabilities and
 how to harden a deployment. The threat model and internal controls are in `docs/SECURITY.md`.
 
@@ -35,13 +35,13 @@ upstream providers.
 
 Before exposing a gateway beyond localhost:
 
-- [ ] Set a strong `AIRT_SECRET_KEY` (48+ random characters) and, ideally, a dedicated
-      `AIRT_ENCRYPTION_KEY` so cookie signing and credential encryption use different keys.
-- [ ] Change `AIRT_ADMIN_PASSWORD` (a warning is logged while it is `admin`) and create
+- [ ] Set a strong `AISRF_SECRET_KEY` (48+ random characters) and, ideally, a dedicated
+      `AISRF_ENCRYPTION_KEY` so cookie signing and credential encryption use different keys.
+- [ ] Change `AISRF_ADMIN_PASSWORD` (a warning is logged while it is `admin`) and create
       individual reviewer accounts with the least role needed (`viewer` < `reviewer` < `admin`).
-- [ ] Set `AIRT_ADMIN_API_TOKEN` to a long random value and give it only to the MCP server / CI.
+- [ ] Set `AISRF_ADMIN_API_TOKEN` to a long random value and give it only to the MCP server / CI.
       It carries the admin role.
-- [ ] `AIRT_ENVIRONMENT=production` and `AIRT_COOKIE_SECURE=true`; terminate TLS in a reverse
+- [ ] `AISRF_ENVIRONMENT=production` and `AISRF_COOKIE_SECURE=true`; terminate TLS in a reverse
       proxy (see `docs/DEPLOYMENT.md`) and forward `X-Forwarded-For` so tickets record the real
       client IP.
 - [ ] Restrict who can reach the reviewer API, dashboard and `/mcp` (network ACL, VPN or the
@@ -56,9 +56,9 @@ Before exposing a gateway beyond localhost:
       to whatever URL the agent record holds (admins can point it at internal hosts).
 - [ ] Use PostgreSQL with TLS for multi-host deployments, back up the database (it holds the
       encrypted upstream keys and the audit chain) and protect the backups.
-- [ ] Ship `logs/airt.jsonl` and `logs/agents/*.jsonl` to your SIEM; verify the audit chain
-      periodically (`GET /api/audit/verify` or `airt audit verify`).
-- [ ] Set `AIRT_TICKET_RETENTION_DAYS` to match your data retention policy: tickets store prompts
+- [ ] Ship `logs/aisrf.jsonl` and `logs/agents/*.jsonl` to your SIEM; verify the audit chain
+      periodically (`GET /api/audit/verify` or `aisrf audit verify`).
+- [ ] Set `AISRF_TICKET_RETENTION_DAYS` to match your data retention policy: tickets store prompts
       and (truncated) responses, which may contain personal data.
 - [ ] Run the container as shipped (non-root user, read-only image, writable volumes only for
       `/app/data` and `/app/logs`).
@@ -67,9 +67,9 @@ Before exposing a gateway beyond localhost:
 ## Cryptography in use
 
 * Reviewer passwords: PBKDF2-HMAC-SHA256, 390k rounds, per-user salt.
-* Agent keys: random 256-bit (`airt_` + token_urlsafe(32)); only the SHA-256 hash is stored.
+* Agent keys: random 256-bit (`aisrf_` + token_urlsafe(32)); only the SHA-256 hash is stored.
 * Session cookies: itsdangerous signed, `HttpOnly`, `SameSite=Lax`, optional `Secure`.
-* Upstream provider keys: Fernet (AES-128-CBC + HMAC-SHA256) with `AIRT_ENCRYPTION_KEY` or a key
-  derived from `AIRT_SECRET_KEY`.
+* Upstream provider keys: Fernet (AES-128-CBC + HMAC-SHA256) with `AISRF_ENCRYPTION_KEY` or a key
+  derived from `AISRF_SECRET_KEY`.
 * Audit log: SHA-256 hash chain over (previous hash, timestamp, actor, action, target, detail).
 * Bearer token comparison: constant time (`hmac.compare_digest`).

@@ -1,12 +1,12 @@
-"""OpenAI SDK through the AIRT gateway, synchronous mode.
+"""OpenAI SDK through the AISRF gateway, synchronous mode.
 
-The SDK is pointed at the gateway with base_url; the AIRT agent key replaces the OpenAI key.
+The SDK is pointed at the gateway with base_url; the AISRF agent key replaces the OpenAI key.
 The call blocks until a reviewer approves the ticket in the dashboard (http://localhost:8080/tickets)
-or the gateway's AIRT_APPROVAL_TIMEOUT_SECONDS (default 300 s) elapses.
+or the gateway's AISRF_APPROVAL_TIMEOUT_SECONDS (default 300 s) elapses.
 
     pip install openai
-    export AIRT_GATEWAY_URL=http://localhost:8080
-    export AIRT_AGENT_KEY=airt_...          # from `airt agent create` or the Agents page
+    export AISRF_GATEWAY_URL=http://localhost:8080
+    export AISRF_AGENT_KEY=aisrf_...          # from `aisrf agent create` or the Agents page
     python examples/openai_sync.py
 """
 
@@ -17,16 +17,16 @@ import sys
 
 from openai import APIStatusError, OpenAI
 
-GATEWAY = os.environ.get("AIRT_GATEWAY_URL", "http://localhost:8080").rstrip("/")
-AGENT_KEY = os.environ.get("AIRT_AGENT_KEY")
+GATEWAY = os.environ.get("AISRF_GATEWAY_URL", "http://localhost:8080").rstrip("/")
+AGENT_KEY = os.environ.get("AISRF_AGENT_KEY")
 if not AGENT_KEY:
-    sys.exit("set AIRT_AGENT_KEY to an agent key issued by the gateway")
+    sys.exit("set AISRF_AGENT_KEY to an agent key issued by the gateway")
 
 client = OpenAI(
     base_url=f"{GATEWAY}/v1",
     api_key=AGENT_KEY,
     # optional: tag the ticket so reviewers can group related calls
-    default_headers={"X-AIRT-Source": "sdk", "X-AIRT-Correlation-Id": "example-openai-sync"},
+    default_headers={"X-AISRF-Source": "sdk", "X-AISRF-Correlation-Id": "example-openai-sync"},
     timeout=330.0,  # must exceed the gateway approval timeout
     max_retries=0,  # a denied/expired ticket must not be retried automatically
 )
@@ -37,7 +37,7 @@ try:
         model=os.environ.get("MODEL", "gpt-4o-mini"),
         messages=[{"role": "user", "content": "In one sentence, what does a red team do?"}],
     )
-    print("ticket:", completion.headers.get("X-AIRT-Ticket"))
+    print("ticket:", completion.headers.get("X-AISRF-Ticket"))
     print("answer:", completion.parse().choices[0].message.content)
 except APIStatusError as exc:
     # 403 = denied by policy or reviewer, 504 = no decision before timeout, 502 = upstream error

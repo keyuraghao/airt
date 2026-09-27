@@ -1,6 +1,6 @@
-# Releasing Airt
+# Releasing AISRF
 
-Airt (the AI Security & Research Framework, package and CLI `airt`) is released from `main` by pushing a `vX.Y.Z` tag. The `Release` workflow
+AISRF (the AI Security & Research Framework, package and CLI `aisrf`) is released from `main` by pushing a `vX.Y.Z` tag. The `Release` workflow
 (`.github/workflows/release.yml`) does everything else: it verifies the version, runs the test
 suite, builds the wheel and sdist, generates an SBOM and checksums, pushes a multi-arch image to
 GHCR and creates the GitHub Release. Nothing is published to PyPI yet (see the end of this page).
@@ -31,7 +31,7 @@ and is bumped by hand in `sdk/node/package.json` when it changes.
    release must be listed under `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed` or
    `Security`. Breaking changes get a short migration note.
 
-3. Bump the version. The script updates `airt/__init__.py`, `pyproject.toml` and turns the
+3. Bump the version. The script updates `aisrf/__init__.py`, `pyproject.toml` and turns the
    `Unreleased` section into the dated release heading (adding a fresh empty `Unreleased` section
    and the compare links):
 
@@ -46,7 +46,7 @@ and is bumped by hand in `sdk/node/package.json` when it changes.
 
    ```bash
    git commit -am "Release 1.1.0"
-   git tag -a v1.1.0 -m "Airt 1.1.0"
+   git tag -a v1.1.0 -m "AISRF 1.1.0"
    git push origin main
    git push origin v1.1.0
    ```
@@ -67,10 +67,10 @@ failed for an infrastructure reason.
 
 | Job | Steps |
 | --- | --- |
-| `verify` | Derives the version from the tag (or the input), checks it is valid semver and equals both `airt.__version__` and `[project].version` (`scripts/bump_version.py --check`), warns when `CHANGELOG.md` has no section for it. |
+| `verify` | Derives the version from the tag (or the input), checks it is valid semver and equals both `aisrf.__version__` and `[project].version` (`scripts/bump_version.py --check`; the package directory is read from `[project].name`), warns when `CHANGELOG.md` has no section for it. |
 | `test` | `ruff check`, `scripts/check_style.py`, `pytest`, Node self-test on Python 3.12. |
-| `build` | `python -m build` (sdist and wheel), installs the wheel and checks `airt version`, generates a CycloneDX JSON SBOM of the installed environment with `cyclonedx-bom`, writes `SHA256SUMS.txt`, uploads everything as the `dist` artifact. |
-| `docker` | Builds `linux/amd64` and `linux/arm64` with Buildx and QEMU, pushes `ghcr.io/keyuraghao/airt:{version, major.minor, latest}` (only the exact version for prereleases) with OCI labels, provenance attestation and an image SBOM, then pulls the image and runs `airt version`. |
+| `build` | `python -m build` (sdist and wheel), installs the wheel and checks `aisrf version`, generates a CycloneDX JSON SBOM of the installed environment with `cyclonedx-bom`, writes `SHA256SUMS.txt`, uploads everything as the `dist` artifact. |
+| `docker` | Builds `linux/amd64` and `linux/arm64` with Buildx and QEMU, pushes `ghcr.io/keyuraghao/aisrf:{version, major.minor, latest}` (only the exact version for prereleases) with OCI labels, provenance attestation and an image SBOM, then pulls the image and runs `aisrf version`. |
 | `release` | Extracts the release notes from `CHANGELOG.md` (`scripts/changelog_notes.py`), falling back to GitHub's auto-generated notes (categories in `.github/release.yml`), appends the artifact list and creates the GitHub Release with the wheel, sdist, SBOM and checksums attached. |
 
 Permissions: `contents: write` (release), `packages: write` (GHCR), `id-token: write` (attestations
@@ -81,21 +81,21 @@ and future PyPI trusted publishing). Only `GITHUB_TOKEN` is used; no secrets nee
 ```bash
 VERSION=1.1.0
 # Container image: tags, architectures, version banner
-docker pull ghcr.io/keyuraghao/airt:$VERSION
-docker run --rm ghcr.io/keyuraghao/airt:$VERSION version          # airt 1.1.0
-docker buildx imagetools inspect ghcr.io/keyuraghao/airt:$VERSION  # both linux/amd64 and linux/arm64
-docker buildx imagetools inspect ghcr.io/keyuraghao/airt:latest    # same digest for stable releases
+docker pull ghcr.io/keyuraghao/aisrf:$VERSION
+docker run --rm ghcr.io/keyuraghao/aisrf:$VERSION version          # aisrf 1.1.0
+docker buildx imagetools inspect ghcr.io/keyuraghao/aisrf:$VERSION  # both linux/amd64 and linux/arm64
+docker buildx imagetools inspect ghcr.io/keyuraghao/aisrf:latest    # same digest for stable releases
 # Wheel and checksums from the release page
-gh release download v$VERSION --repo keyuraghao/airt --dir /tmp/airt-$VERSION
-(cd /tmp/airt-$VERSION && sha256sum -c SHA256SUMS.txt)
-python -m venv /tmp/airt-check && /tmp/airt-check/bin/pip install /tmp/airt-$VERSION/airt-$VERSION-py3-none-any.whl
-/tmp/airt-check/bin/airt version
+gh release download v$VERSION --repo keyuraghao/aisrf --dir /tmp/aisrf-$VERSION
+(cd /tmp/aisrf-$VERSION && sha256sum -c SHA256SUMS.txt)
+python -m venv /tmp/aisrf-check && /tmp/aisrf-check/bin/pip install /tmp/aisrf-$VERSION/aisrf-$VERSION-py3-none-any.whl
+/tmp/aisrf-check/bin/aisrf version
 # SBOM
-python -c "import json; d=json.load(open('/tmp/airt-$VERSION/airt-$VERSION.cyclonedx.json')); print(d['specVersion'], len(d['components']))"
+python -c "import json; d=json.load(open('/tmp/aisrf-$VERSION/aisrf-$VERSION.cyclonedx.json')); print(d['specVersion'], len(d['components']))"
 ```
 
 Then start the image once against an empty volume (`docker run --rm -p 127.0.0.1:8080:8080 -e
-AIRT_SECRET_KEY=... ghcr.io/keyuraghao/airt:$VERSION`), log in, create an agent and approve one
+AISRF_SECRET_KEY=... ghcr.io/keyuraghao/aisrf:$VERSION`), log in, create an agent and approve one
 ticket. Deployments upgrade as described in `docs/DEPLOYMENT.md` (Upgrading).
 
 ## Hotfixes
@@ -108,7 +108,7 @@ release the hotfix from the older branch and re-tag `latest` by hand if needed).
 ## PyPI (not enabled)
 
 `release.yml` contains a commented `pypi` job that uses PyPI trusted publishing (OIDC, no token).
-To enable it: register the pending publisher on pypi.org (owner `keyuraghao`, repository `airt`,
+To enable it: register the pending publisher on pypi.org (owner `keyuraghao`, repository `aisrf`,
 workflow `release.yml`, environment `pypi`), create the `pypi` GitHub environment with required
 reviewers, and uncomment the job. Until then, users install from the wheel attached to the release
 or from the container image.
