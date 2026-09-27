@@ -102,7 +102,9 @@ def finding_row(run_id: str, f: Finding) -> CodeReviewFinding:
         severity=f.severity,
         confidence=f.confidence,
         title=f.title[:200],
-        description=(f.description + (f"\n\nNote: {f.metadata['note']}" if f.metadata.get("note") else ""))[:8000],
+        description=(f.description + (f"\n\nNote: {f.metadata['note']}" if f.metadata.get("note") else ""))[
+            :8000
+        ],
         remediation=f.remediation[:8000],
         file=f.file[:500],
         line_start=f.line_start,
@@ -118,7 +120,9 @@ def finding_row(run_id: str, f: Finding) -> CodeReviewFinding:
 
 
 # --- summaries --------------------------------------------------------------------------------
-def compute_summary(findings: list[dict[str, Any]], engines: dict[str, Any] | None = None, duration_s: float | None = None) -> dict[str, Any]:
+def compute_summary(
+    findings: list[dict[str, Any]], engines: dict[str, Any] | None = None, duration_s: float | None = None
+) -> dict[str, Any]:
     by_sev = dict.fromkeys(SEVERITIES, 0)
     by_pack: dict[str, int] = {}
     by_engine: dict[str, int] = {}
@@ -139,7 +143,10 @@ def compute_summary(findings: list[dict[str, Any]], engines: dict[str, Any] | No
         by_engine[str(f.get("engine"))] = by_engine.get(str(f.get("engine")), 0) + 1
         for o in f.get("owasp") or []:
             by_owasp[o] = by_owasp.get(o, 0) + 1
-        r = rules.setdefault(str(f.get("rule_id")), {"rule_id": f.get("rule_id"), "title": f.get("title"), "severity": sev, "count": 0})
+        r = rules.setdefault(
+            str(f.get("rule_id")),
+            {"rule_id": f.get("rule_id"), "title": f.get("title"), "severity": sev, "count": 0},
+        )
         r["count"] += 1
         path = str(f.get("file") or "")
         if path:
@@ -148,7 +155,9 @@ def compute_summary(findings: list[dict[str, Any]], engines: dict[str, Any] | No
             if SEVERITIES.index(sev) < SEVERITIES.index(entry["max_severity"]):
                 entry["max_severity"] = sev
     score = risk_score(open_findings)
-    owasp_rows = {oid: {"name": OWASP_LLM_TOP10[oid]["name"], "count": by_owasp.get(oid, 0)} for oid in OWASP_LLM_TOP10}
+    owasp_rows = {
+        oid: {"name": OWASP_LLM_TOP10[oid]["name"], "count": by_owasp.get(oid, 0)} for oid in OWASP_LLM_TOP10
+    }
     return {
         "total": len(findings),
         "open": len(open_findings),
@@ -159,7 +168,9 @@ def compute_summary(findings: list[dict[str, Any]], engines: dict[str, Any] | No
         "by_status": by_status,
         "risk_score": score,
         "risk_level": level_for_score(score),
-        "top_rules": sorted(rules.values(), key=lambda r: (-r["count"], SEVERITIES.index(r["severity"]), r["rule_id"]))[:10],
+        "top_rules": sorted(
+            rules.values(), key=lambda r: (-r["count"], SEVERITIES.index(r["severity"]), r["rule_id"])
+        )[:10],
         "top_files": sorted(files.values(), key=lambda r: (-r["count"], r["file"]))[:10],
         "engines": engines or {},
         "duration_seconds": duration_s,
@@ -172,14 +183,24 @@ async def get_run(session: AsyncSession, run_id: str) -> CodeReviewRun | None:
     return await session.get(CodeReviewRun, run_id)
 
 
-async def list_runs(session: AsyncSession, status: str | None = None, source_type: str | None = None, limit: int = 50, offset: int = 0) -> tuple[list[CodeReviewRun], int]:
+async def list_runs(
+    session: AsyncSession,
+    status: str | None = None,
+    source_type: str | None = None,
+    limit: int = 50,
+    offset: int = 0,
+) -> tuple[list[CodeReviewRun], int]:
     q = select(CodeReviewRun)
     if status:
         q = q.where(CodeReviewRun.status == status.upper())
     if source_type:
         q = q.where(CodeReviewRun.source_type == source_type)
     total = int((await session.execute(select(func.count()).select_from(q.subquery()))).scalar_one())
-    rows = list((await session.execute(q.order_by(CodeReviewRun.created_at.desc()).limit(limit).offset(offset))).scalars())
+    rows = list(
+        (
+            await session.execute(q.order_by(CodeReviewRun.created_at.desc()).limit(limit).offset(offset))
+        ).scalars()
+    )
     return rows, total
 
 
@@ -200,9 +221,13 @@ async def refresh_summary(session: AsyncSession, run_id: str) -> dict[str, Any]:
     run = await session.get(CodeReviewRun, run_id)
     if run is None:
         return {}
-    rows = list((await session.execute(select(CodeReviewFinding).where(CodeReviewFinding.run_id == run_id))).scalars())
+    rows = list(
+        (await session.execute(select(CodeReviewFinding).where(CodeReviewFinding.run_id == run_id))).scalars()
+    )
     old = run.summary or {}
-    run.summary = compute_summary([finding_to_dict(r) for r in rows], old.get("engines"), old.get("duration_seconds"))
+    run.summary = compute_summary(
+        [finding_to_dict(r) for r in rows], old.get("engines"), old.get("duration_seconds")
+    )
     run.finding_count = len(rows)
     await session.flush()
     return run.summary
@@ -225,7 +250,11 @@ async def list_findings(
 ) -> tuple[list[CodeReviewFinding], int]:
     q = select(CodeReviewFinding).where(CodeReviewFinding.run_id == run_id)
     if severity:
-        sevs = [s.strip().upper() for s in (severity.split(",") if isinstance(severity, str) else severity) if s.strip()]
+        sevs = [
+            s.strip().upper()
+            for s in (severity.split(",") if isinstance(severity, str) else severity)
+            if s.strip()
+        ]
         if sevs:
             q = q.where(CodeReviewFinding.severity.in_(sevs))
     if pack:
@@ -235,14 +264,23 @@ async def list_findings(
     if file:
         q = q.where(or_(CodeReviewFinding.file == file, CodeReviewFinding.file.like(f"{file}%")))
     if status:
-        statuses = [x.strip() for x in (status.split(",") if isinstance(status, str) else status) if x.strip()]
+        statuses = [
+            x.strip() for x in (status.split(",") if isinstance(status, str) else status) if x.strip()
+        ]
         if statuses:
             q = q.where(CodeReviewFinding.status.in_(statuses))
     if rule_id:
         q = q.where(CodeReviewFinding.rule_id == rule_id)
     if search:
         like = f"%{search}%"
-        q = q.where(or_(CodeReviewFinding.title.ilike(like), CodeReviewFinding.file.ilike(like), CodeReviewFinding.rule_id.ilike(like), CodeReviewFinding.snippet.ilike(like)))
+        q = q.where(
+            or_(
+                CodeReviewFinding.title.ilike(like),
+                CodeReviewFinding.file.ilike(like),
+                CodeReviewFinding.rule_id.ilike(like),
+                CodeReviewFinding.snippet.ilike(like),
+            )
+        )
     total = int((await session.execute(select(func.count()).select_from(q.subquery()))).scalar_one())
     sev_order = {s: i for i, s in enumerate(SEVERITIES)}
     rows = list((await session.execute(q.limit(5000))).scalars())
@@ -251,7 +289,15 @@ async def list_findings(
 
 
 async def findings_for_file(session: AsyncSession, run_id: str, path: str) -> list[CodeReviewFinding]:
-    rows = list((await session.execute(select(CodeReviewFinding).where(CodeReviewFinding.run_id == run_id, CodeReviewFinding.file == path))).scalars())
+    rows = list(
+        (
+            await session.execute(
+                select(CodeReviewFinding).where(
+                    CodeReviewFinding.run_id == run_id, CodeReviewFinding.file == path
+                )
+            )
+        ).scalars()
+    )
     rows.sort(key=lambda f: (f.line_start, f.rule_id))
     return rows
 
@@ -260,7 +306,9 @@ async def get_finding(session: AsyncSession, finding_id: str) -> CodeReviewFindi
     return await session.get(CodeReviewFinding, finding_id)
 
 
-async def set_finding_status(session: AsyncSession, finding: CodeReviewFinding, status: str, note: str, actor: str) -> CodeReviewFinding:
+async def set_finding_status(
+    session: AsyncSession, finding: CodeReviewFinding, status: str, note: str, actor: str
+) -> CodeReviewFinding:
     if status not in FINDING_STATUSES:
         raise ValueError(f"status must be one of {', '.join(FINDING_STATUSES)}")
     finding.status = status
@@ -268,14 +316,22 @@ async def set_finding_status(session: AsyncSession, finding: CodeReviewFinding, 
     finding.reviewed_by = actor
     await session.flush()
     await refresh_summary(session, finding.run_id)
-    broadcaster.publish("codereview", {"event": "finding.status", "run_id": finding.run_id, "finding_id": finding.id, "status": status})
+    broadcaster.publish(
+        "codereview",
+        {"event": "finding.status", "run_id": finding.run_id, "finding_id": finding.id, "status": status},
+    )
     return finding
 
 
 # --- file viewer ---------------------------------------------------------------------------------
 def read_run_file(run: CodeReviewRun, rel_path: str) -> dict[str, Any] | None:
     """Return the content of one scanned file, refusing anything outside the run's source directory."""
-    if not run.work_dir or not rel_path or rel_path.startswith(("/", "\\")) or ".." in rel_path.replace("\\", "/").split("/"):
+    if (
+        not run.work_dir
+        or not rel_path
+        or rel_path.startswith(("/", "\\"))
+        or ".." in rel_path.replace("\\", "/").split("/")
+    ):
         return None
     root = Path(run.work_dir, "src")
     try:
@@ -291,7 +347,14 @@ def read_run_file(run: CodeReviewRun, rel_path: str) -> dict[str, Any] | None:
     with target.open("rb") as fh:
         raw = fh.read(MAX_FILE_VIEW_BYTES)
     text = raw.decode("utf-8", "replace")
-    return {"path": rel_path, "language": language_of(rel_path), "size": size, "truncated": size > MAX_FILE_VIEW_BYTES, "content": text, "lines": text.count("\n") + 1}
+    return {
+        "path": rel_path,
+        "language": language_of(rel_path),
+        "size": size,
+        "truncated": size > MAX_FILE_VIEW_BYTES,
+        "content": text,
+        "lines": text.count("\n") + 1,
+    }
 
 
 # --- credentials (encrypted, stored in the codereview settings namespace) ------------------------
@@ -301,7 +364,10 @@ def _credential_rows() -> list[dict[str, Any]]:
 
 
 def list_credentials() -> list[dict[str, Any]]:
-    return [{k: v for k, v in r.items() if k != "token_encrypted"} | {"has_token": bool(r.get("token_encrypted"))} for r in _credential_rows()]
+    return [
+        {k: v for k, v in r.items() if k != "token_encrypted"} | {"has_token": bool(r.get("token_encrypted"))}
+        for r in _credential_rows()
+    ]
 
 
 def resolve_credential(credential_id: str) -> dict[str, Any] | None:
@@ -312,7 +378,9 @@ def resolve_credential(credential_id: str) -> dict[str, Any] | None:
     return None
 
 
-async def add_credential(session: AsyncSession, label: str, provider: str, token: str, actor: str, username: str = "") -> dict[str, Any]:
+async def add_credential(
+    session: AsyncSession, label: str, provider: str, token: str, actor: str, username: str = ""
+) -> dict[str, Any]:
     if not token or not token.strip():
         raise ValueError("token is required")
     label = re.sub(r"\s+", " ", label or "").strip()[:80] or "credential"

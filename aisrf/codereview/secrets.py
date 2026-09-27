@@ -60,7 +60,9 @@ def redact_url(url: str) -> str:
     return urlunsplit((parts.scheme, host, parts.path, parts.query, parts.fragment))
 
 
-def redact_mapping(data: dict, keys: tuple[str, ...] = ("token", "password", "secret", "key", "credential")) -> dict:
+def redact_mapping(
+    data: dict, keys: tuple[str, ...] = ("token", "password", "secret", "key", "credential")
+) -> dict:
     """Shallow copy of a dict with credential-like keys replaced, for audit details and stored config."""
     out = {}
     for k, v in data.items():

@@ -42,7 +42,9 @@ class Metrics:
     def snapshot(self) -> dict:
         with self._lock:
             return {
-                "counters": {f"{n}{dict(labels)}" if labels else n: v for (n, labels), v in self._counters.items()},
+                "counters": {
+                    f"{n}{dict(labels)}" if labels else n: v for (n, labels), v in self._counters.items()
+                },
                 "histograms": {n: len(v) for n, v in self._hist.items()},
             }
 

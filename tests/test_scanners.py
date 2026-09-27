@@ -4,6 +4,7 @@ The garak and promptfoo runs launch the real scanner binaries against a live uvi
 the app (with a MockTransport upstream), so their traffic flows through the gateway as tickets. The
 PyRIT run drives AISRFGatewayTarget in-process. The whole module stays well under 3 minutes.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -59,7 +60,9 @@ async def scan_app():
 
 @pytest.fixture
 async def api(scan_app):
-    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=scan_app), base_url="http://testserver") as c:
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=scan_app), base_url="http://testserver"
+    ) as c:
         yield c
 
 
@@ -72,7 +75,9 @@ def admin():
 async def live_server(scan_app):
     """Serve `scan_app` over real TCP so scanner subprocesses can reach the gateway."""
     port = _free_port()
-    server = uvicorn.Server(uvicorn.Config(scan_app, host="127.0.0.1", port=port, log_level="warning", lifespan="off"))
+    server = uvicorn.Server(
+        uvicorn.Config(scan_app, host="127.0.0.1", port=port, log_level="warning", lifespan="off")
+    )
     task = asyncio.create_task(server.serve())
     for _ in range(200):
         if server.started:
@@ -87,19 +92,33 @@ async def live_server(scan_app):
             await asyncio.wait_for(task, timeout=10)
 
 
-async def _make_agent(api: httpx.AsyncClient, admin: dict[str, str], *, require_approval: bool = False, name: str = "scan-target") -> dict[str, Any]:
+async def _make_agent(
+    api: httpx.AsyncClient,
+    admin: dict[str, str],
+    *,
+    require_approval: bool = False,
+    name: str = "scan-target",
+) -> dict[str, Any]:
     import os
 
     r = await api.post(
         "/api/agents",
         headers=admin,
-        json={"name": f"{name}-{os.urandom(3).hex()}", "upstream_provider": "openai", "upstream_base_url": "https://upstream.example/v1", "upstream_api_key": "sk-upstream-secret", "require_approval": require_approval},
+        json={
+            "name": f"{name}-{os.urandom(3).hex()}",
+            "upstream_provider": "openai",
+            "upstream_base_url": "https://upstream.example/v1",
+            "upstream_api_key": "sk-upstream-secret",
+            "require_approval": require_approval,
+        },
     )
     assert r.status_code == 201, r.text
     return r.json()
 
 
-async def _wait_done(api: httpx.AsyncClient, admin: dict[str, str], campaign_id: str, tries: int = 900) -> dict[str, Any]:
+async def _wait_done(
+    api: httpx.AsyncClient, admin: dict[str, str], campaign_id: str, tries: int = 900
+) -> dict[str, Any]:
     for _ in range(tries):
         r = await api.get(f"/api/redteam/campaigns/{campaign_id}", headers=admin)
         assert r.status_code == 200, r.text
@@ -160,7 +179,18 @@ async def test_garak_end_to_end(api, admin, live_server):
     r = await api.post(
         "/api/scanners/garak/campaigns",
         headers=admin,
-        json={"name": "garak smoke", "agent_id": agent["id"], "target_model": "mock-model", "options": {"probes": ["test.Test"], "generations": 1, "gateway_url": live_server, "parallel_attempts": 2}, "auto_start": True},
+        json={
+            "name": "garak smoke",
+            "agent_id": agent["id"],
+            "target_model": "mock-model",
+            "options": {
+                "probes": ["test.Test"],
+                "generations": 1,
+                "gateway_url": live_server,
+                "parallel_attempts": 2,
+            },
+            "auto_start": True,
+        },
     )
     assert r.status_code == 201, r.text
     campaign = r.json()
@@ -169,7 +199,9 @@ async def test_garak_end_to_end(api, admin, live_server):
     final = await _wait_done(api, admin, cid)
     assert final["status"] == "COMPLETED", final
     assert final["summary"]["engine"] == "garak"
-    results = (await api.get(f"/api/redteam/campaigns/{cid}/results", headers=admin, params={"limit": 1000})).json()
+    results = (
+        await api.get(f"/api/redteam/campaigns/{cid}/results", headers=admin, params={"limit": 1000})
+    ).json()
     assert results["total"] >= 1, results
     assert all(item["verdict"] != "PENDING" for item in results["items"])
     linked = [item for item in results["items"] if item["ticket_id"]]
@@ -185,14 +217,29 @@ async def test_promptfoo_end_to_end(api, admin, live_server):
     r = await api.post(
         "/api/scanners/promptfoo/campaigns",
         headers=admin,
-        json={"name": "promptfoo corpus", "agent_id": agent["id"], "target_model": "mock-model", "options": {"mode": "corpus", "categories": ["benign_control", "prompt_injection"], "max_probes": 6, "seed": 5, "gateway_url": live_server, "concurrency": 4}, "auto_start": True},
+        json={
+            "name": "promptfoo corpus",
+            "agent_id": agent["id"],
+            "target_model": "mock-model",
+            "options": {
+                "mode": "corpus",
+                "categories": ["benign_control", "prompt_injection"],
+                "max_probes": 6,
+                "seed": 5,
+                "gateway_url": live_server,
+                "concurrency": 4,
+            },
+            "auto_start": True,
+        },
     )
     assert r.status_code == 201, r.text
     cid = r.json()["id"]
     final = await _wait_done(api, admin, cid)
     assert final["status"] == "COMPLETED", final
     assert final["summary"]["engine"] == "promptfoo"
-    results = (await api.get(f"/api/redteam/campaigns/{cid}/results", headers=admin, params={"limit": 1000})).json()
+    results = (
+        await api.get(f"/api/redteam/campaigns/{cid}/results", headers=admin, params={"limit": 1000})
+    ).json()
     assert results["total"] == 6, results
     verdicts = {item["verdict"] for item in results["items"]}
     assert verdicts.issubset({"VULNERABLE", "RESISTED", "BLOCKED", "ERROR", "INCONCLUSIVE"})
@@ -206,7 +253,20 @@ async def test_pyrit_in_process_run(api, admin):
     r = await api.post(
         "/api/scanners/pyrit/campaigns",
         headers=admin,
-        json={"name": "pyrit inproc", "agent_id": agent["id"], "target_model": "mock-model", "options": {"mode": "inprocess", "converters": ["Base64Converter"], "scorer": "CorpusIndicatorScorer", "categories": ["benign_control", "prompt_injection"], "max_probes": 4, "seed": 3}, "auto_start": True},
+        json={
+            "name": "pyrit inproc",
+            "agent_id": agent["id"],
+            "target_model": "mock-model",
+            "options": {
+                "mode": "inprocess",
+                "converters": ["Base64Converter"],
+                "scorer": "CorpusIndicatorScorer",
+                "categories": ["benign_control", "prompt_injection"],
+                "max_probes": 4,
+                "seed": 3,
+            },
+            "auto_start": True,
+        },
     )
     assert r.status_code == 201, r.text
     cid = r.json()["id"]
@@ -214,7 +274,9 @@ async def test_pyrit_in_process_run(api, admin):
     assert final["status"] == "COMPLETED", final
     assert final["summary"]["engine"] == "pyrit"
     assert final["summary"]["pyrit"]["converters"] == ["Base64Converter"]
-    results = (await api.get(f"/api/redteam/campaigns/{cid}/results", headers=admin, params={"limit": 1000})).json()
+    results = (
+        await api.get(f"/api/redteam/campaigns/{cid}/results", headers=admin, params={"limit": 1000})
+    ).json()
     assert results["total"] == 4, results
     for item in results["items"]:
         assert item["probe_id"].endswith("+Base64Converter")
@@ -229,7 +291,10 @@ async def test_pyrit_in_process_run(api, admin):
 async def test_pyrit_ship_convert_and_score(api, admin):
     converters = (await api.get("/api/pyrit-ship/prompt/convert")).json()
     assert "ROT13Converter" in converters and "Base64Converter" in converters
-    r = await api.post("/api/pyrit-ship/prompt/convert/ROT13Converter", json={"text": "hello [CONVERT]secret[/CONVERT] world"})
+    r = await api.post(
+        "/api/pyrit-ship/prompt/convert/ROT13Converter",
+        json={"text": "hello [CONVERT]secret[/CONVERT] world"},
+    )
     assert r.status_code == 200, r.text
     assert r.json()["converted_text"] == "hello frperg world"
     r = await api.post("/api/pyrit-ship/prompt/convert/Base64Converter", json={"text": "abc"})
@@ -239,7 +304,14 @@ async def test_pyrit_ship_convert_and_score(api, admin):
     assert r.json()["converted_text"].strip() == base64.b64encode(b"abc").decode()
     r = await api.post("/api/pyrit-ship/prompt/convert/NotAConverter", json={"text": "x"})
     assert r.status_code == 404
-    r = await api.post("/api/pyrit-ship/prompt/score/SelfAskTrueFalseScorer", json={"scoring_true": "there is a password in the text", "scoring_false": "there is no password", "prompt_response": "the password is PYRITSHIP"})
+    r = await api.post(
+        "/api/pyrit-ship/prompt/score/SelfAskTrueFalseScorer",
+        json={
+            "scoring_true": "there is a password in the text",
+            "scoring_false": "there is no password",
+            "prompt_response": "the password is PYRITSHIP",
+        },
+    )
     assert r.status_code == 200, r.text
     scores = r.json()
     assert isinstance(scores, list) and scores
@@ -255,8 +327,14 @@ async def test_pyrit_ship_convert_creates_ticket(api, admin):
     from aisrf.db import session_scope
 
     async with session_scope() as session:
-        _, raw = await agent_service.mint_scan_token(session, agent["id"], ttl_seconds=600, purpose="pyrit_ship")
-    r = await api.post("/api/pyrit-ship/prompt/convert/ROT13Converter", headers={"Authorization": f"Bearer {raw}"}, json={"text": "attack payload"})
+        _, raw = await agent_service.mint_scan_token(
+            session, agent["id"], ttl_seconds=600, purpose="pyrit_ship"
+        )
+    r = await api.post(
+        "/api/pyrit-ship/prompt/convert/ROT13Converter",
+        headers={"Authorization": f"Bearer {raw}"},
+        json={"text": "attack payload"},
+    )
     assert r.status_code == 200, r.text
     assert r.json().get("ticket_id"), "converted prompt should be submitted as a ticket"
     ticket = (await api.get(f"/api/tickets/{r.json()['ticket_id']}", headers=admin)).json()
@@ -272,8 +350,16 @@ async def test_matrix_run_and_comparison(api, admin):
         headers=admin,
         json={
             "name": "cross-target",
-            "targets": [{"agent_id": agent_a["id"], "target_model": "model-a"}, {"agent_id": agent_b["id"], "target_model": "model-b"}],
-            "options": {"mode": "inprocess", "categories": ["benign_control", "prompt_injection"], "max_probes": 3, "seed": 1},
+            "targets": [
+                {"agent_id": agent_a["id"], "target_model": "model-a"},
+                {"agent_id": agent_b["id"], "target_model": "model-b"},
+            ],
+            "options": {
+                "mode": "inprocess",
+                "categories": ["benign_control", "prompt_injection"],
+                "max_probes": 3,
+                "seed": 1,
+            },
             "auto_start": True,
         },
     )
@@ -303,7 +389,13 @@ async def test_cancel_campaign(api, admin):
     r = await api.post(
         "/api/scanners/pyrit/campaigns",
         headers=admin,
-        json={"name": "to cancel", "agent_id": agent["id"], "target_model": "mock", "options": {"mode": "inprocess", "categories": ["jailbreak"], "max_probes": 3}, "auto_start": False},
+        json={
+            "name": "to cancel",
+            "agent_id": agent["id"],
+            "target_model": "mock",
+            "options": {"mode": "inprocess", "categories": ["jailbreak"], "max_probes": 3},
+            "auto_start": False,
+        },
     )
     cid = r.json()["id"]
     assert r.json()["status"] == "CREATED"

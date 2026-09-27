@@ -71,8 +71,7 @@ jobs:
         continue-on-error: false
         run: .venv/bin/ruff check --output-format=github aisrf tests examples
       - name: Ruff format check
-        # TODO: flip to continue-on-error: false once the core is formatted (`make fmt`).
-        continue-on-error: true
+        continue-on-error: false
         run: .venv/bin/ruff format --check aisrf tests examples
       - name: Pytest with coverage
         env:

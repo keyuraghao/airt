@@ -1,4 +1,5 @@
 """Reviewer REST API for the red-team engine: corpus browsing, campaign lifecycle and results."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -60,7 +61,11 @@ class GroupIn(BaseModel):
 @router.get("/corpus")
 async def get_corpus(_: Principal = Depends(current_principal)) -> dict[str, Any]:
     categories = list_categories()
-    return {"categories": categories, "total": sum(c["probe_count"] for c in categories), "mutators": MUTATOR_NAMES}
+    return {
+        "categories": categories,
+        "total": sum(c["probe_count"] for c in categories),
+        "mutators": MUTATOR_NAMES,
+    }
 
 
 @router.get("/corpus/probes")
@@ -121,7 +126,14 @@ async def create_campaign(
         seed=payload.seed,
         extra_body=payload.extra_body,
     )
-    await audit.record(session, p.username, "redteam.campaign.create", "campaign", campaign.id, {"agent_id": payload.agent_id, "total_probes": campaign.total_probes})
+    await audit.record(
+        session,
+        p.username,
+        "redteam.campaign.create",
+        "campaign",
+        campaign.id,
+        {"agent_id": payload.agent_id, "total_probes": campaign.total_probes},
+    )
     await session.commit()
     campaign_id = campaign.id
     if payload.auto_start:
@@ -142,12 +154,19 @@ async def _campaign_or_404(session: AsyncSession, campaign_id: str) -> dict[str,
 
 
 @router.get("/campaigns/{campaign_id}")
-async def get_campaign(campaign_id: str, _: Principal = Depends(current_principal), session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
+async def get_campaign(
+    campaign_id: str, _: Principal = Depends(current_principal), session: AsyncSession = Depends(get_session)
+) -> dict[str, Any]:
     return await _campaign_or_404(session, campaign_id)
 
 
 @router.post("/campaigns/{campaign_id}/start")
-async def start_campaign(campaign_id: str, request: Request, p: Principal = Depends(require_role("reviewer")), session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
+async def start_campaign(
+    campaign_id: str,
+    request: Request,
+    p: Principal = Depends(require_role("reviewer")),
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, Any]:
     campaign = await service.get_campaign(session, campaign_id)
     if campaign is None:
         raise HTTPException(404, "campaign not found")
@@ -160,7 +179,11 @@ async def start_campaign(campaign_id: str, request: Request, p: Principal = Depe
 
 
 @router.post("/campaigns/{campaign_id}/pause")
-async def pause_campaign(campaign_id: str, p: Principal = Depends(require_role("reviewer")), session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
+async def pause_campaign(
+    campaign_id: str,
+    p: Principal = Depends(require_role("reviewer")),
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, Any]:
     campaign = await service.get_campaign(session, campaign_id)
     if campaign is None:
         raise HTTPException(404, "campaign not found")
@@ -169,7 +192,12 @@ async def pause_campaign(campaign_id: str, p: Principal = Depends(require_role("
 
 
 @router.post("/campaigns/{campaign_id}/resume")
-async def resume_campaign(campaign_id: str, request: Request, p: Principal = Depends(require_role("reviewer")), session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
+async def resume_campaign(
+    campaign_id: str,
+    request: Request,
+    p: Principal = Depends(require_role("reviewer")),
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, Any]:
     campaign = await service.get_campaign(session, campaign_id)
     if campaign is None:
         raise HTTPException(404, "campaign not found")
@@ -178,7 +206,11 @@ async def resume_campaign(campaign_id: str, request: Request, p: Principal = Dep
 
 
 @router.post("/campaigns/{campaign_id}/cancel")
-async def cancel_campaign(campaign_id: str, p: Principal = Depends(require_role("reviewer")), session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
+async def cancel_campaign(
+    campaign_id: str,
+    p: Principal = Depends(require_role("reviewer")),
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, Any]:
     campaign = await service.get_campaign(session, campaign_id)
     if campaign is None:
         raise HTTPException(404, "campaign not found")
@@ -189,7 +221,11 @@ async def cancel_campaign(campaign_id: str, p: Principal = Depends(require_role(
 
 
 @router.delete("/campaigns/{campaign_id}")
-async def delete_campaign(campaign_id: str, p: Principal = Depends(require_role("reviewer")), session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
+async def delete_campaign(
+    campaign_id: str,
+    p: Principal = Depends(require_role("reviewer")),
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, Any]:
     await campaign_runner.cancel(campaign_id)
     deleted = await service.delete_campaign(session, campaign_id)
     if not deleted:
@@ -213,12 +249,22 @@ async def campaign_results(
     campaign = await service.get_campaign(session, campaign_id)
     if campaign is None:
         raise HTTPException(404, "campaign not found")
-    items, total = await service.list_results(session, campaign_id, verdict=verdict, category=category, technique=technique, limit=limit, offset=offset)
+    items, total = await service.list_results(
+        session,
+        campaign_id,
+        verdict=verdict,
+        category=category,
+        technique=technique,
+        limit=limit,
+        offset=offset,
+    )
     return {"items": items, "total": total}
 
 
 @router.get("/campaigns/{campaign_id}/summary")
-async def campaign_summary(campaign_id: str, _: Principal = Depends(current_principal), session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
+async def campaign_summary(
+    campaign_id: str, _: Principal = Depends(current_principal), session: AsyncSession = Depends(get_session)
+) -> dict[str, Any]:
     campaign = await service.get_campaign(session, campaign_id)
     if campaign is None:
         raise HTTPException(404, "campaign not found")
@@ -231,7 +277,9 @@ async def campaign_summary(campaign_id: str, _: Principal = Depends(current_prin
 
 # --- comparison groups: the same probe set against several targets --------------
 @router.get("/groups")
-async def list_groups(_: Principal = Depends(current_principal), session: AsyncSession = Depends(get_session)) -> list[dict[str, Any]]:
+async def list_groups(
+    _: Principal = Depends(current_principal), session: AsyncSession = Depends(get_session)
+) -> list[dict[str, Any]]:
     return await service.list_groups(session)
 
 
@@ -262,7 +310,14 @@ async def create_group(
     )
     group_id = str(campaigns[0].config.get("group_id"))
     campaign_ids = [c.id for c in campaigns]
-    await audit.record(session, p.username, "redteam.group.create", "campaign_group", group_id, {"campaigns": campaign_ids, "targets": len(campaign_ids)})
+    await audit.record(
+        session,
+        p.username,
+        "redteam.group.create",
+        "campaign_group",
+        group_id,
+        {"campaigns": campaign_ids, "targets": len(campaign_ids)},
+    )
     await session.commit()
     if payload.auto_start:
         await campaign_runner.start_group(group_id, request.app.state.http)
@@ -279,12 +334,19 @@ async def _group_or_404(session: AsyncSession, group_id: str) -> dict[str, Any]:
 
 
 @router.get("/groups/{group_id}")
-async def get_group(group_id: str, _: Principal = Depends(current_principal), session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
+async def get_group(
+    group_id: str, _: Principal = Depends(current_principal), session: AsyncSession = Depends(get_session)
+) -> dict[str, Any]:
     return await _group_or_404(session, group_id)
 
 
 @router.post("/groups/{group_id}/start")
-async def start_group(group_id: str, request: Request, p: Principal = Depends(require_role("reviewer")), session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
+async def start_group(
+    group_id: str,
+    request: Request,
+    p: Principal = Depends(require_role("reviewer")),
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, Any]:
     await _group_or_404(session, group_id)
     await campaign_runner.start_group(group_id, request.app.state.http)
     await audit.record(session, p.username, "redteam.group.start", "campaign_group", group_id)
@@ -293,7 +355,11 @@ async def start_group(group_id: str, request: Request, p: Principal = Depends(re
 
 
 @router.post("/groups/{group_id}/cancel")
-async def cancel_group(group_id: str, p: Principal = Depends(require_role("reviewer")), session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
+async def cancel_group(
+    group_id: str,
+    p: Principal = Depends(require_role("reviewer")),
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, Any]:
     await _group_or_404(session, group_id)
     await campaign_runner.cancel_group(group_id)
     await audit.record(session, p.username, "redteam.group.cancel", "campaign_group", group_id)
@@ -302,11 +368,17 @@ async def cancel_group(group_id: str, p: Principal = Depends(require_role("revie
 
 
 @router.delete("/groups/{group_id}")
-async def delete_group(group_id: str, p: Principal = Depends(require_role("reviewer")), session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
+async def delete_group(
+    group_id: str,
+    p: Principal = Depends(require_role("reviewer")),
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, Any]:
     await campaign_runner.cancel_group(group_id)
     deleted = await service.delete_group(session, group_id)
     if not deleted:
         raise HTTPException(404, "group not found")
-    await audit.record(session, p.username, "redteam.group.delete", "campaign_group", group_id, {"campaigns": deleted})
+    await audit.record(
+        session, p.username, "redteam.group.delete", "campaign_group", group_id, {"campaigns": deleted}
+    )
     await session.commit()
     return {"deleted": group_id, "campaigns": deleted}

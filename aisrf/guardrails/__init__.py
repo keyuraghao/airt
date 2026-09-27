@@ -8,6 +8,7 @@ heavy third-party imports (torch, transformers, nemoguardrails) happen lazily on
     status()        -> per-integration installed / enabled / configured / last_error
     health_check()  -> runs a tiny scan through every enabled integration
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -23,7 +24,12 @@ for _a in REQUEST_ANALYZERS:
 for _a in RESPONSE_ANALYZERS:
     register(_a, response=True)
 
-INTEGRATIONS: dict[str, Any] = {"rebuff": rebuff, "llm_guard": llm_guard, "nemo_guardrails": nemo, "lakera": lakera}
+INTEGRATIONS: dict[str, Any] = {
+    "rebuff": rebuff,
+    "llm_guard": llm_guard,
+    "nemo_guardrails": nemo,
+    "lakera": lakera,
+}
 GUARDRAIL_NAMES: list[str] = [a.name for a in REQUEST_ANALYZERS] + [a.name for a in RESPONSE_ANALYZERS]
 
 
@@ -34,7 +40,15 @@ def status() -> list[dict[str, Any]]:
         try:
             out.append(module.status())
         except Exception as exc:  # status must never fail the settings page
-            out.append({"name": name, "installed": False, "enabled": False, "configured": False, "last_error": str(exc)[:300]})
+            out.append(
+                {
+                    "name": name,
+                    "installed": False,
+                    "enabled": False,
+                    "configured": False,
+                    "last_error": str(exc)[:300],
+                }
+            )
     return out
 
 
@@ -58,4 +72,15 @@ async def health_check(names: list[str] | None = None, timeout: float = 120.0) -
     return results
 
 
-__all__ = ["GUARDRAIL_NAMES", "INTEGRATIONS", "REQUEST_ANALYZERS", "RESPONSE_ANALYZERS", "health_check", "lakera", "llm_guard", "nemo", "rebuff", "status"]
+__all__ = [
+    "GUARDRAIL_NAMES",
+    "INTEGRATIONS",
+    "REQUEST_ANALYZERS",
+    "RESPONSE_ANALYZERS",
+    "health_check",
+    "lakera",
+    "llm_guard",
+    "nemo",
+    "rebuff",
+    "status",
+]

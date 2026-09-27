@@ -38,9 +38,37 @@ _SHA = re.compile(r"^[0-9a-f]{7,40}$")
 _ARCHIVE_EXT = (".zip", ".tar", ".tar.gz", ".tgz", ".tar.bz2", ".tbz2", ".tar.xz", ".txz")
 SNIPPET_EXT: dict[str, str] = {}
 for _ext, _lang in LANGUAGES.items():  # first extension listed for a language wins (.py before .pyi)
-    if _lang in ("python", "javascript", "typescript", "java", "go", "csharp", "ruby", "php", "rust", "kotlin", "swift", "html", "yaml", "json", "shell", "sql"):
+    if _lang in (
+        "python",
+        "javascript",
+        "typescript",
+        "java",
+        "go",
+        "csharp",
+        "ruby",
+        "php",
+        "rust",
+        "kotlin",
+        "swift",
+        "html",
+        "yaml",
+        "json",
+        "shell",
+        "sql",
+    ):
         SNIPPET_EXT.setdefault(_lang, _ext)
-SNIPPET_EXT.update({"js": ".js", "ts": ".ts", "py": ".py", "jsx": ".jsx", "tsx": ".tsx", "text": ".txt", "prompt": ".prompt", "dockerfile": "Dockerfile"})
+SNIPPET_EXT.update(
+    {
+        "js": ".js",
+        "ts": ".ts",
+        "py": ".py",
+        "jsx": ".jsx",
+        "tsx": ".tsx",
+        "text": ".txt",
+        "prompt": ".prompt",
+        "dockerfile": "Dockerfile",
+    }
+)
 
 
 class IntakeError(ValueError):
@@ -185,7 +213,12 @@ def extract_archive(path: Path, dest: Path, cfg: dict[str, Any] | None = None) -
         parts = name.replace("\\", "/").split("/")
         if any(p in exclude_dirs for p in parts[:-1]):
             return False
-        return not (max_file and size > max_file and Path(name).suffix.lower() not in (".pt", ".pth", ".pkl", ".bin", ".safetensors", ".gguf", ".onnx", ".h5"))
+        return not (
+            max_file
+            and size > max_file
+            and Path(name).suffix.lower()
+            not in (".pt", ".pth", ".pkl", ".bin", ".safetensors", ".gguf", ".onnx", ".h5")
+        )
 
     if info["kind"] == "zip":
         with zipfile.ZipFile(path) as zf:
@@ -233,7 +266,9 @@ def _flatten(dest: Path) -> None:
 
 
 # --- downloads ----------------------------------------------------------------------------
-def download(url: str, dest: Path, cfg: dict[str, Any] | None = None, headers: dict[str, str] | None = None) -> Path:
+def download(
+    url: str, dest: Path, cfg: dict[str, Any] | None = None, headers: dict[str, str] | None = None
+) -> Path:
     cfg = cfg or get_config()
     limit = int(cfg.get("max_archive_bytes") or 0)
     timeout = float(cfg.get("download_timeout_seconds") or 120)
@@ -242,7 +277,10 @@ def download(url: str, dest: Path, cfg: dict[str, Any] | None = None, headers: d
         raise IntakeError("archive URL must use http or https")
     size = 0
     try:
-        with httpx.Client(follow_redirects=True, timeout=timeout) as client, client.stream("GET", url, headers=headers or {}) as resp:
+        with (
+            httpx.Client(follow_redirects=True, timeout=timeout) as client,
+            client.stream("GET", url, headers=headers or {}) as resp,
+        ):
             if resp.status_code >= 400:
                 raise IntakeError(f"download failed with HTTP {resp.status_code}")
             with dest.open("wb") as out:
@@ -268,7 +306,9 @@ esac
 def git_provider(url: str, explicit: str | None = None) -> str:
     if explicit:
         return explicit.lower()
-    host = (urlsplit(url).hostname or "").lower() if "://" in url else url.split("@")[-1].split(":")[0].lower()
+    host = (
+        (urlsplit(url).hostname or "").lower() if "://" in url else url.split("@")[-1].split(":")[0].lower()
+    )
     if "github" in host:
         return "github"
     if "gitlab" in host:
@@ -281,7 +321,9 @@ def git_provider(url: str, explicit: str | None = None) -> str:
 
 
 def token_username(provider: str) -> str:
-    return {"github": "x-access-token", "gitlab": "oauth2", "bitbucket": "x-token-auth", "azure": "pat"}.get(provider, "token")
+    return {"github": "x-access-token", "gitlab": "oauth2", "bitbucket": "x-token-auth", "azure": "pat"}.get(
+        provider, "token"
+    )
 
 
 def split_url_credentials(url: str) -> tuple[str, str | None, str | None]:
@@ -298,9 +340,20 @@ def split_url_credentials(url: str) -> tuple[str, str | None, str | None]:
     return clean, parts.username, parts.password
 
 
-def _run_git(args: list[str], cwd: Path, env: dict[str, str], timeout: float) -> subprocess.CompletedProcess[str]:
+def _run_git(
+    args: list[str], cwd: Path, env: dict[str, str], timeout: float
+) -> subprocess.CompletedProcess[str]:
     try:
-        return subprocess.run(["git", *args], cwd=str(cwd), env=env, capture_output=True, text=True, timeout=timeout, stdin=subprocess.DEVNULL, check=False)
+        return subprocess.run(
+            ["git", *args],
+            cwd=str(cwd),
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            stdin=subprocess.DEVNULL,
+            check=False,
+        )
     except subprocess.TimeoutExpired:
         raise IntakeError(f"git {args[0]} timed out after {int(timeout)}s") from None
     except FileNotFoundError:
@@ -341,7 +394,9 @@ def clone_repository(
         key = Path(ssh_key_path).expanduser()
         if not key.is_file():
             raise IntakeError("ssh deploy key not found")
-        env["GIT_SSH_COMMAND"] = f"ssh -i {key} -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=accept-new"
+        env["GIT_SSH_COMMAND"] = (
+            f"ssh -i {key} -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=accept-new"
+        )
     if dest.exists():
         shutil.rmtree(dest, ignore_errors=True)
     dest.parent.mkdir(parents=True, exist_ok=True)
@@ -359,7 +414,9 @@ def clone_repository(
             if fetched.returncode != 0:
                 full = _run_git(["fetch", "--quiet", "--unshallow", "origin"], dest, env, timeout)
                 if full.returncode != 0:
-                    raise IntakeError("git fetch of the requested commit failed: " + _clean_git_error(fetched.stderr))
+                    raise IntakeError(
+                        "git fetch of the requested commit failed: " + _clean_git_error(fetched.stderr)
+                    )
             checkout = _run_git(["checkout", "--quiet", ref], dest, env, timeout)
             if checkout.returncode != 0:
                 raise IntakeError("git checkout failed: " + _clean_git_error(checkout.stderr))
@@ -370,16 +427,26 @@ def clone_repository(
         if helper is not None:
             helper.unlink(missing_ok=True)
     shutil.rmtree(dest / ".git", ignore_errors=True)
-    return {"commit": commit, "branch": branch.stdout.strip() if branch.returncode == 0 else "", "ref": ref or ""}
+    return {
+        "commit": commit,
+        "branch": branch.stdout.strip() if branch.returncode == 0 else "",
+        "ref": ref or "",
+    }
 
 
 def _clean_git_error(stderr: str) -> str:
     text = mask_secrets(redact_url(stderr or "")).strip()
-    lines = [line for line in text.splitlines() if line.strip() and not line.startswith(("hint:", "warning: You appear"))]
+    lines = [
+        line
+        for line in text.splitlines()
+        if line.strip() and not line.startswith(("hint:", "warning: You appear"))
+    ]
     return " ".join(lines)[:600] or "unknown error"
 
 
-def github_tarball(url: str, dest_archive: Path, ref: str | None, token: str | None, cfg: dict[str, Any] | None = None) -> Path:
+def github_tarball(
+    url: str, dest_archive: Path, ref: str | None, token: str | None, cfg: dict[str, Any] | None = None
+) -> Path:
     """Download a repository tarball through the GitHub REST API (used when git is unavailable)."""
     parts = urlsplit(url)
     path = parts.path.strip("/").removesuffix(".git")
@@ -387,8 +454,16 @@ def github_tarball(url: str, dest_archive: Path, ref: str | None, token: str | N
     if len(segments) < 2:
         raise IntakeError("GitHub URL must look like https://github.com/<owner>/<repo>")
     owner, repo = segments[0], segments[1]
-    api = f"https://api.github.com/repos/{owner}/{repo}/tarball/{ref}" if ref else f"https://api.github.com/repos/{owner}/{repo}/tarball"
-    headers = {"Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28", "User-Agent": "AISRF-codereview"}
+    api = (
+        f"https://api.github.com/repos/{owner}/{repo}/tarball/{ref}"
+        if ref
+        else f"https://api.github.com/repos/{owner}/{repo}/tarball"
+    )
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "User-Agent": "AISRF-codereview",
+    }
     if token:
         headers["Authorization"] = f"Bearer {token}"
     return download(api, dest_archive, cfg, headers)
@@ -423,7 +498,9 @@ def check_local_path(path: str, cfg: dict[str, Any] | None = None) -> Path:
     raise IntakeError("path is outside the allowed directories (data_dir or the codereview path_allowlist)")
 
 
-def copy_local_tree(source: Path, dest: Path, cfg: dict[str, Any], include: list[str] | None, exclude: list[str] | None) -> WalkStats:
+def copy_local_tree(
+    source: Path, dest: Path, cfg: dict[str, Any], include: list[str] | None, exclude: list[str] | None
+) -> WalkStats:
     stats = WalkStats()
     for f in walk_files(source, cfg, include=include, exclude=exclude, stats=stats):
         target = dest / f.path
@@ -446,7 +523,12 @@ def write_snippet(code: str, language: str | None, dest: Path) -> Path:
 
 
 # --- orchestration --------------------------------------------------------------------------
-def acquire(run_id: str, source: dict[str, Any], options: dict[str, Any] | None = None, cfg: dict[str, Any] | None = None) -> IntakeResult:
+def acquire(
+    run_id: str,
+    source: dict[str, Any],
+    options: dict[str, Any] | None = None,
+    cfg: dict[str, Any] | None = None,
+) -> IntakeResult:
     """Materialise the source under <work_dir>/src. Blocking; run it in a worker thread."""
     cfg = cfg or get_config()
     options = options or {}
@@ -462,7 +544,12 @@ def acquire(run_id: str, source: dict[str, Any], options: dict[str, Any] | None 
     if kind == "path":
         resolved = check_local_path(str(source.get("path") or ""), cfg)
         stats = copy_local_tree(resolved, src, cfg, options.get("include"), options.get("exclude"))
-        detail = {"copied": stats.scanned, "skipped_large": stats.skipped_large, "skipped_binary": stats.skipped_binary, "truncated": stats.truncated}
+        detail = {
+            "copied": stats.scanned,
+            "skipped_large": stats.skipped_large,
+            "skipped_binary": stats.skipped_binary,
+            "truncated": stats.truncated,
+        }
         return IntakeResult(src, kind, str(resolved), detail)
     if kind == "zip":
         archive = Path(str(source.get("archive_path") or ""))
@@ -492,7 +579,17 @@ def acquire(run_id: str, source: dict[str, Any], options: dict[str, Any] | None 
     have_git = shutil.which("git") is not None
     if have_git:
         try:
-            detail = clone_repository(url, src, ref=ref, token=token, username=source.get("username"), ssh_key_path=source.get("ssh_key_path"), provider=provider, work_dir=work_dir, cfg=cfg)
+            detail = clone_repository(
+                url,
+                src,
+                ref=ref,
+                token=token,
+                username=source.get("username"),
+                ssh_key_path=source.get("ssh_key_path"),
+                provider=provider,
+                work_dir=work_dir,
+                cfg=cfg,
+            )
             detail["method"] = "git"
             return IntakeResult(src, kind, redact_url(clean_url), detail)
         except IntakeError as exc:

@@ -31,7 +31,15 @@ from ..rules import RULES_BY_ID, semgrep_configs
 from ..rules.base import Rule
 
 log = get_logger("aisrf.codereview.semgrep")
-SEVERITY_MAP = {"ERROR": "HIGH", "WARNING": "MEDIUM", "INFO": "LOW", "CRITICAL": "CRITICAL", "HIGH": "HIGH", "MEDIUM": "MEDIUM", "LOW": "LOW"}
+SEVERITY_MAP = {
+    "ERROR": "HIGH",
+    "WARNING": "MEDIUM",
+    "INFO": "LOW",
+    "CRITICAL": "CRITICAL",
+    "HIGH": "HIGH",
+    "MEDIUM": "MEDIUM",
+    "LOW": "LOW",
+}
 MISSING_LINES = ("", "requires login")
 
 
@@ -80,7 +88,9 @@ def invocations(cfg: dict[str, Any]) -> list[Invocation]:
         binary, libs = core
         env = _base_env()
         if libs.is_dir():
-            env["LD_LIBRARY_PATH"] = str(libs) + (os.pathsep + env["LD_LIBRARY_PATH"] if env.get("LD_LIBRARY_PATH") else "")
+            env["LD_LIBRARY_PATH"] = str(libs) + (
+                os.pathsep + env["LD_LIBRARY_PATH"] if env.get("LD_LIBRARY_PATH") else ""
+            )
         out.append(Invocation("osemgrep", str(binary), "osemgrep", ["--experimental"], env))
     if not explicit:
         cli = scanner_binary("semgrep", cfg)
@@ -122,14 +132,21 @@ def to_finding(result: dict[str, Any], src_dir: Path | None = None) -> Finding |
     snippet = str(extra.get("lines") or "")
     if snippet.strip() in MISSING_LINES and src_dir is not None:
         snippet = _snippet_from_disk(src_dir, path, start, end)
-    severity = str(meta.get("severity") or SEVERITY_MAP.get(str(extra.get("severity") or "WARNING").upper(), "MEDIUM")).upper()
+    severity = str(
+        meta.get("severity") or SEVERITY_MAP.get(str(extra.get("severity") or "WARNING").upper(), "MEDIUM")
+    ).upper()
     try:
         confidence = float(meta.get("confidence") or 0.65)
     except (TypeError, ValueError):
         confidence = 0.65
     message = str(extra.get("message") or "").strip()
     if rule is not None:
-        pack, title, description, remediation = rule.pack, rule.title, rule.description, "\n".join(f"- {s}" for s in rule.remediation)
+        pack, title, description, remediation = (
+            rule.pack,
+            rule.title,
+            rule.description,
+            "\n".join(f"- {s}" for s in rule.remediation),
+        )
         owasp, cwe, category = rule.owasp, rule.cwe, rule.category
         if not meta.get("severity"):
             severity = rule.severity
@@ -158,7 +175,11 @@ def to_finding(result: dict[str, Any], src_dir: Path | None = None) -> Finding |
         owasp=owasp,
         cwe=cwe,
         category=category,
-        metadata={"check_id": check_id, "message": message, "taint": bool(meta.get("taint")) or "dataflow_trace" in extra},
+        metadata={
+            "check_id": check_id,
+            "message": message,
+            "taint": bool(meta.get("taint")) or "dataflow_trace" in extra,
+        },
     )
 
 
@@ -179,7 +200,22 @@ def parse_output(text: str, src_dir: Path | None = None) -> tuple[list[Finding],
 
 
 def scan_args(inv: Invocation, configs: list[Path], cfg: dict[str, Any]) -> list[str]:
-    args = [inv.argv0, "scan", *inv.extra_args, "--json", "--metrics=off", "--quiet", "--disable-version-check", "--no-git-ignore", "--timeout", "30", "--timeout-threshold", "3", "--max-target-bytes", str(int(cfg.get("max_file_bytes") or 2_000_000))]
+    args = [
+        inv.argv0,
+        "scan",
+        *inv.extra_args,
+        "--json",
+        "--metrics=off",
+        "--quiet",
+        "--disable-version-check",
+        "--no-git-ignore",
+        "--timeout",
+        "30",
+        "--timeout-threshold",
+        "3",
+        "--max-target-bytes",
+        str(int(cfg.get("max_file_bytes") or 2_000_000)),
+    ]
     for d in cfg.get("exclude_dirs") or []:
         args += ["--exclude", d]
     for c in configs:
@@ -188,8 +224,17 @@ def scan_args(inv: Invocation, configs: list[Path], cfg: dict[str, Any]) -> list
     return args
 
 
-async def _execute(inv: Invocation, args: list[str], cwd: Path, timeout: float) -> tuple[int | None, bytes, bytes]:
-    proc = await asyncio.create_subprocess_exec(*args, executable=inv.executable, cwd=str(cwd), stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE, env=inv.env)
+async def _execute(
+    inv: Invocation, args: list[str], cwd: Path, timeout: float
+) -> tuple[int | None, bytes, bytes]:
+    proc = await asyncio.create_subprocess_exec(
+        *args,
+        executable=inv.executable,
+        cwd=str(cwd),
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+        env=inv.env,
+    )
     try:
         out, err = await asyncio.wait_for(proc.communicate(), timeout=timeout)
     except (TimeoutError, asyncio.CancelledError):
@@ -198,7 +243,9 @@ async def _execute(inv: Invocation, args: list[str], cwd: Path, timeout: float) 
     return proc.returncode, out, err
 
 
-async def run_semgrep(src_dir: Path, packs: list[str] | None, cfg: dict[str, Any]) -> tuple[list[Finding], dict[str, Any]]:
+async def run_semgrep(
+    src_dir: Path, packs: list[str] | None, cfg: dict[str, Any]
+) -> tuple[list[Finding], dict[str, Any]]:
     candidates = invocations(cfg)
     status: dict[str, Any] = {"engine": "semgrep", "available": bool(candidates), "findings": 0}
     if not candidates:
@@ -227,7 +274,15 @@ async def run_semgrep(src_dir: Path, packs: list[str] | None, cfg: dict[str, Any
             tail = err.decode("utf-8", "replace").strip().splitlines()[-1:] or [""]
             attempts.append(f"{inv.name}: exit {code}, {tail[0][:200]}")
             continue
-        status.update({"findings": len(findings), "rule_files": len(configs), "errors": len(errors), "exit_code": code, "mode": inv.name})
+        status.update(
+            {
+                "findings": len(findings),
+                "rule_files": len(configs),
+                "errors": len(errors),
+                "exit_code": code,
+                "mode": inv.name,
+            }
+        )
         if errors:
             status["error_samples"] = [str(e.get("message") or e.get("type") or "")[:200] for e in errors[:5]]
         if attempts:

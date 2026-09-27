@@ -26,43 +26,90 @@ from .base import (
 )
 
 PACK = "agent_tool_abuse"
-TOOL_DECORATOR = re.compile(r"(?i)(^|\.)(tool|function_tool|kernel_function|register_tool|register_function|agent_tool|action|command)$|mcp\.tool|server\.tool|\.tool$")
-SHELL_CALLS = re.compile(r"(^|\.)(subprocess\.(run|call|check_output|check_call|Popen|getoutput|getstatusoutput)|os\.(system|popen|execv|execvp|execl|spawn\w*)|commands\.getoutput|pty\.spawn|asyncio\.create_subprocess_shell)$")
-CODE_EXEC = re.compile(r"(^|\.)(eval|exec|compile|__import__|importlib\.import_module|PythonREPL\.run|python_repl\.run|run_code|execute_code)$")
-FILE_CALLS = re.compile(r"(^|\.)(open|Path|read_text|write_text|read_bytes|write_bytes|os\.remove|os\.unlink|os\.rename|os\.listdir|os\.walk|shutil\.(copy|copyfile|move|rmtree)|send_file|FileResponse|aiofiles\.open|unlink|rename)$")
-HTTP_CALLS = re.compile(r"(^|\.)(requests\.(get|post|put|delete|request|head)|httpx\.(get|post|request|AsyncClient|Client)|urlopen|urllib\.request\.urlopen|aiohttp\.ClientSession|session\.(get|post)|client\.(get|post)|fetch|urlretrieve)$")
-SQL_EXEC = re.compile(r"(^|\.)(execute|executemany|executescript|exec_driver_sql|raw|query|run_query|run_sql|sql|cursor\.execute|text)$")
-DANGEROUS_TOOL_NAME = re.compile(r"(?i)(refund|delete|remove|drop|wipe|purge|destroy|transfer|withdraw|pay(ment)?|charge|purchase|buy|order|send_?(email|mail|sms|message|notification)|email|deploy|rollback|terminate|shutdown|reboot|kill|revoke|grant|escalate|create_?(api_?key|user|token|credential)|update_?(address|password|email|permission|role)|write_?file|overwrite|publish|post_to|execute|run_?command)")
-CONFIRMATION = re.compile(r"(?i)(confirm|approv|human|hitl|ask_user|consent|dry_run|dryrun|is_admin|has_permission|authoriz|require_confirmation|manual_review|two_person|require_approval)")
-PATH_GUARD = re.compile(r"(realpath|\.resolve\(|relative_to|is_relative_to|commonpath|safe_join|secure_filename|allowlist|ALLOWED|startswith\(|normpath|os\.path\.abspath|in ALLOWED|sandbox|chroot|jail)")
-URL_GUARD = re.compile(r"(urlparse|urlsplit|hostname|allowlist|allow_list|ALLOWED|allowed_domains|allowed_hosts|is_private|ipaddress|ip_address|netloc|whitelist|TRUSTED|blocklist|ssrf)")
-RECIPIENT_GUARD = re.compile(r"(?i)(allowlist|allowed_recipients|verified|in ALLOWED|endswith\(['\"]@|internal_domain|allowed_domains|ALLOWED_TO|approved_recipients|confirm)")
-DANGEROUS_CAPABILITY = re.compile(r"(subprocess\.|os\.system|os\.popen|\beval\(|\bexec\(|shutil\.rmtree|os\.remove|os\.unlink|\.write_text\(|open\([^)]*[\"'][wa]|requests\.(post|put|delete)|smtplib|sendmail|paramiko|fabric|docker\.|kubernetes|boto3|psycopg|sqlite3|pymysql|sqlalchemy|child_process|execSync|spawnSync)")
-FRAMEWORK_DANGEROUS = re.compile(r"(PythonREPLTool|PythonAstREPLTool|PythonREPL\(|ShellTool\(|BashProcess|TerminalTool|allow_dangerous_code\s*=\s*True|allow_dangerous_requests\s*=\s*True|PALChain|LLMMathChain|load_tools\([^)]*[\"'](terminal|python_repl|shell|requests_all|requests_post)|create_pandas_dataframe_agent|create_python_agent|create_csv_agent|create_spark_dataframe_agent|LocalPythonExecutor|PythonInterpreterTool|LocalCommandLineCodeExecutor|use_docker[\"']?\s*[:=]\s*False|RequestsToolkit|FileManagementToolkit|PlayWrightBrowserToolkit|E2BDataAnalysisTool\([^)]*sandbox\s*=\s*None|CodeAgent\(|allowDangerousCode\s*:\s*true)")
+TOOL_DECORATOR = re.compile(
+    r"(?i)(^|\.)(tool|function_tool|kernel_function|register_tool|register_function|agent_tool|action|command)$|mcp\.tool|server\.tool|\.tool$"
+)
+SHELL_CALLS = re.compile(
+    r"(^|\.)(subprocess\.(run|call|check_output|check_call|Popen|getoutput|getstatusoutput)|os\.(system|popen|execv|execvp|execl|spawn\w*)|commands\.getoutput|pty\.spawn|asyncio\.create_subprocess_shell)$"
+)
+CODE_EXEC = re.compile(
+    r"(^|\.)(eval|exec|compile|__import__|importlib\.import_module|PythonREPL\.run|python_repl\.run|run_code|execute_code)$"
+)
+FILE_CALLS = re.compile(
+    r"(^|\.)(open|Path|read_text|write_text|read_bytes|write_bytes|os\.remove|os\.unlink|os\.rename|os\.listdir|os\.walk|shutil\.(copy|copyfile|move|rmtree)|send_file|FileResponse|aiofiles\.open|unlink|rename)$"
+)
+HTTP_CALLS = re.compile(
+    r"(^|\.)(requests\.(get|post|put|delete|request|head)|httpx\.(get|post|request|AsyncClient|Client)|urlopen|urllib\.request\.urlopen|aiohttp\.ClientSession|session\.(get|post)|client\.(get|post)|fetch|urlretrieve)$"
+)
+SQL_EXEC = re.compile(
+    r"(^|\.)(execute|executemany|executescript|exec_driver_sql|raw|query|run_query|run_sql|sql|cursor\.execute|text)$"
+)
+DANGEROUS_TOOL_NAME = re.compile(
+    r"(?i)(refund|delete|remove|drop|wipe|purge|destroy|transfer|withdraw|pay(ment)?|charge|purchase|buy|order|send_?(email|mail|sms|message|notification)|email|deploy|rollback|terminate|shutdown|reboot|kill|revoke|grant|escalate|create_?(api_?key|user|token|credential)|update_?(address|password|email|permission|role)|write_?file|overwrite|publish|post_to|execute|run_?command)"
+)
+CONFIRMATION = re.compile(
+    r"(?i)(confirm|approv|human|hitl|ask_user|consent|dry_run|dryrun|is_admin|has_permission|authoriz|require_confirmation|manual_review|two_person|require_approval)"
+)
+PATH_GUARD = re.compile(
+    r"(realpath|\.resolve\(|relative_to|is_relative_to|commonpath|safe_join|secure_filename|allowlist|ALLOWED|startswith\(|normpath|os\.path\.abspath|in ALLOWED|sandbox|chroot|jail)"
+)
+URL_GUARD = re.compile(
+    r"(urlparse|urlsplit|hostname|allowlist|allow_list|ALLOWED|allowed_domains|allowed_hosts|is_private|ipaddress|ip_address|netloc|whitelist|TRUSTED|blocklist|ssrf)"
+)
+RECIPIENT_GUARD = re.compile(
+    r"(?i)(allowlist|allowed_recipients|verified|in ALLOWED|endswith\(['\"]@|internal_domain|allowed_domains|ALLOWED_TO|approved_recipients|confirm)"
+)
+DANGEROUS_CAPABILITY = re.compile(
+    r"(subprocess\.|os\.system|os\.popen|\beval\(|\bexec\(|shutil\.rmtree|os\.remove|os\.unlink|\.write_text\(|open\([^)]*[\"'][wa]|requests\.(post|put|delete)|smtplib|sendmail|paramiko|fabric|docker\.|kubernetes|boto3|psycopg|sqlite3|pymysql|sqlalchemy|child_process|execSync|spawnSync)"
+)
+FRAMEWORK_DANGEROUS = re.compile(
+    r"(PythonREPLTool|PythonAstREPLTool|PythonREPL\(|ShellTool\(|BashProcess|TerminalTool|allow_dangerous_code\s*=\s*True|allow_dangerous_requests\s*=\s*True|PALChain|LLMMathChain|load_tools\([^)]*[\"'](terminal|python_repl|shell|requests_all|requests_post)|create_pandas_dataframe_agent|create_python_agent|create_csv_agent|create_spark_dataframe_agent|LocalPythonExecutor|PythonInterpreterTool|LocalCommandLineCodeExecutor|use_docker[\"']?\s*[:=]\s*False|RequestsToolkit|FileManagementToolkit|PlayWrightBrowserToolkit|E2BDataAnalysisTool\([^)]*sandbox\s*=\s*None|CodeAgent\(|allowDangerousCode\s*:\s*true)"
+)
 
 
-def _tool_functions(ctx: FileContext, tree: ast.Module) -> dict[str, tuple[ast.FunctionDef | ast.AsyncFunctionDef, str]]:
+def _tool_functions(
+    ctx: FileContext, tree: ast.Module
+) -> dict[str, tuple[ast.FunctionDef | ast.AsyncFunctionDef, str]]:
     """Functions exposed to a model: decorated (@tool, @mcp.tool...) or referenced from a tool registration."""
     registered: set[str] = set()
     for call in pyast.iter_calls(tree):
         name = pyast.call_name(call)
-        if re.search(r"(^|\.)(Tool|StructuredTool\.from_function|FunctionTool\.from_defaults|FunctionTool|tool|register_tool|add_tool|register_for_llm|register_for_execution|Function|FunctionDeclaration)$", name):
+        if re.search(
+            r"(^|\.)(Tool|StructuredTool\.from_function|FunctionTool\.from_defaults|FunctionTool|tool|register_tool|add_tool|register_for_llm|register_for_execution|Function|FunctionDeclaration)$",
+            name,
+        ):
             for a in [*call.args, *[k.value for k in call.keywords]]:
                 registered |= {n for n in pyast.names_in(a) if "." not in n}
     for node in ast.walk(tree):
-        if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id.lower() in ("tools", "functions", "toolkit", "available_tools") for t in node.targets):
+        if isinstance(node, ast.Assign) and any(
+            isinstance(t, ast.Name) and t.id.lower() in ("tools", "functions", "toolkit", "available_tools")
+            for t in node.targets
+        ):
             registered |= {n for n in pyast.names_in(node.value) if "." not in n}
     out: dict[str, tuple[ast.FunctionDef | ast.AsyncFunctionDef, str]] = {}
     generic = ctx.has_flag("tool", "mcp", "agent")
     for func in pyast.iter_functions(tree):
         if any(TOOL_DECORATOR.search(d) for d in pyast.decorators(func)) or func.name in registered:
             out[func.name] = (func, "strong")
-        elif generic and ast.get_docstring(func) and not func.name.startswith("_") and pyast.enclosing_function(func) is None:
+        elif (
+            generic
+            and ast.get_docstring(func)
+            and not func.name.startswith("_")
+            and pyast.enclosing_function(func) is None
+        ):
             out[func.name] = (func, "weak")
     return out
 
 
-def _tool_sink(ctx: FileContext, tree: ast.Module, sink: re.Pattern[str], guard: re.Pattern[str] | None, note: str, *, require_param: bool = True) -> Iterator[Match]:
+def _tool_sink(
+    ctx: FileContext,
+    tree: ast.Module,
+    sink: re.Pattern[str],
+    guard: re.Pattern[str] | None,
+    note: str,
+    *,
+    require_param: bool = True,
+) -> Iterator[Match]:
     for name, (func, strength) in _tool_functions(ctx, tree).items():
         text = pyast.func_text(func, ctx.lines)
         if guard is not None and guard.search(text):
@@ -72,9 +119,13 @@ def _tool_sink(ctx: FileContext, tree: ast.Module, sink: re.Pattern[str], guard:
             if not sink.search(pyast.call_name(call)):
                 continue
             args = [*call.args, *[k.value for k in call.keywords]]
-            if require_param and not any(pyast.depends_on(a, params) or pyast.is_dynamic_string(a) for a in args):
+            if require_param and not any(
+                pyast.depends_on(a, params) or pyast.is_dynamic_string(a) for a in args
+            ):
                 continue
-            yield node_match(ctx, call, boost=0.2 if strength == "strong" else -0.15, note=f"tool {name}: {note}")
+            yield node_match(
+                ctx, call, boost=0.2 if strength == "strong" else -0.15, note=f"tool {name}: {note}"
+            )
             break
 
 
@@ -85,7 +136,9 @@ def _shell_with_model_args(ctx: FileContext, tree: ast.Module) -> Iterator[Match
         if not SHELL_CALLS.search(name):
             continue
         first = call.args[0] if call.args else None
-        shell = pyast.is_true(pyast.keyword(call, "shell")) or name.endswith(("os.system", "os.popen", "create_subprocess_shell", "getoutput"))
+        shell = pyast.is_true(pyast.keyword(call, "shell")) or name.endswith(
+            ("os.system", "os.popen", "create_subprocess_shell", "getoutput")
+        )
         if first is None or (pyast.is_constant(first) and not pyast.is_dynamic_string(first)):
             continue
         func = pyast.enclosing_function(call)
@@ -98,7 +151,13 @@ def _shell_with_model_args(ctx: FileContext, tree: ast.Module) -> Iterator[Match
         boost = 0.2 if in_tool else 0.0
         if not shell and not pyast.is_dynamic_string(first):
             boost -= 0.2
-        yield node_match(ctx, call, boost=boost, note=("shell=True with runtime arguments" if shell else "command built at runtime") + (f" inside tool {func.name}" if in_tool and func else ""))
+        yield node_match(
+            ctx,
+            call,
+            boost=boost,
+            note=("shell=True with runtime arguments" if shell else "command built at runtime")
+            + (f" inside tool {func.name}" if in_tool and func else ""),
+        )
 
 
 def _code_exec_of_args(ctx: FileContext, tree: ast.Module) -> Iterator[Match]:
@@ -114,7 +173,12 @@ def _code_exec_of_args(ctx: FileContext, tree: ast.Module) -> Iterator[Match]:
         in_tool = func is not None and func.name in tools
         if not in_tool and not ctx.has_flag("ai", "tool", "agent", "mcp"):
             continue
-        yield node_match(ctx, call, boost=0.2 if in_tool else 0.0, note=f"{name}() on runtime data" + (f" inside tool {func.name}" if in_tool and func else ""))
+        yield node_match(
+            ctx,
+            call,
+            boost=0.2 if in_tool else 0.0,
+            note=f"{name}() on runtime data" + (f" inside tool {func.name}" if in_tool and func else ""),
+        )
 
 
 def _sql_from_runtime(ctx: FileContext, tree: ast.Module) -> Iterator[Match]:
@@ -127,11 +191,19 @@ def _sql_from_runtime(ctx: FileContext, tree: ast.Module) -> Iterator[Match]:
         first = call.args[0]
         if not pyast.is_dynamic_string(first):
             continue
-        if not re.search(r"(?i)\b(select|insert|update|delete|drop|alter|create|where|from)\b", pyast.literal_text(first)):
+        if not re.search(
+            r"(?i)\b(select|insert|update|delete|drop|alter|create|where|from)\b", pyast.literal_text(first)
+        ):
             continue
         func = pyast.enclosing_function(call)
         in_tool = func is not None and func.name in tools
-        yield node_match(ctx, call, boost=0.2 if in_tool else 0.0, note="query text is formatted at runtime" + (f" inside tool {func.name}" if in_tool and func else ""))
+        yield node_match(
+            ctx,
+            call,
+            boost=0.2 if in_tool else 0.0,
+            note="query text is formatted at runtime"
+            + (f" inside tool {func.name}" if in_tool and func else ""),
+        )
 
 
 def _destructive_without_confirmation(ctx: FileContext, tree: ast.Module) -> Iterator[Match]:
@@ -142,7 +214,13 @@ def _destructive_without_confirmation(ctx: FileContext, tree: ast.Module) -> Ite
         text = pyast.func_text(func, ctx.lines)
         if CONFIRMATION.search(text):
             continue
-        yield Match(func.lineno, func.lineno, snippet=ctx.snippet(func.lineno, func.lineno + 2), boost=0.15 if strength == "strong" else -0.1, note=f"tool {name} has side effects and no confirmation gate")
+        yield Match(
+            func.lineno,
+            func.lineno,
+            snippet=ctx.snippet(func.lineno, func.lineno + 2),
+            boost=0.15 if strength == "strong" else -0.1,
+            note=f"tool {name} has side effects and no confirmation gate",
+        )
 
 
 def _unbounded_loop(ctx: FileContext, tree: ast.Module) -> Iterator[Match]:
@@ -150,11 +228,22 @@ def _unbounded_loop(ctx: FileContext, tree: ast.Module) -> Iterator[Match]:
         text = pyast.func_text(func, ctx.lines)
         if not (LLM_CALL.search(text) or re.search(r"tool_calls|function_call|\.tools\b", text)):
             continue
-        if re.search(r"(?i)(max_iter|max_steps|max_turns|max_rounds|budget|MAX_[A-Z_]*(STEP|ITER|TURN|LOOP|CALL)|_limit\b|iterations?\s*[<>]|steps?\s*[<>]|attempt|recursion_limit|deadline|time\.(time|monotonic)\(\)\s*[-<>])", text):
+        if re.search(
+            r"(?i)(max_iter|max_steps|max_turns|max_rounds|budget|MAX_[A-Z_]*(STEP|ITER|TURN|LOOP|CALL)|_limit\b|iterations?\s*[<>]|steps?\s*[<>]|attempt|recursion_limit|deadline|time\.(time|monotonic)\(\)\s*[-<>])",
+            text,
+        ):
             continue
         for node in ast.walk(func):
-            if isinstance(node, ast.While) and isinstance(node.test, ast.Constant) and node.test.value is True:
-                yield node_match(ctx, node, note=f"while True loop in {func.name} drives the model without a step or cost cap")
+            if (
+                isinstance(node, ast.While)
+                and isinstance(node.test, ast.Constant)
+                and node.test.value is True
+            ):
+                yield node_match(
+                    ctx,
+                    node,
+                    note=f"while True loop in {func.name} drives the model without a step or cost cap",
+                )
                 break
 
 
@@ -162,9 +251,20 @@ def _dispatch_by_name(ctx: FileContext, tree: ast.Module) -> Iterator[Match]:
     if not ctx.has_flag("ai", "tool", "agent", "mcp"):
         return
     for node in ast.walk(tree):
-        if isinstance(node, ast.Subscript) and isinstance(node.value, ast.Call) and pyast.call_name(node.value) in ("globals", "locals", "vars"):
-            yield node_match(ctx, node, note="function looked up in globals()/locals() by a model-supplied name")
-        elif isinstance(node, ast.Call) and pyast.call_name(node) == "getattr" and len(node.args) >= 2 and not pyast.is_constant(node.args[1]):
+        if (
+            isinstance(node, ast.Subscript)
+            and isinstance(node.value, ast.Call)
+            and pyast.call_name(node.value) in ("globals", "locals", "vars")
+        ):
+            yield node_match(
+                ctx, node, note="function looked up in globals()/locals() by a model-supplied name"
+            )
+        elif (
+            isinstance(node, ast.Call)
+            and pyast.call_name(node) == "getattr"
+            and len(node.args) >= 2
+            and not pyast.is_constant(node.args[1])
+        ):
             refs = " ".join(pyast.names_in(node.args[1]))
             if re.search(r"(?i)(name|function|tool|call)", refs):
                 yield node_match(ctx, node, note="getattr() with a model-supplied attribute name")
@@ -182,17 +282,34 @@ def _mcp_dangerous_tools(ctx: FileContext, tree: ast.Module) -> Iterator[Match]:
             continue
         if CONFIRMATION.search(text) and PATH_GUARD.search(text):
             continue
-        yield Match(func.lineno, func.lineno, snippet=ctx.snippet(func.lineno, func.lineno + 2), note=f"MCP tool {func.name} uses {', '.join(caps[:4])}")
+        yield Match(
+            func.lineno,
+            func.lineno,
+            snippet=ctx.snippet(func.lineno, func.lineno + 2),
+            note=f"MCP tool {func.name} uses {', '.join(caps[:4])}",
+        )
 
 
 def _unscoped_data_access(ctx: FileContext, tree: ast.Module) -> Iterator[Match]:
     for name, (func, strength) in _tool_functions(ctx, tree).items():
         text = pyast.func_text(func, ctx.lines)
-        if not re.search(r"(?i)(\bselect\b|\.filter\(|\.filter_by\(|find_one\(|\.find\(|\.query\(|\.get\(|lookup|fetch_|load_)", text):
+        if not re.search(
+            r"(?i)(\bselect\b|\.filter\(|\.filter_by\(|find_one\(|\.find\(|\.query\(|\.get\(|lookup|fetch_|load_)",
+            text,
+        ):
             continue
-        if re.search(r"(?i)(user_id|tenant|owner|customer_id|current_user|scope|principal|session\.user|account_id|org_id|workspace|requester|acl|permission)", text):
+        if re.search(
+            r"(?i)(user_id|tenant|owner|customer_id|current_user|scope|principal|session\.user|account_id|org_id|workspace|requester|acl|permission)",
+            text,
+        ):
             continue
-        yield Match(func.lineno, func.lineno, snippet=ctx.snippet(func.lineno, func.lineno + 2), boost=0.1 if strength == "strong" else -0.1, note=f"tool {name} reads data without a user or tenant scope")
+        yield Match(
+            func.lineno,
+            func.lineno,
+            snippet=ctx.snippet(func.lineno, func.lineno + 2),
+            boost=0.1 if strength == "strong" else -0.1,
+            note=f"tool {name} reads data without a user or tenant scope",
+        )
 
 
 RULES: list[Rule] = [
@@ -215,7 +332,11 @@ RULES: list[Rule] = [
         languages=CODE,
         matcher=any_of(
             py(_shell_with_model_args),
-            lines(r"\b(exec|execSync|execFile|spawn|spawnSync)\s*\(\s*(`[^`]*\$\{|[A-Za-z_$][\w$.]*\s*\+|[A-Za-z_$][\w$.]*\s*[,)])", flag=("ai", "tool", "agent", "mcp"), unless=r"\(\s*['\"]"),
+            lines(
+                r"\b(exec|execSync|execFile|spawn|spawnSync)\s*\(\s*(`[^`]*\$\{|[A-Za-z_$][\w$.]*\s*\+|[A-Za-z_$][\w$.]*\s*[,)])",
+                flag=("ai", "tool", "agent", "mcp"),
+                unless=r"\(\s*['\"]",
+            ),
         ),
         tags=("sink:shell",),
         engines=("rules", "semgrep", "bandit"),
@@ -238,7 +359,10 @@ RULES: list[Rule] = [
         languages=CODE,
         matcher=any_of(
             py(_code_exec_of_args),
-            lines(r"(\beval\s*\(\s*(?!['\"])|new\s+Function\s*\(|vm\.(runInNewContext|runInThisContext|runInContext|Script)\s*\(|\bFunction\s*\(\s*['\"]return)", flag=("ai", "tool", "agent", "mcp")),
+            lines(
+                r"(\beval\s*\(\s*(?!['\"])|new\s+Function\s*\(|vm\.(runInNewContext|runInThisContext|runInContext|Script)\s*\(|\bFunction\s*\(\s*['\"]return)",
+                flag=("ai", "tool", "agent", "mcp"),
+            ),
         ),
         tags=("sink:eval",),
         engines=("rules", "semgrep", "bandit"),
@@ -260,8 +384,19 @@ RULES: list[Rule] = [
         ),
         languages=CODE,
         matcher=any_of(
-            py(lambda ctx, tree: _tool_sink(ctx, tree, FILE_CALLS, PATH_GUARD, "file path comes from tool arguments")),
-            absence([r"fs\.(readFile|readFileSync|writeFile|writeFileSync|unlink|rm|readdir|appendFile)\w*\s*\(\s*(?!['\"])"], [r"path\.resolve[^\n]*startsWith|normalize|allowlist|ALLOWED|isInside|safePath"], flag=("tool", "mcp", "agent"), anchor=r"fs\.(readFile|readFileSync|writeFile|writeFileSync|unlink|rm|readdir|appendFile)\w*\s*\("),
+            py(
+                lambda ctx, tree: _tool_sink(
+                    ctx, tree, FILE_CALLS, PATH_GUARD, "file path comes from tool arguments"
+                )
+            ),
+            absence(
+                [
+                    r"fs\.(readFile|readFileSync|writeFile|writeFileSync|unlink|rm|readdir|appendFile)\w*\s*\(\s*(?!['\"])"
+                ],
+                [r"path\.resolve[^\n]*startsWith|normalize|allowlist|ALLOWED|isInside|safePath"],
+                flag=("tool", "mcp", "agent"),
+                anchor=r"fs\.(readFile|readFileSync|writeFile|writeFileSync|unlink|rm|readdir|appendFile)\w*\s*\(",
+            ),
         ),
         tags=("sink:filesystem",),
         engines=("rules", "semgrep"),
@@ -283,8 +418,19 @@ RULES: list[Rule] = [
         ),
         languages=CODE,
         matcher=any_of(
-            py(lambda ctx, tree: _tool_sink(ctx, tree, HTTP_CALLS, URL_GUARD, "destination URL comes from tool arguments")),
-            absence([r"\b(fetch|axios(\.get|\.post)?|got|request)\s*\(\s*(?!['\"])[A-Za-z_$`]"], [r"(?i)(allowlist|allowed_hosts|allowedHosts|hostname|new URL\([^)]*\)\.host|isPrivate|ssrf|blocklist)"], flag=("tool", "mcp", "agent"), anchor=r"\b(fetch|axios(\.get|\.post)?|got|request)\s*\(\s*(?!['\"])"),
+            py(
+                lambda ctx, tree: _tool_sink(
+                    ctx, tree, HTTP_CALLS, URL_GUARD, "destination URL comes from tool arguments"
+                )
+            ),
+            absence(
+                [r"\b(fetch|axios(\.get|\.post)?|got|request)\s*\(\s*(?!['\"])[A-Za-z_$`]"],
+                [
+                    r"(?i)(allowlist|allowed_hosts|allowedHosts|hostname|new URL\([^)]*\)\.host|isPrivate|ssrf|blocklist)"
+                ],
+                flag=("tool", "mcp", "agent"),
+                anchor=r"\b(fetch|axios(\.get|\.post)?|got|request)\s*\(\s*(?!['\"])",
+            ),
         ),
         tags=("sink:http", "ssrf"),
         engines=("rules", "semgrep"),
@@ -307,7 +453,10 @@ RULES: list[Rule] = [
         languages=CODE,
         matcher=any_of(
             py(_sql_from_runtime),
-            lines(r"\.(query|execute|raw|run|all|get|exec)\s*\(\s*(`[^`]*(?i:select|insert|update|delete|where)[^`]*\$\{|['\"][^'\"]*(?i:select|insert|update|delete|where)[^'\"]*['\"]\s*\+)", flag=("ai", "tool", "agent", "rag", "mcp")),
+            lines(
+                r"\.(query|execute|raw|run|all|get|exec)\s*\(\s*(`[^`]*(?i:select|insert|update|delete|where)[^`]*\$\{|['\"][^'\"]*(?i:select|insert|update|delete|where)[^'\"]*['\"]\s*\+)",
+                flag=("ai", "tool", "agent", "rag", "mcp"),
+            ),
         ),
         tags=("sink:sql",),
         engines=("rules", "semgrep", "bandit"),
@@ -328,7 +477,11 @@ RULES: list[Rule] = [
             "Enforce the same limits in code; the description is not a control.",
         ),
         languages=CODE,
-        matcher=lines(r"(?i)[\"'`][^\"'`]*\b(any (sql|query|command|url|file|path|address|email|action|shell|code|api)|arbitrary (sql|command|code|url|file|path|python|shell|request)|execute (arbitrary|any)|run (any|arbitrary)|unrestricted|full (access|control)|admin(istrator)? (privileges|access)|without (restriction|limit)s?)\b", flag=("tool", "mcp", "agent", "ai"), skip_comments=False),
+        matcher=lines(
+            r"(?i)[\"'`][^\"'`]*\b(any (sql|query|command|url|file|path|address|email|action|shell|code|api)|arbitrary (sql|command|code|url|file|path|python|shell|request)|execute (arbitrary|any)|run (any|arbitrary)|unrestricted|full (access|control)|admin(istrator)? (privileges|access)|without (restriction|limit)s?)\b",
+            flag=("tool", "mcp", "agent", "ai"),
+            skip_comments=False,
+        ),
         tags=("schema",),
     ),
     rule(
@@ -349,7 +502,14 @@ RULES: list[Rule] = [
         languages=CODE,
         matcher=any_of(
             py(_destructive_without_confirmation),
-            absence([r"name\s*:\s*['\"](refund|delete|remove|transfer|pay|payment|charge|send_?(email|mail|sms|message)|deploy|terminate|revoke|purchase)\w*['\"]"], [CONFIRMATION.pattern], flag=("tool", "agent", "ai"), anchor=r"name\s*:\s*['\"](refund|delete|remove|transfer|pay|payment|charge|send_?(email|mail|sms|message)|deploy|terminate|revoke|purchase)\w*['\"]"),
+            absence(
+                [
+                    r"name\s*:\s*['\"](refund|delete|remove|transfer|pay|payment|charge|send_?(email|mail|sms|message)|deploy|terminate|revoke|purchase)\w*['\"]"
+                ],
+                [CONFIRMATION.pattern],
+                flag=("tool", "agent", "ai"),
+                anchor=r"name\s*:\s*['\"](refund|delete|remove|transfer|pay|payment|charge|send_?(email|mail|sms|message)|deploy|terminate|revoke|purchase)\w*['\"]",
+            ),
         ),
         tags=("agency", "hitl"),
     ),
@@ -371,8 +531,21 @@ RULES: list[Rule] = [
         languages=CODE,
         matcher=any_of(
             py(_unbounded_loop),
-            near(r"(initialize_agent\(|AgentExecutor\(|create_react_agent\(|\.compile\(|generateText\(\{|streamText\(\{|Agent\(\s*$|Crew\()", r"(tools|agent|llm|model)", window=8, unless=r"(max_iterations|max_execution_time|recursion_limit|max_steps|maxSteps|max_turns|max_rpm|max_iter|stopWhen|step_limit)", flag=("agent", "ai")),
-            absence([r"while\s*\(\s*true\s*\)", r"(tool_?calls|toolCalls|functionCall|\.tools\b)"], [r"(maxSteps|maxIterations|max_steps|budget|MAX_[A-Z_]*(STEP|ITER|TURN|CALL)|deadline|Date\.now\(\)\s*-)"], flag=("ai", "agent"), anchor=r"while\s*\(\s*true\s*\)"),
+            near(
+                r"(initialize_agent\(|AgentExecutor\(|create_react_agent\(|\.compile\(|generateText\(\{|streamText\(\{|Agent\(\s*$|Crew\()",
+                r"(tools|agent|llm|model)",
+                window=8,
+                unless=r"(max_iterations|max_execution_time|recursion_limit|max_steps|maxSteps|max_turns|max_rpm|max_iter|stopWhen|step_limit)",
+                flag=("agent", "ai"),
+            ),
+            absence(
+                [r"while\s*\(\s*true\s*\)", r"(tool_?calls|toolCalls|functionCall|\.tools\b)"],
+                [
+                    r"(maxSteps|maxIterations|max_steps|budget|MAX_[A-Z_]*(STEP|ITER|TURN|CALL)|deadline|Date\.now\(\)\s*-)"
+                ],
+                flag=("ai", "agent"),
+                anchor=r"while\s*\(\s*true\s*\)",
+            ),
         ),
         tags=("limits",),
     ),
@@ -392,7 +565,15 @@ RULES: list[Rule] = [
             "Return structured objects from tools instead of free text where possible.",
         ),
         languages=CODE,
-        matcher=absence([r"[\"']role[\"']\s*:\s*[\"'](tool|function)[\"'][^\n]*content[\"']?\s*:\s*(?![\"'])|role\s*:\s*[\"'](tool|function)[\"'][^\n]*content\s*:\s*(?![\"'])"], [r"(?i)(sanitiz|scan_|truncat|clean_|filter_|<tool_result|tool_output_guard|output_scanner|escape_|redact)"], anchor=r"role[\"']?\s*:\s*[\"'](tool|function)[\"']"),
+        matcher=absence(
+            [
+                r"[\"']role[\"']\s*:\s*[\"'](tool|function)[\"'][^\n]*content[\"']?\s*:\s*(?![\"'])|role\s*:\s*[\"'](tool|function)[\"'][^\n]*content\s*:\s*(?![\"'])"
+            ],
+            [
+                r"(?i)(sanitiz|scan_|truncat|clean_|filter_|<tool_result|tool_output_guard|output_scanner|escape_|redact)"
+            ],
+            anchor=r"role[\"']?\s*:\s*[\"'](tool|function)[\"']",
+        ),
         tags=("indirect", "loop"),
     ),
     rule(
@@ -413,7 +594,10 @@ RULES: list[Rule] = [
         languages=CODE,
         matcher=any_of(
             py(_dispatch_by_name),
-            lines(r"(\b(global|window|globalThis)\s*\[[^\]]*(name|fn|tool)|\[\s*(call|toolCall|tc|fc)\.(function\.)?name\s*\]\s*\(|require\(\s*(call|toolCall|tc)\.)", flag=("ai", "tool", "agent")),
+            lines(
+                r"(\b(global|window|globalThis)\s*\[[^\]]*(name|fn|tool)|\[\s*(call|toolCall|tc|fc)\.(function\.)?name\s*\]\s*\(|require\(\s*(call|toolCall|tc)\.)",
+                flag=("ai", "tool", "agent"),
+            ),
         ),
         tags=("dispatch",),
         engines=("rules", "semgrep"),
@@ -436,7 +620,12 @@ RULES: list[Rule] = [
         languages=CODE,
         matcher=any_of(
             py(_mcp_dangerous_tools),
-            near(r"(server|mcp)\.(tool|registerTool)\s*\(", r"(child_process|execSync|spawn|\beval\(|new Function|fs\.(write|rm|unlink|appendFile)|rimraf|nodemailer|sgMail|\.send\(|kubectl|docker)", window=25, flag="mcp"),
+            near(
+                r"(server|mcp)\.(tool|registerTool)\s*\(",
+                r"(child_process|execSync|spawn|\beval\(|new Function|fs\.(write|rm|unlink|appendFile)|rimraf|nodemailer|sgMail|\.send\(|kubectl|docker)",
+                window=25,
+                flag="mcp",
+            ),
         ),
         tags=("mcp",),
     ),
@@ -457,8 +646,25 @@ RULES: list[Rule] = [
         ),
         languages=CODE,
         matcher=any_of(
-            py(lambda ctx, tree: _tool_sink(ctx, tree, re.compile(r"(^|\.)(smtplib\.SMTP|SMTP|sendmail|send_message|send_mail|send_email|SendGridAPIClient|sg\.send|messages\.create|chat_postMessage|WebhookClient|stripe\.(Charge|PaymentIntent|Transfer|Refund)\.create|refund|transfer|payout|send)$"), RECIPIENT_GUARD, "recipient or amount comes from tool arguments")),
-            absence([r"\b(sendMail|sgMail\.send|transporter\.send|twilio|messages\.create|chat\.postMessage|stripe\.(charges|refunds|transfers|paymentIntents)\.create)\s*\("], [RECIPIENT_GUARD.pattern], flag=("tool", "agent", "mcp"), anchor=r"\b(sendMail|sgMail\.send|transporter\.send|twilio|messages\.create|chat\.postMessage|stripe\.(charges|refunds|transfers|paymentIntents)\.create)\s*\("),
+            py(
+                lambda ctx, tree: _tool_sink(
+                    ctx,
+                    tree,
+                    re.compile(
+                        r"(^|\.)(smtplib\.SMTP|SMTP|sendmail|send_message|send_mail|send_email|SendGridAPIClient|sg\.send|messages\.create|chat_postMessage|WebhookClient|stripe\.(Charge|PaymentIntent|Transfer|Refund)\.create|refund|transfer|payout|send)$"
+                    ),
+                    RECIPIENT_GUARD,
+                    "recipient or amount comes from tool arguments",
+                )
+            ),
+            absence(
+                [
+                    r"\b(sendMail|sgMail\.send|transporter\.send|twilio|messages\.create|chat\.postMessage|stripe\.(charges|refunds|transfers|paymentIntents)\.create)\s*\("
+                ],
+                [RECIPIENT_GUARD.pattern],
+                flag=("tool", "agent", "mcp"),
+                anchor=r"\b(sendMail|sgMail\.send|transporter\.send|twilio|messages\.create|chat\.postMessage|stripe\.(charges|refunds|transfers|paymentIntents)\.create)\s*\(",
+            ),
         ),
         tags=("exfil", "agency"),
     ),
@@ -516,7 +722,14 @@ RULES: list[Rule] = [
             "Record which tools each session was granted for audit purposes.",
         ),
         languages=CODE,
-        matcher=absence([r"\btools\s*[=:]\s*[\[\w]"], [r"(?i)(permission|role|allowed_tools|allowedTools|scope|authoriz|rbac|can_use|policy|acl|tools_for|get_tools\(|filter_tools)"], flag=("agent", "ai"), anchor=r"\btools\s*[=:]\s*[\[\w]"),
+        matcher=absence(
+            [r"\btools\s*[=:]\s*[\[\w]"],
+            [
+                r"(?i)(permission|role|allowed_tools|allowedTools|scope|authoriz|rbac|can_use|policy|acl|tools_for|get_tools\(|filter_tools)"
+            ],
+            flag=("agent", "ai"),
+            anchor=r"\btools\s*[=:]\s*[\[\w]",
+        ),
         tags=("authorization", "hardening"),
     ),
 ]
@@ -527,9 +740,15 @@ CALL_BUDGET = r"(?i)(max_calls|call_count|calls_per|budget|rate_limit|ratelimit|
 AUDIT_TRAIL = r"(?i)(audit|\blog\.|logger\.|logging\.|console\.(log|info|warn)|structlog|langfuse|phoenix|opentelemetry|tracer|span\(|record_tool|telemetry|trace\()"
 DELEGATION = r"(allow_delegation\s*=\s*True|GroupChat\s*\(|create_supervisor\s*\(|createSupervisor\s*\(|handoffs?\s*[=:]\s*\[|Handoff\s*\(|create_handoff_tool\s*\(|\bSwarm\s*\(|transfer_to_\w+|delegate_to\w*\s*\(|sub_?agents?\s*[=:]\s*\[|AgentTool\s*\(|\.as_tool\s*\(|hierarchical|manager_agent|manager_llm)"
 DELEGATION_GUARD = r"(?i)(max_delegation|delegation_depth|MAX_DEPTH|depth\s*[<>]=?|can_delegate|allowed_agents|allowedAgents|recursion_limit|max_handoffs|max_round|max_rounds|max_iter|sanitiz|scan_|screen_|inter_agent|validate_message)"
-WRITE_CAPABILITY = re.compile(r"(write_text\(|write_bytes\(|open\([^)]*['\"][wa]b?['\"]|\.write\(|shutil\.(copy|move|copyfile)|os\.rename|fs\.(writeFile|appendFile|writeFileSync|appendFileSync)|createWriteStream)")
-EXEC_CAPABILITY = re.compile(r"(subprocess\.|os\.system|os\.popen|\beval\(|\bexec\(|run_tests|pytest\.main|execSync|spawnSync|child_process|importlib\.import_module|runpy)")
-VALIDATION = re.compile(r"(re\.(match|fullmatch|search)|pydantic|BaseModel|Field\(|validator|model_validate|parse_obj|parse_raw|isinstance\(|in ALLOWED|allowlist|ALLOWED_|Enum\b|Literal\[|\.validate\(|raise ValueError|assert |max_length|len\(|args_schema|jsonschema|Draft\d+Validator|schema=|strict=True|zod|z\.)")
+WRITE_CAPABILITY = re.compile(
+    r"(write_text\(|write_bytes\(|open\([^)]*['\"][wa]b?['\"]|\.write\(|shutil\.(copy|move|copyfile)|os\.rename|fs\.(writeFile|appendFile|writeFileSync|appendFileSync)|createWriteStream)"
+)
+EXEC_CAPABILITY = re.compile(
+    r"(subprocess\.|os\.system|os\.popen|\beval\(|\bexec\(|run_tests|pytest\.main|execSync|spawnSync|child_process|importlib\.import_module|runpy)"
+)
+VALIDATION = re.compile(
+    r"(re\.(match|fullmatch|search)|pydantic|BaseModel|Field\(|validator|model_validate|parse_obj|parse_raw|isinstance\(|in ALLOWED|allowlist|ALLOWED_|Enum\b|Literal\[|\.validate\(|raise ValueError|assert |max_length|len\(|args_schema|jsonschema|Draft\d+Validator|schema=|strict=True|zod|z\.)"
+)
 
 
 def _tool_without_validation(ctx: FileContext, tree: ast.Module) -> Iterator[Match]:
@@ -539,25 +758,45 @@ def _tool_without_validation(ctx: FileContext, tree: ast.Module) -> Iterator[Mat
         params = pyast.arg_names(func)
         if not params:
             continue
-        text = pyast.func_text(func, ctx.lines) + " " + " ".join(pyast.ast_dump_short(d) for d in func.decorator_list)
+        text = (
+            pyast.func_text(func, ctx.lines)
+            + " "
+            + " ".join(pyast.ast_dump_short(d) for d in func.decorator_list)
+        )
         if VALIDATION.search(text):
             continue
-        used = any(pyast.depends_on(a, params) for call in pyast.iter_calls(func) for a in [*call.args, *[k.value for k in call.keywords]])
+        used = any(
+            pyast.depends_on(a, params)
+            for call in pyast.iter_calls(func)
+            for a in [*call.args, *[k.value for k in call.keywords]]
+        )
         if not used:
             continue
-        yield Match(func.lineno, func.lineno, snippet=ctx.snippet(func.lineno, func.lineno + 2), note=f"tool {name} passes its arguments on without validating them ({', '.join(sorted(params)[:4])})")
+        yield Match(
+            func.lineno,
+            func.lineno,
+            snippet=ctx.snippet(func.lineno, func.lineno + 2),
+            note=f"tool {name} passes its arguments on without validating them ({', '.join(sorted(params)[:4])})",
+        )
 
 
 def _write_plus_exec(ctx: FileContext, tree: ast.Module) -> Iterator[Match]:
     tools = _tool_functions(ctx, tree)
-    if len(tools) < 2 or ctx.search(r"(?i)(sandbox|docker|firejail|gvisor|nsjail|read_only|readonly|isolated|microvm|e2b)"):
+    if len(tools) < 2 or ctx.search(
+        r"(?i)(sandbox|docker|firejail|gvisor|nsjail|read_only|readonly|isolated|microvm|e2b)"
+    ):
         return
     writers = [n for n, (f, _) in tools.items() if WRITE_CAPABILITY.search(pyast.func_text(f, ctx.lines))]
     runners = [n for n, (f, _) in tools.items() if EXEC_CAPABILITY.search(pyast.func_text(f, ctx.lines))]
     if not writers or not runners:
         return
     func = tools[runners[0]][0]
-    yield Match(func.lineno, func.lineno, snippet=ctx.snippet(func.lineno, func.lineno + 2), note=f"tools {', '.join(writers[:2])} write files and {', '.join(runners[:2])} execute code or commands")
+    yield Match(
+        func.lineno,
+        func.lineno,
+        snippet=ctx.snippet(func.lineno, func.lineno + 2),
+        note=f"tools {', '.join(writers[:2])} write files and {', '.join(runners[:2])} execute code or commands",
+    )
 
 
 RULES += [
@@ -653,7 +892,15 @@ RULES += [
         languages=CODE,
         matcher=any_of(
             py(_write_plus_exec),
-            absence([r"fs\.(writeFile|appendFile|writeFileSync|appendFileSync)\s*\(", r"(execSync|spawnSync|spawn|exec)\s*\("], [r"(?i)(sandbox|docker|isolated-vm|vm2|worker_threads|gvisor|firecracker|deno|readonly)"], flag=("tool", "mcp", "agent"), anchor=r"(execSync|spawnSync|spawn|exec)\s*\("),
+            absence(
+                [
+                    r"fs\.(writeFile|appendFile|writeFileSync|appendFileSync)\s*\(",
+                    r"(execSync|spawnSync|spawn|exec)\s*\(",
+                ],
+                [r"(?i)(sandbox|docker|isolated-vm|vm2|worker_threads|gvisor|firecracker|deno|readonly)"],
+                flag=("tool", "mcp", "agent"),
+                anchor=r"(execSync|spawnSync|spawn|exec)\s*\(",
+            ),
         ),
         tags=("chaining",),
     ),

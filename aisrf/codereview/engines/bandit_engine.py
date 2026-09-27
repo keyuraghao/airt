@@ -84,7 +84,11 @@ def _to_finding(item: dict[str, Any]) -> Finding:
         owasp=owasp_ids(category),
         cwe=cwe,
         category=category,
-        metadata={"test_name": item.get("test_name"), "more_info": item.get("more_info"), "bandit_confidence": item.get("issue_confidence")},
+        metadata={
+            "test_name": item.get("test_name"),
+            "more_info": item.get("more_info"),
+            "bandit_confidence": item.get("issue_confidence"),
+        },
     )
 
 
@@ -100,7 +104,9 @@ async def run_bandit(src_dir: Path, cfg: dict[str, Any]) -> tuple[list[Finding],
     if excludes:
         args += ["-x", excludes]
     try:
-        proc = await asyncio.create_subprocess_exec(*args, cwd=str(src_dir), stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+        proc = await asyncio.create_subprocess_exec(
+            *args, cwd=str(src_dir), stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+        )
     except OSError as exc:
         status["error"] = f"bandit failed to start: {exc}"
         return [], status
@@ -127,5 +133,12 @@ async def run_bandit(src_dir: Path, cfg: dict[str, Any]) -> tuple[list[Finding],
         except Exception as exc:
             log.warning("codereview.bandit.bad_result", error=str(exc))
     metrics = (doc.get("metrics") or {}).get("_totals") or {}
-    status.update({"findings": len(findings), "loc": metrics.get("loc"), "exit_code": proc.returncode, "errors": len(doc.get("errors") or [])})
+    status.update(
+        {
+            "findings": len(findings),
+            "loc": metrics.get("loc"),
+            "exit_code": proc.returncode,
+            "errors": len(doc.get("errors") or []),
+        }
+    )
     return findings, status

@@ -77,7 +77,9 @@ def choice_value(answers: dict[str, Any], name: str) -> tuple[str, float, float,
     a = answers.get(name)
     if not isinstance(a, dict):
         return "", 0.0, 0.0, {}
-    probs = {str(k): float(v) for k, v in (a.get("probabilities") or {}).items() if isinstance(v, (int, float))}
+    probs = {
+        str(k): float(v) for k, v in (a.get("probabilities") or {}).items() if isinstance(v, (int, float))
+    }
     chosen = str(a.get("choice") or "")
     try:
         conf = float(a.get("confidence") or 0.0)
@@ -99,7 +101,9 @@ def score_value(answers: dict[str, Any], name: str) -> tuple[float | None, float
         conf = float(a.get("confidence") or 0.0)
     except (TypeError, ValueError):
         conf = 0.0
-    probs = {str(k): float(v) for k, v in (a.get("probabilities") or {}).items() if isinstance(v, (int, float))}
+    probs = {
+        str(k): float(v) for k, v in (a.get("probabilities") or {}).items() if isinstance(v, (int, float))
+    }
     return s, max(0.0, min(1.0, conf)), probs
 
 
@@ -138,7 +142,9 @@ def summarize(
             fired[name] = round(p, 3)
         elif p >= 0.5:
             grey = True
-    intent, intent_p, intent_conf, intent_probs = choice_value(answers, intent_name) if intent_name else ("", 0.0, 0.0, {})
+    intent, intent_p, intent_conf, intent_probs = (
+        choice_value(answers, intent_name) if intent_name else ("", 0.0, 0.0, {})
+    )
     attack_intent = bool(intent) and intent not in ("benign", "other") and intent_conf >= thr
     severity, severity_conf, _ = score_value(answers, "severity")
     benign_p = noul_value(answers, benign_noul) if benign_noul else None
@@ -194,9 +200,13 @@ def _metadata(result: dict[str, Any], summary: dict[str, Any]) -> dict[str, Any]
 # ---------------------------------------------------------------------------
 
 
-def request_findings(result: dict[str, Any], cfg: dict[str, Any], location: str = "prompt_text") -> tuple[list[Finding], dict[str, Any]]:
+def request_findings(
+    result: dict[str, Any], cfg: dict[str, Any], location: str = "prompt_text"
+) -> tuple[list[Finding], dict[str, Any]]:
     answers = result.get("answers") or {}
-    summary = summarize(answers, q.REQUEST_NOUL_CATEGORY, cfg, benign_noul=q.REQUEST_BENIGN_NOUL, intent_name="intent")
+    summary = summarize(
+        answers, q.REQUEST_NOUL_CATEGORY, cfg, benign_noul=q.REQUEST_BENIGN_NOUL, intent_name="intent"
+    )
     meta = _metadata(result, summary)
     findings: list[Finding] = []
     covered: set[str] = set()
@@ -208,22 +218,40 @@ def request_findings(result: dict[str, Any], cfg: dict[str, Any], location: str 
             sev = Severity.MEDIUM  # a near certain attack signal is never merely informational
         findings.append(
             make_finding(
-                NAME_REQUEST, category, sev, f"TypeSafe: {_LABELS.get(name, name)} (noul {p:.2f})",
+                NAME_REQUEST,
+                category,
+                sev,
+                f"TypeSafe: {_LABELS.get(name, name)} (noul {p:.2f})",
                 f"TypeSafe (model {result.get('model')}) answered yes with probability {p:.2f} to the question '{name}'. "
                 f"Intent: {summary['intent'] or 'n/a'} (confidence {summary['intent_confidence']:.2f}), severity score "
                 f"{summary['severity_score'] if summary['severity_score'] is not None else 'n/a'} on a 0 to 4 scale. Verdict: {summary['verdict']}.",
-                f"typesafe noul={p:.2f}", location, noul_confidence(p), tags=["typesafe", name], metadata=meta,
+                f"typesafe noul={p:.2f}",
+                location,
+                noul_confidence(p),
+                tags=["typesafe", name],
+                metadata=meta,
             )
         )
     intent = summary["intent"]
-    if intent and intent not in ("benign", "other") and summary["intent_confidence"] >= summary["threshold"] and intent not in covered:
+    if (
+        intent
+        and intent not in ("benign", "other")
+        and summary["intent_confidence"] >= summary["threshold"]
+        and intent not in covered
+    ):
         sev = severity_from_score(summary["severity_score"], Severity.MEDIUM)
         findings.append(
             make_finding(
-                NAME_REQUEST, intent, sev, f"TypeSafe: intent classified as {intent.replace('_', ' ')} (p={summary['intent_probability']:.2f})",
+                NAME_REQUEST,
+                intent,
+                sev,
+                f"TypeSafe: intent classified as {intent.replace('_', ' ')} (p={summary['intent_probability']:.2f})",
                 f"TypeSafe's intent choice selected '{intent}' with probability {summary['intent_probability']:.2f} and confidence {summary['intent_confidence']:.2f}. Verdict: {summary['verdict']}.",
-                f"typesafe choice={intent} p={summary['intent_probability']:.2f}", location, summary["intent_confidence"],
-                tags=["typesafe", "intent"], metadata=meta,
+                f"typesafe choice={intent} p={summary['intent_probability']:.2f}",
+                location,
+                summary["intent_confidence"],
+                tags=["typesafe", "intent"],
+                metadata=meta,
             )
         )
     if not findings:
@@ -231,13 +259,18 @@ def request_findings(result: dict[str, Any], cfg: dict[str, Any], location: str 
         benign = summary["verdict"] == "benign"
         findings.append(
             make_finding(
-                NAME_REQUEST, "benign_control" if benign else "policy", Severity.INFO,
+                NAME_REQUEST,
+                "benign_control" if benign else "policy",
+                Severity.INFO,
                 f"TypeSafe judged the request {'benign' if benign else 'uncertain'} (confidence {summary['confidence']:.2f})",
                 f"No attack noul reached the threshold {summary['threshold']}. Intent: {summary['intent'] or 'n/a'} "
                 f"(confidence {summary['intent_confidence']:.2f}); benign probability "
                 f"{summary['benign_probability'] if summary['benign_probability'] is not None else 'n/a'}.",
-                f"typesafe verdict={summary['verdict']} confidence={summary['confidence']:.2f}", location, summary["confidence"],
-                tags=["typesafe", "verdict"], metadata=meta,
+                f"typesafe verdict={summary['verdict']} confidence={summary['confidence']:.2f}",
+                location,
+                summary["confidence"],
+                tags=["typesafe", "verdict"],
+                metadata=meta,
             )
         )
     return findings, summary
@@ -259,11 +292,17 @@ class TypeSafeRequestAnalyzer:
             if not result:
                 return []
             findings, summary = request_findings(result, cfg)
-            context["typesafe"] = {"verdict": summary["verdict"], "confidence": summary["confidence"], "intent": summary["intent"]}
+            context["typesafe"] = {
+                "verdict": summary["verdict"],
+                "confidence": summary["confidence"],
+                "intent": summary["intent"],
+            }
             return findings
         except Exception as exc:
             set_error(ts.NAME, str(exc))
-            log_throttled("typesafe.request", "typesafe.analyzer_failed", analyzer=self.name, error=str(exc)[:300])
+            log_throttled(
+                "typesafe.request", "typesafe.analyzer_failed", analyzer=self.name, error=str(exc)[:300]
+            )
             return []
 
 
@@ -282,18 +321,32 @@ def response_findings(result: dict[str, Any], cfg: dict[str, Any]) -> tuple[list
         sev = base if p >= 0.9 else _LEVELS[max(0, _LEVELS.index(base) - 1)]
         findings.append(
             make_finding(
-                NAME_RESPONSE, q.RESPONSE_NOUL_CATEGORY[name], sev, f"TypeSafe: {_LABELS.get(name, name)} (noul {p:.2f})",
+                NAME_RESPONSE,
+                q.RESPONSE_NOUL_CATEGORY[name],
+                sev,
+                f"TypeSafe: {_LABELS.get(name, name)} (noul {p:.2f})",
                 f"TypeSafe (model {result.get('model')}) answered yes with probability {p:.2f} to '{name}' about the model response. Verdict: {summary['verdict']}.",
-                f"typesafe noul={p:.2f}", "response", noul_confidence(p), tags=["typesafe", name], metadata=meta,
+                f"typesafe noul={p:.2f}",
+                "response",
+                noul_confidence(p),
+                tags=["typesafe", name],
+                metadata=meta,
             )
         )
     refusal = noul_value(answers, "refusal")
     if refusal is not None and refusal >= summary["threshold"]:
         findings.append(
             make_finding(
-                NAME_RESPONSE, "refusal", Severity.INFO, f"TypeSafe: the model refused (noul {refusal:.2f})",
+                NAME_RESPONSE,
+                "refusal",
+                Severity.INFO,
+                f"TypeSafe: the model refused (noul {refusal:.2f})",
                 "TypeSafe judged the response to be a refusal. Informational; useful for red-team evaluation and false refusal tracking.",
-                f"typesafe noul={refusal:.2f}", "response", noul_confidence(refusal), tags=["typesafe", "refusal"], metadata=meta,
+                f"typesafe noul={refusal:.2f}",
+                "response",
+                noul_confidence(refusal),
+                tags=["typesafe", "refusal"],
+                metadata=meta,
             )
         )
     return findings, summary
@@ -316,11 +369,16 @@ class TypeSafeResponseAnalyzer:
             if not result:
                 return []
             findings, summary = response_findings(result, cfg)
-            context["typesafe_response"] = {"verdict": summary["verdict"], "confidence": summary["confidence"]}
+            context["typesafe_response"] = {
+                "verdict": summary["verdict"],
+                "confidence": summary["confidence"],
+            }
             return findings
         except Exception as exc:
             set_error(ts.NAME, str(exc))
-            log_throttled("typesafe.response", "typesafe.analyzer_failed", analyzer=self.name, error=str(exc)[:300])
+            log_throttled(
+                "typesafe.response", "typesafe.analyzer_failed", analyzer=self.name, error=str(exc)[:300]
+            )
             return []
 
 

@@ -4,6 +4,7 @@ Reads every YAML file in aisrf/redteam/corpus/, validates each probe with pydant
 cached query helpers. A corpus file has an optional top-level `category`, `description` and
 `defaults` mapping (fields merged into every probe that omits them) plus a `probes` list.
 """
+
 from __future__ import annotations
 
 import functools
@@ -218,7 +219,10 @@ def get_probes(
             continue
         if wanted_tags is not None and not wanted_tags.intersection(p.tags):
             continue
-        if needle is not None and needle not in (p.id + " " + p.name + " " + p.description + " " + p.prompt_text()).lower():
+        if (
+            needle is not None
+            and needle not in (p.id + " " + p.name + " " + p.description + " " + p.prompt_text()).lower()
+        ):
             continue
         selected.append(p)
 

@@ -28,21 +28,51 @@ from .base import (
 
 PACK = "rag_poisoning_exfil"
 INGEST = r"(add_texts\s*\(|add_documents\s*\(|aadd_documents\s*\(|\.upsert\s*\(|from_documents\s*\(|from_texts\s*\(|index\.insert\s*\(|insert_nodes\s*\(|VectorStoreIndex\.from_documents|\.add\s*\(\s*(documents|ids|embeddings|texts)\s*=|addDocuments\s*\(|addVectors\s*\(|\.index\s*\(\s*\{|write_documents\s*\()"
-RETRIEVAL_CALLS = re.compile(r"(^|\.)(similarity_search|similarity_search_with_score|similarity_search_by_vector|asimilarity_search|max_marginal_relevance_search|as_retriever|get_relevant_documents|aget_relevant_documents|retrieve|aretrieve)$")
+RETRIEVAL_CALLS = re.compile(
+    r"(^|\.)(similarity_search|similarity_search_with_score|similarity_search_by_vector|asimilarity_search|max_marginal_relevance_search|as_retriever|get_relevant_documents|aget_relevant_documents|retrieve|aretrieve)$"
+)
 VECTOR_QUERY = re.compile(r"(^|\.)(query|search|query_points|search_points|knn_search|hybrid_search)$")
-SCOPE_KW = {"filter", "filters", "where", "namespace", "search_kwargs", "pre_filter", "tenant", "metadata_filter", "query_filter", "filter_expr", "expr", "partition_names", "collection_name", "user_id", "tenant_id"}
-CONTEXT_NAMES = re.compile(r"(?i)^(context|ctx|docs?|documents?|chunks?|retrieved\w*|results?|passages?|page_content|sources?|knowledge|snippets?|evidence|references?|hits|matches|nodes?|memories|memory|search_results?)$")
-DELIMITED = re.compile(r"(<context>|<document|<retrieved|<source|<reference|\[Source:|Source:|BEGIN (CONTEXT|DOCUMENT)|```|<data>|<untrusted)")
-LOG_CALL = re.compile(r"(?i)\b(logger|logging|log|console|print|app\.logger|structlog\w*|logs?)\.?(info|debug|warning|warn|error|exception|log|critical)?\s*\(")
-LOG_SENSITIVE = re.compile(r"(?i:(\{|\(|,|\+|%s.*%|f['\"][^'\"]*\{)\s*(prompt|full_prompt|system_prompt|messages|user_message|user_input|user_query|completion|response\.choices|response\.content|response\.text|answer|conversation|transcript|raw_response|llm_response|chat_history|history)\b)")
-CACHE_DECORATOR = re.compile(r"(?i)(lru_cache|functools\.cache|^cache$|\.cache$|cached|memoize|cache_data|cache_resource|st\.cache)")
+SCOPE_KW = {
+    "filter",
+    "filters",
+    "where",
+    "namespace",
+    "search_kwargs",
+    "pre_filter",
+    "tenant",
+    "metadata_filter",
+    "query_filter",
+    "filter_expr",
+    "expr",
+    "partition_names",
+    "collection_name",
+    "user_id",
+    "tenant_id",
+}
+CONTEXT_NAMES = re.compile(
+    r"(?i)^(context|ctx|docs?|documents?|chunks?|retrieved\w*|results?|passages?|page_content|sources?|knowledge|snippets?|evidence|references?|hits|matches|nodes?|memories|memory|search_results?)$"
+)
+DELIMITED = re.compile(
+    r"(<context>|<document|<retrieved|<source|<reference|\[Source:|Source:|BEGIN (CONTEXT|DOCUMENT)|```|<data>|<untrusted)"
+)
+LOG_CALL = re.compile(
+    r"(?i)\b(logger|logging|log|console|print|app\.logger|structlog\w*|logs?)\.?(info|debug|warning|warn|error|exception|log|critical)?\s*\("
+)
+LOG_SENSITIVE = re.compile(
+    r"(?i:(\{|\(|,|\+|%s.*%|f['\"][^'\"]*\{)\s*(prompt|full_prompt|system_prompt|messages|user_message|user_input|user_query|completion|response\.choices|response\.content|response\.text|answer|conversation|transcript|raw_response|llm_response|chat_history|history)\b)"
+)
+CACHE_DECORATOR = re.compile(
+    r"(?i)(lru_cache|functools\.cache|^cache$|\.cache$|cached|memoize|cache_data|cache_resource|st\.cache)"
+)
 MEMORY_TYPES = r"(ConversationBufferMemory|ConversationBufferWindowMemory|ConversationSummary\w*Memory|ConversationTokenBufferMemory|ChatMessageHistory|InMemoryChatMessageHistory|MemorySaver|InMemorySaver|ConversationChain|VectorStoreRetrieverMemory|BufferMemory|ChatMemory)"
 CREDENTIAL_LITERAL = r"['\"][A-Za-z0-9_\-:/.@+=]{12,}['\"]"
 ENV_REF = r"(os\.environ|getenv|process\.env|\$\{|\$[A-Z_]|secrets\.|vault|keyring|Settings\(|settings\.|config\.|<[^>]+>|your[_-]|xxx|example|changeme|placeholder|dummy|test-?)"
 
 
 def _unscoped_retrieval(ctx: FileContext, tree: ast.Module) -> Iterator[Match]:
-    multi_tenant = ctx.search(r"(?i)(user_id|tenant|customer_id|org_id|workspace|account_id|current_user|principal)")
+    multi_tenant = ctx.search(
+        r"(?i)(user_id|tenant|customer_id|org_id|workspace|account_id|current_user|principal)"
+    )
     for call in pyast.iter_calls(tree):
         name = pyast.call_name(call)
         kws = {k.arg for k in call.keywords if k.arg}
@@ -51,9 +81,34 @@ def _unscoped_retrieval(ctx: FileContext, tree: ast.Module) -> Iterator[Match]:
         if RETRIEVAL_CALLS.search(name):
             if name.endswith("as_retriever") and any(isinstance(a, ast.Dict) for a in call.args):
                 continue
-            yield node_match(ctx, call, boost=0.2 if multi_tenant or ctx.has_flag("route") else 0.0, note=f"{name}() runs without a filter, namespace or tenant scope")
-        elif VECTOR_QUERY.search(name) and (kws & {"vector", "query_embeddings", "query_vector", "embedding", "query_embedding", "query_texts", "data", "anns_field", "top_k", "n_results", "limit"}):
-            yield node_match(ctx, call, boost=0.1 if multi_tenant else -0.1, note=f"{name}() runs without a filter or namespace")
+            yield node_match(
+                ctx,
+                call,
+                boost=0.2 if multi_tenant or ctx.has_flag("route") else 0.0,
+                note=f"{name}() runs without a filter, namespace or tenant scope",
+            )
+        elif VECTOR_QUERY.search(name) and (
+            kws
+            & {
+                "vector",
+                "query_embeddings",
+                "query_vector",
+                "embedding",
+                "query_embedding",
+                "query_texts",
+                "data",
+                "anns_field",
+                "top_k",
+                "n_results",
+                "limit",
+            }
+        ):
+            yield node_match(
+                ctx,
+                call,
+                boost=0.1 if multi_tenant else -0.1,
+                note=f"{name}() runs without a filter or namespace",
+            )
 
 
 def _filter_from_request(ctx: FileContext, tree: ast.Module) -> Iterator[Match]:
@@ -67,9 +122,22 @@ def _filter_from_request(ctx: FileContext, tree: ast.Module) -> Iterator[Match]:
                 src = ast.unparse(value)
             except Exception:
                 src = ""
-            tainted = [r for r in refs if UNTRUSTED_STRONG.search(r) or re.match(r"^(request|req|params|body|payload|form|data|args|kwargs)(\.|$)", r)]
-            if tainted or re.search(r"json\.loads\(\s*(request|req|body|payload)", src) or pyast.is_dynamic_string(value):
-                yield node_match(ctx, call, note=f"{kw.arg}= is built from {', '.join(sorted(tainted)[:3]) or 'runtime input'}")
+            tainted = [
+                r
+                for r in refs
+                if UNTRUSTED_STRONG.search(r)
+                or re.match(r"^(request|req|params|body|payload|form|data|args|kwargs)(\.|$)", r)
+            ]
+            if (
+                tainted
+                or re.search(r"json\.loads\(\s*(request|req|body|payload)", src)
+                or pyast.is_dynamic_string(value)
+            ):
+                yield node_match(
+                    ctx,
+                    call,
+                    note=f"{kw.arg}= is built from {', '.join(sorted(tainted)[:3]) or 'runtime input'}",
+                )
                 break
 
 
@@ -85,7 +153,11 @@ def _context_in_prompt(ctx: FileContext, tree: ast.Module) -> Iterator[Match]:
         names = {n.split(".")[0] for n in pyast.interpolated(node)}
         ctx_names = sorted(n for n in names if CONTEXT_NAMES.match(n))
         if ctx_names:
-            yield node_match(ctx, node, note="retrieved content " + ", ".join(ctx_names[:3]) + " is inlined with the instructions")
+            yield node_match(
+                ctx,
+                node,
+                note="retrieved content " + ", ".join(ctx_names[:3]) + " is inlined with the instructions",
+            )
 
 
 def _cached_retrieval(ctx: FileContext, tree: ast.Module) -> Iterator[Match]:
@@ -98,11 +170,18 @@ def _cached_retrieval(ctx: FileContext, tree: ast.Module) -> Iterator[Match]:
         params = pyast.arg_names(func)
         if any(re.search(r"(?i)(user|tenant|session|principal|account|org)", p) for p in params):
             continue
-        yield Match(func.lineno, func.lineno, snippet=ctx.snippet(func.lineno, func.lineno + 2), note=f"{func.name} caches retrieval or model results keyed only by its text arguments")
+        yield Match(
+            func.lineno,
+            func.lineno,
+            snippet=ctx.snippet(func.lineno, func.lineno + 2),
+            note=f"{func.name} caches retrieval or model results keyed only by its text arguments",
+        )
 
 
 def _shared_memory(ctx: FileContext, tree: ast.Module) -> Iterator[Match]:
-    if ctx.search(r"(?i)(thread_id|session_id|user_id|per_user|get_session_history|RunnableWithMessageHistory|memories\[|memory_for|session\.)"):
+    if ctx.search(
+        r"(?i)(thread_id|session_id|user_id|per_user|get_session_history|RunnableWithMessageHistory|memories\[|memory_for|session\.)"
+    ):
         return
     for node in tree.body:
         targets: list[ast.AST] = []
@@ -113,10 +192,22 @@ def _shared_memory(ctx: FileContext, tree: ast.Module) -> Iterator[Match]:
             for sub in node.body:
                 if isinstance(sub, (ast.FunctionDef, ast.AsyncFunctionDef)) and sub.name == "__init__":
                     for stmt in ast.walk(sub):
-                        if isinstance(stmt, ast.Assign) and isinstance(stmt.value, ast.Call) and re.search(MEMORY_TYPES, pyast.call_name(stmt.value)):
-                            yield node_match(ctx, stmt, note="conversation memory is created once per instance and shared by every caller")
+                        if (
+                            isinstance(stmt, ast.Assign)
+                            and isinstance(stmt.value, ast.Call)
+                            and re.search(MEMORY_TYPES, pyast.call_name(stmt.value))
+                        ):
+                            yield node_match(
+                                ctx,
+                                stmt,
+                                note="conversation memory is created once per instance and shared by every caller",
+                            )
             continue
-        if value is None or not isinstance(value, ast.Call) or not re.search(MEMORY_TYPES, pyast.call_name(value)):
+        if (
+            value is None
+            or not isinstance(value, ast.Call)
+            or not re.search(MEMORY_TYPES, pyast.call_name(value))
+        ):
             continue
         yield node_match(ctx, node, note="module-level conversation memory is shared by every user")
         del targets
@@ -139,7 +230,13 @@ RULES: list[Rule] = [
             "Store source, author, classification and a content hash with every chunk and require approval before it becomes retrievable.",
         ),
         languages=CODE,
-        matcher=absence([INGEST], [r"(?i)(sanitiz|clean_|strip_|bleach|nh3|scan_|inject|zero.?width|display\s*:\s*none|provenance|content_hash|approved|review|quarantine|moderat|Analyzer\(|guard)"], anchor=INGEST),
+        matcher=absence(
+            [INGEST],
+            [
+                r"(?i)(sanitiz|clean_|strip_|bleach|nh3|scan_|inject|zero.?width|display\s*:\s*none|provenance|content_hash|approved|review|quarantine|moderat|Analyzer\(|guard)"
+            ],
+            anchor=INGEST,
+        ),
         tags=("ingestion",),
     ),
     rule(
@@ -160,7 +257,13 @@ RULES: list[Rule] = [
         languages=CODE,
         matcher=any_of(
             py(_unscoped_retrieval),
-            near(r"\.(similaritySearch|similaritySearchWithScore|asRetriever|maxMarginalRelevanceSearch)\s*\(", None, window=4, unless=r"(filter|namespace|where|tenant|k:\s*\d+\s*,\s*\{)", flag="rag"),
+            near(
+                r"\.(similaritySearch|similaritySearchWithScore|asRetriever|maxMarginalRelevanceSearch)\s*\(",
+                None,
+                window=4,
+                unless=r"(filter|namespace|where|tenant|k:\s*\d+\s*,\s*\{)",
+                flag="rag",
+            ),
         ),
         tags=("authorization", "retrieval"),
         engines=("rules", "semgrep"),
@@ -183,7 +286,10 @@ RULES: list[Rule] = [
         languages=CODE,
         matcher=any_of(
             py(_filter_from_request),
-            lines(r"\b(filter|filters|where|namespace|collection|tenant|collectionName)\s*[:=]\s*(req\.(body|query|params)|request\.(json|args|form|body|get_json)|JSON\.parse\(\s*req|json\.loads\(\s*request|params\[|body\[|payload\[|f['\"]|`[^`]*\$\{)", flag="rag"),
+            lines(
+                r"\b(filter|filters|where|namespace|collection|tenant|collectionName)\s*[:=]\s*(req\.(body|query|params)|request\.(json|args|form|body|get_json)|JSON\.parse\(\s*req|json\.loads\(\s*request|params\[|body\[|payload\[|f['\"]|`[^`]*\$\{)",
+                flag="rag",
+            ),
         ),
         tags=("authorization", "source:http"),
         engines=("rules", "semgrep"),
@@ -204,7 +310,9 @@ RULES: list[Rule] = [
             "Enable audit logging on the collection.",
         ),
         languages=CODE,
-        matcher=lines(r"(QdrantClient\s*\((?![^)\n]*api_key)[^)\n]*(url|host)\s*=\s*['\"]https?://(?!localhost|127\.0\.0\.1)|chromadb\.HttpClient\s*\((?![^)\n]*(headers|settings|auth))[^)\n]*host\s*=|weaviate\.(Client|connect_to_custom|connect_to_wcs|connect_to_weaviate_cloud)\s*\((?![^)\n]*auth)[^)\n]*(url|host|cluster_url)\s*=|MilvusClient\s*\((?![^)\n]*(token|password))[^)\n]*uri\s*=\s*['\"]https?://(?!localhost|127\.0\.0\.1)|Elasticsearch\s*\(\s*['\"]http://(?!localhost|127\.0\.0\.1)|new QdrantClient\s*\(\s*\{(?![^}\n]*apiKey)[^}\n]*url|new ChromaClient\s*\(\s*\{(?![^}\n]*auth)[^}\n]*path\s*:\s*['\"]https?://(?!localhost)|weaviate\.client\s*\(\s*\{(?![^}\n]*(apiKey|authClientSecret))[^}\n]*host)"),
+        matcher=lines(
+            r"(QdrantClient\s*\((?![^)\n]*api_key)[^)\n]*(url|host)\s*=\s*['\"]https?://(?!localhost|127\.0\.0\.1)|chromadb\.HttpClient\s*\((?![^)\n]*(headers|settings|auth))[^)\n]*host\s*=|weaviate\.(Client|connect_to_custom|connect_to_wcs|connect_to_weaviate_cloud)\s*\((?![^)\n]*auth)[^)\n]*(url|host|cluster_url)\s*=|MilvusClient\s*\((?![^)\n]*(token|password))[^)\n]*uri\s*=\s*['\"]https?://(?!localhost|127\.0\.0\.1)|Elasticsearch\s*\(\s*['\"]http://(?!localhost|127\.0\.0\.1)|new QdrantClient\s*\(\s*\{(?![^}\n]*apiKey)[^}\n]*url|new ChromaClient\s*\(\s*\{(?![^}\n]*auth)[^}\n]*path\s*:\s*['\"]https?://(?!localhost)|weaviate\.client\s*\(\s*\{(?![^}\n]*(apiKey|authClientSecret))[^}\n]*host)"
+        ),
         tags=("auth", "vector-store"),
     ),
     rule(
@@ -225,7 +333,12 @@ RULES: list[Rule] = [
         languages=CODE,
         matcher=any_of(
             py(_context_in_prompt),
-            lines(r"\$\{\s*(context|docs|documents|chunks|retrieved\w*|results|passages|sources|snippets|evidence)\w*\s*\}", requires=r"(?i)(you are|answer|summari[sz]e|instruction|question:|based on)", unless=DELIMITED.pattern, flag="rag"),
+            lines(
+                r"\$\{\s*(context|docs|documents|chunks|retrieved\w*|results|passages|sources|snippets|evidence)\w*\s*\}",
+                requires=r"(?i)(you are|answer|summari[sz]e|instruction|question:|based on)",
+                unless=DELIMITED.pattern,
+                flag="rag",
+            ),
         ),
         tags=("indirect", "sink:prompt"),
         engines=("rules", "semgrep"),
@@ -247,8 +360,24 @@ RULES: list[Rule] = [
         ),
         languages=CODE,
         matcher=any_of(
-            absence([r"(<ReactMarkdown|<Markdown\b|<MarkdownRenderer|\bremark\(|\bmarked(\.parse)?\s*\(|markdownit\s*\(|md\.render\s*\(|unified\(\)|<MDXRemote|react-markdown)", r"(?i)(chat|answer|response|assistant|completion|message)"], [r"(disallowedElements|allowedElements|urlTransform|transformImageUri|transformLinkUri|skipHtml|sanitize|DOMPurify|rehypeSanitize|allowedTags|noImages|strip_images|['\"]img['\"]|linkTarget|imageProxy)"], anchor=r"(<ReactMarkdown|<Markdown\b|<MarkdownRenderer|\bremark\(|\bmarked(\.parse)?\s*\(|markdownit\s*\(|md\.render\s*\(|unified\(\)|<MDXRemote)"),
-            absence([r"(markdown\.markdown\s*\(|markdown2\.markdown\s*\(|mistune\.(html|markdown|create_markdown)\s*\()", r"(?i)(answer|response|completion|output|assistant)"], [r"(?i)(bleach|nh3|strip_images|no_images|allowlist|['\"]img['\"]|image_proxy|linkify_safe)"], anchor=r"(markdown\.markdown\s*\(|markdown2\.markdown\s*\(|mistune\.(html|markdown|create_markdown)\s*\()"),
+            absence(
+                [
+                    r"(<ReactMarkdown|<Markdown\b|<MarkdownRenderer|\bremark\(|\bmarked(\.parse)?\s*\(|markdownit\s*\(|md\.render\s*\(|unified\(\)|<MDXRemote|react-markdown)",
+                    r"(?i)(chat|answer|response|assistant|completion|message)",
+                ],
+                [
+                    r"(disallowedElements|allowedElements|urlTransform|transformImageUri|transformLinkUri|skipHtml|sanitize|DOMPurify|rehypeSanitize|allowedTags|noImages|strip_images|['\"]img['\"]|linkTarget|imageProxy)"
+                ],
+                anchor=r"(<ReactMarkdown|<Markdown\b|<MarkdownRenderer|\bremark\(|\bmarked(\.parse)?\s*\(|markdownit\s*\(|md\.render\s*\(|unified\(\)|<MDXRemote)",
+            ),
+            absence(
+                [
+                    r"(markdown\.markdown\s*\(|markdown2\.markdown\s*\(|mistune\.(html|markdown|create_markdown)\s*\()",
+                    r"(?i)(answer|response|completion|output|assistant)",
+                ],
+                [r"(?i)(bleach|nh3|strip_images|no_images|allowlist|['\"]img['\"]|image_proxy|linkify_safe)"],
+                anchor=r"(markdown\.markdown\s*\(|markdown2\.markdown\s*\(|mistune\.(html|markdown|create_markdown)\s*\()",
+            ),
         ),
         tags=("exfil", "markdown"),
     ),
@@ -268,7 +397,11 @@ RULES: list[Rule] = [
             "Keep the debug flag off in production.",
         ),
         languages=CODE,
-        matcher=lines(LOG_CALL.pattern + r"[^\n]*" + LOG_SENSITIVE.pattern, flag=("ai", "rag"), unless=r"(?i)(redact|mask|scrub|len\(|\.count|token|truncat|\[:\d)"),
+        matcher=lines(
+            LOG_CALL.pattern + r"[^\n]*" + LOG_SENSITIVE.pattern,
+            flag=("ai", "rag"),
+            unless=r"(?i)(redact|mask|scrub|len\(|\.count|token|truncat|\[:\d)",
+        ),
         tags=("logging", "pii"),
     ),
     rule(
@@ -289,7 +422,11 @@ RULES: list[Rule] = [
         languages=CODE,
         matcher=any_of(
             py(_cached_retrieval),
-            lines(r"(cache\.(get|set)\s*\(\s*(query|question|prompt|q|text|key)\b|cache_key\s*=\s*[^\n]*(query|question|prompt)|set_llm_cache\s*\(|InMemoryCache\s*\(|SQLiteCache\s*\(|RedisCache\s*\(|GPTCache|cacheKey\s*=\s*[^\n]*(query|question|prompt))", unless=r"(?i)(user|tenant|session|principal|account)", flag=("ai", "rag")),
+            lines(
+                r"(cache\.(get|set)\s*\(\s*(query|question|prompt|q|text|key)\b|cache_key\s*=\s*[^\n]*(query|question|prompt)|set_llm_cache\s*\(|InMemoryCache\s*\(|SQLiteCache\s*\(|RedisCache\s*\(|GPTCache|cacheKey\s*=\s*[^\n]*(query|question|prompt))",
+                unless=r"(?i)(user|tenant|session|principal|account)",
+                flag=("ai", "rag"),
+            ),
         ),
         tags=("cache",),
     ),
@@ -309,7 +446,14 @@ RULES: list[Rule] = [
             "Implement deletion workflows for the index to honour erasure requests.",
         ),
         languages=CODE,
-        matcher=absence([INGEST, r"(?i)(email|phone|ssn|customer|patient|employee|user_?record|ticket|support|crm|hr_|medical|health|payroll|salary|address)"], [r"(?i)(presidio|scrub|anonymi|redact|pii|mask|deidentif|Analyzer\(|dlp|pseudonym)"], anchor=INGEST),
+        matcher=absence(
+            [
+                INGEST,
+                r"(?i)(email|phone|ssn|customer|patient|employee|user_?record|ticket|support|crm|hr_|medical|health|payroll|salary|address)",
+            ],
+            [r"(?i)(presidio|scrub|anonymi|redact|pii|mask|deidentif|Analyzer\(|dlp|pseudonym)"],
+            anchor=INGEST,
+        ),
         tags=("pii", "ingestion"),
     ),
     rule(
@@ -327,7 +471,13 @@ RULES: list[Rule] = [
             "Use scoped keys (read-only for query paths) and enable audit logging on the service.",
         ),
         languages=("*",),
-        matcher=lines(r"(?i)((pinecone|qdrant|weaviate|milvus|zilliz|chroma|pgvector|elastic|opensearch|supabase|turbopuffer|lancedb|vectara|voyage|embedding)\w*[_-]?(api[_-]?key|token|secret|password)\s*[=:]\s*" + CREDENTIAL_LITERAL + r"|AuthApiKey\s*\(\s*['\"][^'\"]{10,}['\"]|Auth\.api_key\s*\(\s*['\"][^'\"]{10,}|QdrantClient\s*\([^)]*api_key\s*=\s*['\"][^'\"]{10,}['\"]|api_key\s*[=:]\s*['\"]pcsk_[^'\"]+['\"]|postgres(ql)?://[^:\s'\"]+:[^@\s'\"]{6,}@)", unless=ENV_REF, skip_comments=False),
+        matcher=lines(
+            r"(?i)((pinecone|qdrant|weaviate|milvus|zilliz|chroma|pgvector|elastic|opensearch|supabase|turbopuffer|lancedb|vectara|voyage|embedding)\w*[_-]?(api[_-]?key|token|secret|password)\s*[=:]\s*"
+            + CREDENTIAL_LITERAL
+            + r"|AuthApiKey\s*\(\s*['\"][^'\"]{10,}['\"]|Auth\.api_key\s*\(\s*['\"][^'\"]{10,}|QdrantClient\s*\([^)]*api_key\s*=\s*['\"][^'\"]{10,}['\"]|api_key\s*[=:]\s*['\"]pcsk_[^'\"]+['\"]|postgres(ql)?://[^:\s'\"]+:[^@\s'\"]{6,}@)",
+            unless=ENV_REF,
+            skip_comments=False,
+        ),
         tags=("secrets",),
     ),
     rule(
@@ -346,7 +496,15 @@ RULES: list[Rule] = [
             "Re-crawl on a schedule and diff content to catch tampering.",
         ),
         languages=CODE,
-        matcher=absence([r"(WebBaseLoader|RecursiveUrlLoader|SitemapLoader|AsyncHtmlLoader|AsyncChromiumLoader|UnstructuredURLLoader|SeleniumURLLoader|PlaywrightURLLoader|CheerioWebBaseLoader|PuppeteerWebBaseLoader|SimpleWebPageReader|BeautifulSoupWebReader|TrafilaturaWebReader|FireCrawlLoader|ApifyDatasetLoader|scrapy|crawl\w*\s*\()\s*\(?\s*[^'\")\n]*\b(url|urls|link|links|sitemap|pages|start_urls)\b"], [r"(?i)(allowlist|allow_list|allowed_domains|ALLOWED|hostname in|robots|whitelist|trusted_domains|domain_filter|url_filter|same_origin)"], anchor=r"(WebBaseLoader|RecursiveUrlLoader|SitemapLoader|AsyncHtmlLoader|AsyncChromiumLoader|UnstructuredURLLoader|SeleniumURLLoader|PlaywrightURLLoader|CheerioWebBaseLoader|PuppeteerWebBaseLoader|SimpleWebPageReader|BeautifulSoupWebReader|TrafilaturaWebReader|FireCrawlLoader|ApifyDatasetLoader|scrapy|crawl\w*\s*\()"),
+        matcher=absence(
+            [
+                r"(WebBaseLoader|RecursiveUrlLoader|SitemapLoader|AsyncHtmlLoader|AsyncChromiumLoader|UnstructuredURLLoader|SeleniumURLLoader|PlaywrightURLLoader|CheerioWebBaseLoader|PuppeteerWebBaseLoader|SimpleWebPageReader|BeautifulSoupWebReader|TrafilaturaWebReader|FireCrawlLoader|ApifyDatasetLoader|scrapy|crawl\w*\s*\()\s*\(?\s*[^'\")\n]*\b(url|urls|link|links|sitemap|pages|start_urls)\b"
+            ],
+            [
+                r"(?i)(allowlist|allow_list|allowed_domains|ALLOWED|hostname in|robots|whitelist|trusted_domains|domain_filter|url_filter|same_origin)"
+            ],
+            anchor=r"(WebBaseLoader|RecursiveUrlLoader|SitemapLoader|AsyncHtmlLoader|AsyncChromiumLoader|UnstructuredURLLoader|SeleniumURLLoader|PlaywrightURLLoader|CheerioWebBaseLoader|PuppeteerWebBaseLoader|SimpleWebPageReader|BeautifulSoupWebReader|TrafilaturaWebReader|FireCrawlLoader|ApifyDatasetLoader|scrapy|crawl\w*\s*\()",
+        ),
         tags=("ingestion", "source:web"),
     ),
     rule(
@@ -367,16 +525,27 @@ RULES: list[Rule] = [
         languages=CODE,
         matcher=any_of(
             py(_shared_memory),
-            absence([r"^(const|let|var)\s+(history|messages|memory|conversation|chatHistory)\s*=\s*(\[\]|new Map\(|\{\}|new (BufferMemory|ChatMessageHistory|InMemoryChatMessageHistory)\()"], [r"(?i)(userId|sessionId|threadId|thread_id|per_user|Map<|\[userId\]|\[sessionId\])"], flag="ai", anchor=r"^(const|let|var)\s+(history|messages|memory|conversation|chatHistory)\s*="),
+            absence(
+                [
+                    r"^(const|let|var)\s+(history|messages|memory|conversation|chatHistory)\s*=\s*(\[\]|new Map\(|\{\}|new (BufferMemory|ChatMessageHistory|InMemoryChatMessageHistory)\()"
+                ],
+                [r"(?i)(userId|sessionId|threadId|thread_id|per_user|Map<|\[userId\]|\[sessionId\])"],
+                flag="ai",
+                anchor=r"^(const|let|var)\s+(history|messages|memory|conversation|chatHistory)\s*=",
+            ),
         ),
         tags=("memory", "isolation"),
     ),
 ]
 _ = PY
 
-UPLOAD_SOURCE = r"(request\.files|UploadFile|File\(|req\.file\b|multer|formData\.get\(\s*['\"]file|busboy|formidable)"
+UPLOAD_SOURCE = (
+    r"(request\.files|UploadFile|File\(|req\.file\b|multer|formData\.get\(\s*['\"]file|busboy|formidable)"
+)
 TENANT_SCOPE = r"(?i)(namespace|tenant|user_id|owner_id|per_user|\bacl\b|visibility|collection_name\s*=\s*f|private|access_group|allowed_users)"
-METADATA_NAMES = re.compile(r"(?i)(filename|file_name|\.name$|metadata|\.title$|\.subject$|\.author$|headers?$|attachment|page_title|doc_title|source_url)")
+METADATA_NAMES = re.compile(
+    r"(?i)(filename|file_name|\.name$|metadata|\.title$|\.subject$|\.author$|headers?$|attachment|page_title|doc_title|source_url)"
+)
 
 
 def _metadata_in_prompt(ctx: FileContext, tree: ast.Module) -> Iterator[Match]:
@@ -390,7 +559,11 @@ def _metadata_in_prompt(ctx: FileContext, tree: ast.Module) -> Iterator[Match]:
             continue
         hits = sorted(n for n in pyast.interpolated(node) if METADATA_NAMES.search(n))
         if hits:
-            yield node_match(ctx, node, note="document metadata " + ", ".join(hits[:3]) + " is interpolated into the prompt")
+            yield node_match(
+                ctx,
+                node,
+                note="document metadata " + ", ".join(hits[:3]) + " is interpolated into the prompt",
+            )
 
 
 RULES += [
@@ -430,7 +603,11 @@ RULES += [
         languages=CODE,
         matcher=any_of(
             py(_metadata_in_prompt),
-            lines(r"\$\{\s*[\w.]*(filename|fileName|metadata|title|subject|author|sourceUrl)\b", requires=r"(?i)(you are|answer|summari[sz]e|instruction|question:|based on|context:)", flag=("ai", "rag")),
+            lines(
+                r"\$\{\s*[\w.]*(filename|fileName|metadata|title|subject|author|sourceUrl)\b",
+                requires=r"(?i)(you are|answer|summari[sz]e|instruction|question:|based on|context:)",
+                flag=("ai", "rag"),
+            ),
         ),
         tags=("indirect", "metadata"),
     ),

@@ -64,7 +64,9 @@ def scan_file(ctx: FileContext, rules: list[Rule]) -> list[Finding]:
                 if hits >= MAX_HITS_PER_RULE_FILE:
                     break
         except Exception as exc:  # a broken matcher must never abort the run
-            log.warning("codereview.rule_error", rule=rule.id, file=ctx.path, error=f"{type(exc).__name__}: {exc}")
+            log.warning(
+                "codereview.rule_error", rule=rule.id, file=ctx.path, error=f"{type(exc).__name__}: {exc}"
+            )
     return out
 
 

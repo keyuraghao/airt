@@ -120,7 +120,9 @@ async def intercept(request: Request, path: str, session: AsyncSession) -> Respo
     inbound_headers = dict(request.headers)
     normalized = normalize(path, body, provider_hint=agent.upstream_provider)
     canary = None
-    if (agent.inject_canary or settings_store.get_value("integrations", "rebuff", {}).get("canary_default")) and body:
+    if (
+        agent.inject_canary or settings_store.get_value("integrations", "rebuff", {}).get("canary_default")
+    ) and body:
         canary = canary_mod.new_canary()
         injected = canary_mod.inject(body, canary)
         if injected != body:

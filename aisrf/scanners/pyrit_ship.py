@@ -14,6 +14,7 @@ gateway pipeline as a ticket, so Burp-driven traffic is intercepted and human-ap
 The client adapter (ShipClient) calls an external PyRIT-Ship server configured in
 settings integrations.pyrit_ship (url, converter, scorer, ...).
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -53,7 +54,9 @@ async def convert_text(converter_name: str, text: str) -> str:
     return await pyrit_engine.apply_converters(text, converters)
 
 
-async def score_true_false(true_description: str, false_description: str, prompt_response: str) -> list[dict[str, Any]]:
+async def score_true_false(
+    true_description: str, false_description: str, prompt_response: str
+) -> list[dict[str, Any]]:
     """SelfAskTrueFalseScorer-compatible scoring via the configured LLM judge, with a heuristic fallback."""
     judge = pyrit_engine.judge_target() if pyrit_engine.pyrit_available() else None
     if judge is not None:
@@ -61,9 +64,22 @@ async def score_true_false(true_description: str, false_description: str, prompt
         try:
             from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
 
-            scorer = SelfAskTrueFalseScorer(chat_target=judge, true_false_question=TrueFalseQuestion(category="pyritship", true_description=true_description, false_description=false_description))
+            scorer = SelfAskTrueFalseScorer(
+                chat_target=judge,
+                true_false_question=TrueFalseQuestion(
+                    category="pyritship",
+                    true_description=true_description,
+                    false_description=false_description,
+                ),
+            )
             score = (await scorer.score_text_async(text=prompt_response))[0]
-            return [{"scoring_text": str(score.get_value()), "scoring_metadata": score.score_metadata or "", "scoring_rationale": score.score_rationale or ""}]
+            return [
+                {
+                    "scoring_text": str(score.get_value()),
+                    "scoring_metadata": score.score_metadata or "",
+                    "scoring_rationale": score.score_rationale or "",
+                }
+            ]
         except Exception as exc:
             log.warning("pyrit_ship.score.judge_failed", error=str(exc))
     value, rationale = _heuristic_true_false(true_description, prompt_response)
@@ -76,10 +92,18 @@ def _heuristic_true_false(true_description: str, prompt_response: str) -> tuple[
     words = [w for w in true_description.lower().replace(".", " ").split() if len(w) > 3]
     hits = [w for w in words if w in text]
     matched = len(hits) >= max(1, len(words) // 3)
-    return matched, ("matched terms: " + ", ".join(hits)) if matched else "no LLM judge configured; keyword heuristic found no match"
+    return matched, (
+        "matched terms: " + ", ".join(hits)
+    ) if matched else "no LLM judge configured; keyword heuristic found no match"
 
 
-async def generate_prompt(prompt_goal: str, http: httpx.AsyncClient | None = None, agent_id: str | None = None, *, campaign_id: str | None = None) -> str:
+async def generate_prompt(
+    prompt_goal: str,
+    http: httpx.AsyncClient | None = None,
+    agent_id: str | None = None,
+    *,
+    campaign_id: str | None = None,
+) -> str:
     """PyRIT-Ship /prompt/generate is a single PromptSendingAttack turn.
 
     When an agent is supplied the attack target is the in-process gateway (AISRFGatewayTarget), so
@@ -91,7 +115,9 @@ async def generate_prompt(prompt_goal: str, http: httpx.AsyncClient | None = Non
         from pyrit.executor.attack import PromptSendingAttack
 
         cls = pyrit_engine.classes()
-        target = cls["AISRFGatewayTarget"](http, agent_id, model="", campaign_id=campaign_id, probe_id="pyrit_ship.generate")
+        target = cls["AISRFGatewayTarget"](
+            http, agent_id, model="", campaign_id=campaign_id, probe_id="pyrit_ship.generate"
+        )
         attack = PromptSendingAttack(objective_target=target)
         result = await attack.execute_async(objective=prompt_goal)
         if result.last_response is not None:
@@ -99,12 +125,26 @@ async def generate_prompt(prompt_goal: str, http: httpx.AsyncClient | None = Non
     return prompt_goal
 
 
-async def submit_converted_prompt(http: httpx.AsyncClient, agent_id: str, converted_text: str, *, campaign_id: str | None = None) -> str | None:
+async def submit_converted_prompt(
+    http: httpx.AsyncClient, agent_id: str, converted_text: str, *, campaign_id: str | None = None
+) -> str | None:
     """Push a converted prompt through the gateway pipeline as a ticket. Returns the ticket id."""
     from ..gateway.pipeline import submit
 
-    body = {"model": "gateway-model", "messages": [{"role": "user", "content": converted_text}], "stream": False}
-    result = await submit(http, agent_id, path="v1/chat/completions", body=body, source=base.SOURCE, campaign_id=campaign_id, probe_id="pyrit_ship.convert")
+    body = {
+        "model": "gateway-model",
+        "messages": [{"role": "user", "content": converted_text}],
+        "stream": False,
+    }
+    result = await submit(
+        http,
+        agent_id,
+        path="v1/chat/completions",
+        body=body,
+        source=base.SOURCE,
+        campaign_id=campaign_id,
+        probe_id="pyrit_ship.convert",
+    )
     return result.ticket_id
 
 
@@ -143,9 +183,18 @@ class ShipClient:
             resp.raise_for_status()
             return str(resp.json().get("prompt", ""))
 
-    async def score(self, scoring_true: str, scoring_false: str, prompt_response: str) -> list[dict[str, Any]]:
+    async def score(
+        self, scoring_true: str, scoring_false: str, prompt_response: str
+    ) -> list[dict[str, Any]]:
         async with await self._client() as client:
-            resp = await client.post(f"/prompt/score/{self.scorer}", json={"scoring_true": scoring_true, "scoring_false": scoring_false, "prompt_response": prompt_response})
+            resp = await client.post(
+                f"/prompt/score/{self.scorer}",
+                json={
+                    "scoring_true": scoring_true,
+                    "scoring_false": scoring_false,
+                    "prompt_response": prompt_response,
+                },
+            )
             resp.raise_for_status()
             return list(resp.json())
 
@@ -165,7 +214,9 @@ class PyritShipEngine:
     """
 
     name = "pyrit_ship"
-    description = "PyRIT-Ship compatible converter/scorer surface plus a client for an external PyRIT-Ship server."
+    description = (
+        "PyRIT-Ship compatible converter/scorer surface plus a client for an external PyRIT-Ship server."
+    )
 
     def installed(self) -> bool:
         return pyrit_engine.pyrit_available()
@@ -175,21 +226,41 @@ class PyritShipEngine:
         client = ShipClient(cfg)
         return {
             "version": pyrit_engine.pyrit_version(),
-            "server_routes": ["GET /api/pyrit-ship/prompt/convert", "POST /api/pyrit-ship/prompt/convert/{converter}", "POST /api/pyrit-ship/prompt/generate", "POST /api/pyrit-ship/prompt/score/SelfAskTrueFalseScorer"],
-            "burp_extension": {"pyrit_ship_url": "point the extension's 'PyRIT Ship URL' at <gateway>/api/pyrit-ship", "converter": cfg.get("converter") or "ROT13Converter", "scorer": cfg.get("scorer") or "SelfAskTrueFalseScorer"},
+            "server_routes": [
+                "GET /api/pyrit-ship/prompt/convert",
+                "POST /api/pyrit-ship/prompt/convert/{converter}",
+                "POST /api/pyrit-ship/prompt/generate",
+                "POST /api/pyrit-ship/prompt/score/SelfAskTrueFalseScorer",
+            ],
+            "burp_extension": {
+                "pyrit_ship_url": "point the extension's 'PyRIT Ship URL' at <gateway>/api/pyrit-ship",
+                "converter": cfg.get("converter") or "ROT13Converter",
+                "scorer": cfg.get("scorer") or "SelfAskTrueFalseScorer",
+            },
             "converters": list_converters() if pyrit_engine.pyrit_available() else [],
             "external_client": {"configured": client.configured(), "url": client.url},
             "gateway_submission": "converted prompts are submitted as tickets when a scan token authenticates the caller or X-AISRF-Campaign-Id is supplied",
         }
 
     def list_probes(self) -> list[dict[str, Any]]:
-        return [{"id": f"converter:{c}", "category": "obfuscation", "technique": "pyrit_converter", "severity": "MEDIUM", "description": f"PyRIT {c} exposed through the PyRIT-Ship surface"} for c in (list_converters() if pyrit_engine.pyrit_available() else [])]
+        return [
+            {
+                "id": f"converter:{c}",
+                "category": "obfuscation",
+                "technique": "pyrit_converter",
+                "severity": "MEDIUM",
+                "description": f"PyRIT {c} exposed through the PyRIT-Ship surface",
+            }
+            for c in (list_converters() if pyrit_engine.pyrit_available() else [])
+        ]
 
     def plan(self, options: dict[str, Any]) -> list[str]:
         return []
 
     async def run(self, campaign_id: str, http: httpx.AsyncClient) -> None:
-        raise RuntimeError("pyrit_ship is a converter/scorer surface, not a batch scan engine; it has no campaign run")
+        raise RuntimeError(
+            "pyrit_ship is a converter/scorer surface, not a batch scan engine; it has no campaign run"
+        )
 
 
 engine = PyritShipEngine()

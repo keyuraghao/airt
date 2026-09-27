@@ -15,6 +15,7 @@ with upstream the vocabulary is larger, a determiner slot was added ("ignore ALL
 and a list of extended attack phrases (DAN, developer mode, prompt extraction) is matched as a second
 signal. All scores stay in 0..1 so Rebuff's thresholds keep their meaning.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -40,39 +41,133 @@ SDK_TIMEOUT = 15.0
 # ---------------------------------------------------------------------------
 VERBS: tuple[tuple[str, ...], ...] = (
     # upstream
-    ("ignore",), ("disregard",), ("skip",), ("forget",), ("neglect",), ("overlook",), ("omit",), ("bypass",),
-    ("pay", "no", "attention", "to"), ("do", "not", "follow"), ("do", "not", "obey"),
+    ("ignore",),
+    ("disregard",),
+    ("skip",),
+    ("forget",),
+    ("neglect",),
+    ("overlook",),
+    ("omit",),
+    ("bypass",),
+    ("pay", "no", "attention", "to"),
+    ("do", "not", "follow"),
+    ("do", "not", "obey"),
     # extension
-    ("discard",), ("override",), ("dismiss",), ("abandon",), ("drop",), ("delete",), ("erase",), ("reset",), ("void",),
-    ("stop", "following"), ("do", "not", "adhere", "to"), ("do", "not", "listen", "to"), ("never", "mind"),
-    ("dont", "follow"), ("dont", "obey"),
+    ("discard",),
+    ("override",),
+    ("dismiss",),
+    ("abandon",),
+    ("drop",),
+    ("delete",),
+    ("erase",),
+    ("reset",),
+    ("void",),
+    ("stop", "following"),
+    ("do", "not", "adhere", "to"),
+    ("do", "not", "listen", "to"),
+    ("never", "mind"),
+    ("dont", "follow"),
+    ("dont", "obey"),
 )
 # Rebuff has no determiner slot; "ignore all previous instructions" would otherwise align only two words.
-DETERMINERS: frozenset[str] = frozenset({"all", "any", "every", "the", "your", "these", "those", "my", "our", "of"})
-ADJECTIVES: frozenset[str] = frozenset({
-    # upstream
-    "prior", "previous", "preceding", "above", "foregoing", "earlier", "initial",
-    # extension
-    "original", "system", "developer", "existing", "former", "old", "first", "hidden", "default", "standard", "safety",
-})
-OBJECTS: frozenset[str] = frozenset({
-    # upstream
-    "content", "text", "instructions", "instruction", "directives", "directive", "commands", "command", "context",
-    "conversation", "input", "inputs", "data", "message", "messages", "communication", "response", "responses",
-    "request", "requests",
-    # extension
-    "rules", "rule", "guidelines", "guideline", "prompt", "prompts", "constraints", "constraint", "restrictions",
-    "restriction", "policies", "policy", "programming", "training", "guidance", "orders", "order", "limitations",
-    "guardrails", "filters", "safeguards", "protocols", "configuration", "persona", "role",
-})
+DETERMINERS: frozenset[str] = frozenset(
+    {"all", "any", "every", "the", "your", "these", "those", "my", "our", "of"}
+)
+ADJECTIVES: frozenset[str] = frozenset(
+    {
+        # upstream
+        "prior",
+        "previous",
+        "preceding",
+        "above",
+        "foregoing",
+        "earlier",
+        "initial",
+        # extension
+        "original",
+        "system",
+        "developer",
+        "existing",
+        "former",
+        "old",
+        "first",
+        "hidden",
+        "default",
+        "standard",
+        "safety",
+    }
+)
+OBJECTS: frozenset[str] = frozenset(
+    {
+        # upstream
+        "content",
+        "text",
+        "instructions",
+        "instruction",
+        "directives",
+        "directive",
+        "commands",
+        "command",
+        "context",
+        "conversation",
+        "input",
+        "inputs",
+        "data",
+        "message",
+        "messages",
+        "communication",
+        "response",
+        "responses",
+        "request",
+        "requests",
+        # extension
+        "rules",
+        "rule",
+        "guidelines",
+        "guideline",
+        "prompt",
+        "prompts",
+        "constraints",
+        "constraint",
+        "restrictions",
+        "restriction",
+        "policies",
+        "policy",
+        "programming",
+        "training",
+        "guidance",
+        "orders",
+        "order",
+        "limitations",
+        "guardrails",
+        "filters",
+        "safeguards",
+        "protocols",
+        "configuration",
+        "persona",
+        "role",
+    }
+)
 TAILS: tuple[tuple[str, ...], ...] = (
     # upstream
-    (), ("and", "start", "over"), ("and", "start", "anew"), ("and", "begin", "afresh"), ("and", "start", "from", "scratch"),
+    (),
+    ("and", "start", "over"),
+    ("and", "start", "anew"),
+    ("and", "begin", "afresh"),
+    ("and", "start", "from", "scratch"),
     # extension
-    ("and", "instead"), ("and", "do", "the", "following"), ("and", "respond", "only", "with"), ("from", "now", "on"),
-    ("and", "follow", "these"), ("and", "answer", "as"), ("completely",), ("entirely",),
+    ("and", "instead"),
+    ("and", "do", "the", "following"),
+    ("and", "respond", "only", "with"),
+    ("from", "now", "on"),
+    ("and", "follow", "these"),
+    ("and", "answer", "as"),
+    ("completely",),
+    ("entirely",),
 )
-_VOCAB: frozenset[str] = frozenset({w for v in VERBS for w in v} | DETERMINERS | ADJECTIVES | OBJECTS | {w for t in TAILS for w in t})
+_VOCAB: frozenset[str] = frozenset(
+    {w for v in VERBS for w in v} | DETERMINERS | ADJECTIVES | OBJECTS | {w for t in TAILS for w in t}
+)
 _MAX_KEYWORD_LEN = max(len(v) for v in VERBS) + 2 + 1 + max(len(t) for t in TAILS)
 _VERB_INDEX: dict[str, list[tuple[tuple[str, ...], int]]] = {}
 for _verb in VERBS:
@@ -215,7 +310,9 @@ def _best_alignment(words: list[str], i: int) -> tuple[int, list[str], list[str]
                 if use_det:
                     if p >= n:
                         continue
-                    hit = mv > 0 and words[p] in DETERMINERS  # determiner slot only counts for verb-led phrases
+                    hit = (
+                        mv > 0 and words[p] in DETERMINERS
+                    )  # determiner slot only counts for verb-led phrases
                     m += 1 if hit else 0
                     kw.append(words[p] if hit else "all")
                     p += 1
@@ -243,7 +340,7 @@ def _best_alignment(words: list[str], i: int) -> tuple[int, list[str], list[str]
                     if mv == 0:
                         total = min(total, 2)
                     if total > best[0]:
-                        best = (total, kw + list(tail), words[i:p + lt])
+                        best = (total, kw + list(tail), words[i : p + lt])
     return best
 
 
@@ -267,7 +364,7 @@ def heuristic_score(text: str) -> HeuristicResult:
     n = len(words)
     candidates: list[tuple[int, list[str], list[str]]] = []
     for i in range(n):
-        if not any(w in _VOCAB for w in words[i:i + _MAX_KEYWORD_LEN]):
+        if not any(w in _VOCAB for w in words[i : i + _MAX_KEYWORD_LEN]):
             continue
         cand = _best_alignment(words, i)
         if cand[0] > 0:
@@ -283,7 +380,12 @@ def heuristic_score(text: str) -> HeuristicResult:
         similarity = SequenceMatcher(None, window_s, keyword_s).ratio()
         adjusted = _matched_words_score(matched) - similarity * (1 / (MAX_MATCHED_WORDS * 2))
         if adjusted > result.score:
-            result.score, result.matched_words, result.keyword, result.window = round(adjusted, 4), matched, keyword_s, window_s
+            result.score, result.matched_words, result.keyword, result.window = (
+                round(adjusted, 4),
+                matched,
+                keyword_s,
+                window_s,
+            )
     result.extended_hits = sorted(set(result.extended_hits))[:10]
     return result
 
@@ -291,7 +393,13 @@ def heuristic_score(text: str) -> HeuristicResult:
 def detect_injection(text: str, threshold: float = DEFAULT_THRESHOLD) -> dict[str, Any]:
     """Synchronous helper mirroring RebuffSdk.detect_injection for the heuristic layer only."""
     res = heuristic_score(text)
-    return {"injection_detected": res.combined >= threshold, "heuristic_score": res.score, "extended_score": res.extended_score, **res.to_dict(), "threshold": threshold}
+    return {
+        "injection_detected": res.combined >= threshold,
+        "heuristic_score": res.score,
+        "extended_score": res.extended_score,
+        **res.to_dict(),
+        "threshold": threshold,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -301,7 +409,9 @@ def generate_canary_word() -> str:
     return _canary.new_canary()
 
 
-def add_canary_word(prompt: str, canary_word: str | None = None, canary_format: str = "<!-- {canary_word} -->") -> tuple[str, str]:
+def add_canary_word(
+    prompt: str, canary_word: str | None = None, canary_format: str = "<!-- {canary_word} -->"
+) -> tuple[str, str]:
     """Prepend a canary comment to a prompt string, returning (prompt_with_canary, canary_word) like Rebuff's SDK.
 
     The gateway itself injects canaries into the system prompt of forwarded requests (aisrf.gateway.canary.inject);
@@ -329,24 +439,42 @@ def _sdk_config(cfg: dict[str, Any]) -> dict[str, str] | None:
     pine_index = str(pinecone.get("index") or cfg.get("pinecone_index") or "").strip()
     api_token = str(cfg.get("api_token") or "").strip()
     if openai_key and pine_key and pine_index:
-        return {"mode": "sdk", "openai_api_key": openai_key, "pinecone_api_key": pine_key, "pinecone_index": pine_index, "openai_model": str(cfg.get("openai_model") or "gpt-3.5-turbo")}
+        return {
+            "mode": "sdk",
+            "openai_api_key": openai_key,
+            "pinecone_api_key": pine_key,
+            "pinecone_index": pine_index,
+            "openai_model": str(cfg.get("openai_model") or "gpt-3.5-turbo"),
+        }
     if api_token:
-        return {"mode": "api", "api_token": api_token, "api_url": str(cfg.get("api_url") or "https://playground.rebuff.ai")}
+        return {
+            "mode": "api",
+            "api_token": api_token,
+            "api_url": str(cfg.get("api_url") or "https://playground.rebuff.ai"),
+        }
     return None
 
 
-def _sdk_detect_sync(creds: dict[str, str], text: str, threshold: float, llm_threshold: float) -> dict[str, Any]:
+def _sdk_detect_sync(
+    creds: dict[str, str], text: str, threshold: float, llm_threshold: float
+) -> dict[str, Any]:
     import rebuff
 
     if creds["mode"] == "sdk":
         from rebuff.sdk import RebuffSdk  # type: ignore[import-not-found]
 
-        rb = RebuffSdk(creds["openai_api_key"], creds["pinecone_api_key"], creds["pinecone_index"], creds["openai_model"])
-        r = rb.detect_injection(text, max_heuristic_score=threshold, max_vector_score=0.9, max_model_score=llm_threshold)
+        rb = RebuffSdk(
+            creds["openai_api_key"], creds["pinecone_api_key"], creds["pinecone_index"], creds["openai_model"]
+        )
+        r = rb.detect_injection(
+            text, max_heuristic_score=threshold, max_vector_score=0.9, max_model_score=llm_threshold
+        )
         return {
             "injection_detected": bool(getattr(r, "injection_detected", False)),
             "heuristic_score": float(getattr(r, "heuristic_score", 0.0) or 0.0),
-            "vector_score": float(getattr(r, "vector_score", 0.0) or 0.0) if not isinstance(getattr(r, "vector_score", 0.0), dict) else float(getattr(r, "vector_score", {}).get("top_score", 0.0) or 0.0),
+            "vector_score": float(getattr(r, "vector_score", 0.0) or 0.0)
+            if not isinstance(getattr(r, "vector_score", 0.0), dict)
+            else float(getattr(r, "vector_score", {}).get("top_score", 0.0) or 0.0),
             "model_score": float(getattr(r, "openai_score", getattr(r, "model_score", 0.0)) or 0.0),
             "mode": "sdk",
         }
@@ -362,9 +490,13 @@ def _sdk_detect_sync(creds: dict[str, str], text: str, threshold: float, llm_thr
     }
 
 
-async def _sdk_layer(creds: dict[str, str], text: str, threshold: float, llm_threshold: float, timeout: float) -> dict[str, Any] | None:
+async def _sdk_layer(
+    creds: dict[str, str], text: str, threshold: float, llm_threshold: float, timeout: float
+) -> dict[str, Any] | None:
     try:
-        return await asyncio.wait_for(asyncio.to_thread(_sdk_detect_sync, creds, text, threshold, llm_threshold), timeout)
+        return await asyncio.wait_for(
+            asyncio.to_thread(_sdk_detect_sync, creds, text, threshold, llm_threshold), timeout
+        )
     except Exception as exc:
         set_error(NAME, f"sdk: {exc}")
         log_throttled("rebuff.sdk", "guardrails.rebuff.sdk_failed", error=str(exc)[:300])
@@ -435,37 +567,79 @@ class RebuffAnalyzer:
             if library_installed("rebuff"):
                 from ._common import primary_text
 
-                sdk_result = await _sdk_layer(creds, primary_text(normalized), threshold, llm_threshold, float(cfg.get("sdk_timeout_seconds") or SDK_TIMEOUT))
-        layers = {"heuristic": round(best_heuristic, 3), "llm": None if llm_score is None else round(llm_score, 3), "threshold": threshold, "llm_threshold": llm_threshold, "sdk": sdk_result}
+                sdk_result = await _sdk_layer(
+                    creds,
+                    primary_text(normalized),
+                    threshold,
+                    llm_threshold,
+                    float(cfg.get("sdk_timeout_seconds") or SDK_TIMEOUT),
+                )
+        layers = {
+            "heuristic": round(best_heuristic, 3),
+            "llm": None if llm_score is None else round(llm_score, 3),
+            "threshold": threshold,
+            "llm_threshold": llm_threshold,
+            "sdk": sdk_result,
+        }
         for location, role, text, res in heuristic_hits[:5]:
             score = res.combined
             idx = normalize_text(text).find(res.window.split(" ")[0]) if res.window else -1
-            evidence = snippet(text, max(0, idx), max(0, idx) + len(res.window), radius=50) if idx >= 0 else text[:160]
-            label = res.extended_hits[0] if res.extended_score >= res.score and res.extended_hits else f"aligned with '{res.keyword}'"
+            evidence = (
+                snippet(text, max(0, idx), max(0, idx) + len(res.window), radius=50)
+                if idx >= 0
+                else text[:160]
+            )
+            label = (
+                res.extended_hits[0]
+                if res.extended_score >= res.score and res.extended_hits
+                else f"aligned with '{res.keyword}'"
+            )
             findings.append(
                 make_finding(
-                    NAME, "prompt_injection", severity_for_score(score, floor=Severity.MEDIUM, cap=Severity.HIGH),
+                    NAME,
+                    "prompt_injection",
+                    severity_for_score(score, floor=Severity.MEDIUM, cap=Severity.HIGH),
                     f"Rebuff heuristic flagged {role} input ({label})",
                     f"The Rebuff heuristic layer scored this {role} message {score:.2f} against a threshold of {threshold:.2f} (keyword alignment {res.score:.2f}, matched words {res.matched_words}, extended phrases {res.extended_score:.2f}).",
-                    evidence, location, min(0.95, score), tags=["rebuff", "heuristic"] + (["extended_phrase"] if res.extended_hits else []),
+                    evidence,
+                    location,
+                    min(0.95, score),
+                    tags=["rebuff", "heuristic"] + (["extended_phrase"] if res.extended_hits else []),
                     metadata={"layers": layers, "heuristic": res.to_dict(), "role": role},
                 )
             )
         if llm_score is not None and llm_score >= llm_threshold:
             findings.append(
                 make_finding(
-                    NAME, "prompt_injection", Severity.HIGH, f"Rebuff LLM layer flagged the request (score {llm_score:.2f})",
+                    NAME,
+                    "prompt_injection",
+                    Severity.HIGH,
+                    f"Rebuff LLM layer flagged the request (score {llm_score:.2f})",
                     f"The LLM judge layer rated the request {llm_score:.2f} against a threshold of {llm_threshold:.2f}.",
-                    "", "prompt_text", min(0.9, llm_score), tags=["rebuff", "llm"], metadata={"layers": layers},
+                    "",
+                    "prompt_text",
+                    min(0.9, llm_score),
+                    tags=["rebuff", "llm"],
+                    metadata={"layers": layers},
                 )
             )
         if sdk_result and sdk_result.get("injection_detected") and not heuristic_hits:
-            top = max(float(sdk_result.get(k, 0.0) or 0.0) for k in ("heuristic_score", "vector_score", "model_score"))
+            top = max(
+                float(sdk_result.get(k, 0.0) or 0.0)
+                for k in ("heuristic_score", "vector_score", "model_score")
+            )
             findings.append(
                 make_finding(
-                    NAME, "prompt_injection", Severity.HIGH, "Rebuff SDK detected prompt injection",
+                    NAME,
+                    "prompt_injection",
+                    Severity.HIGH,
+                    "Rebuff SDK detected prompt injection",
                     f"RebuffSdk.detect_injection reported an injection (heuristic {sdk_result.get('heuristic_score', 0):.2f}, vector {sdk_result.get('vector_score', 0):.2f}, model {sdk_result.get('model_score', 0):.2f}).",
-                    "", "prompt_text", min(0.95, max(0.6, top)), tags=["rebuff", "sdk"], metadata={"layers": layers},
+                    "",
+                    "prompt_text",
+                    min(0.95, max(0.6, top)),
+                    tags=["rebuff", "sdk"],
+                    metadata={"layers": layers},
                 )
             )
         set_error(NAME, None)
@@ -485,7 +659,12 @@ def status() -> dict[str, Any]:
         "sdk_installed": library_installed("rebuff"),
         "enabled": bool(cfg.get("enabled")),
         "configured": True,
-        "layers": {"heuristic": True, "llm": bool(cfg.get("use_llm")), "sdk": _sdk_config(cfg) is not None and library_installed("rebuff"), "canary": True},
+        "layers": {
+            "heuristic": True,
+            "llm": bool(cfg.get("use_llm")),
+            "sdk": _sdk_config(cfg) is not None and library_installed("rebuff"),
+            "canary": True,
+        },
         "analyzers": [NAME],
         "last_error": last_error(NAME),
     }

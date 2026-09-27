@@ -11,6 +11,7 @@ The scanner API differs between llm-guard releases: 0.0.x `scan` returns (saniti
 releases return (sanitized, is_valid, risk_score) and ship extra scanners (Secrets, Regex, MaliciousURLs).
 Both shapes are handled and unknown scanner names are reported instead of raising.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -39,7 +40,20 @@ NAME_INPUT = "llm_guard_input"
 NAME_OUTPUT = "llm_guard_output"
 DEFAULT_TIMEOUT = 20.0
 BUILD_RETRY_SECONDS = 300.0
-LIGHTWEIGHT_SCANNERS: frozenset[str] = frozenset({"BanSubstrings", "Regex", "TokenLimit", "Secrets", "InvisibleText", "Language", "Deanonymize", "JSON", "ReadingTime", "URLReachability"})
+LIGHTWEIGHT_SCANNERS: frozenset[str] = frozenset(
+    {
+        "BanSubstrings",
+        "Regex",
+        "TokenLimit",
+        "Secrets",
+        "InvisibleText",
+        "Language",
+        "Deanonymize",
+        "JSON",
+        "ReadingTime",
+        "URLReachability",
+    }
+)
 
 # scanner class name -> (finding category, severity floor, severity cap)
 CATEGORY_MAP: dict[str, tuple[str, Severity, Severity]] = {
@@ -68,16 +82,33 @@ CATEGORY_MAP: dict[str, tuple[str, Severity, Severity]] = {
     "JSON": ("output_handling", Severity.LOW, Severity.LOW),
 }
 # Substrings used when BanSubstrings is configured without an explicit list.
-DEFAULT_BANNED_SUBSTRINGS: list[str] = ["ignore all previous instructions", "ignore previous instructions", "you are now dan", "developer mode enabled", "i have been pwned"]
+DEFAULT_BANNED_SUBSTRINGS: list[str] = [
+    "ignore all previous instructions",
+    "ignore previous instructions",
+    "you are now dan",
+    "developer mode enabled",
+    "i have been pwned",
+]
 DEFAULT_BAD_PATTERNS: list[str] = [r"AISRF-CANARY-[0-9a-f]{16}", r"-----BEGIN [A-Z ]*PRIVATE KEY-----"]
 
 _lock = threading.Lock()
-_cache: dict[str, dict[str, Any]] = {}  # config key -> {"scanners": [(name, instance)], "unavailable": {...}, "failed": {...}, "built_at": float}
+_cache: dict[
+    str, dict[str, Any]
+] = {}  # config key -> {"scanners": [(name, instance)], "unavailable": {...}, "failed": {...}, "built_at": float}
 
 
 def _config_key(kind: str, cfg: dict[str, Any]) -> str:
     names = cfg.get("input_scanners" if kind == "input" else "output_scanners") or []
-    return json.dumps({"kind": kind, "scanners": names, "threshold": cfg.get("threshold"), "options": cfg.get("scanner_options") or {}}, sort_keys=True, default=str)
+    return json.dumps(
+        {
+            "kind": kind,
+            "scanners": names,
+            "threshold": cfg.get("threshold"),
+            "options": cfg.get("scanner_options") or {},
+        },
+        sort_keys=True,
+        default=str,
+    )
 
 
 def _scanner_kwargs(name: str, cls: Any, threshold: float | None, options: dict[str, Any]) -> dict[str, Any]:
@@ -87,7 +118,12 @@ def _scanner_kwargs(name: str, cls: Any, threshold: float | None, options: dict[
         kwargs["threshold"] = threshold
     if name == "BanSubstrings" and not kwargs.get("substrings"):
         kwargs["substrings"] = list(DEFAULT_BANNED_SUBSTRINGS)
-    if name == "Regex" and not kwargs.get("bad_patterns") and not kwargs.get("good_patterns") and not kwargs.get("patterns"):
+    if (
+        name == "Regex"
+        and not kwargs.get("bad_patterns")
+        and not kwargs.get("good_patterns")
+        and not kwargs.get("patterns")
+    ):
         kwargs["bad_patterns" if "bad_patterns" in params else "patterns"] = list(DEFAULT_BAD_PATTERNS)
     if name == "BanTopics" and not kwargs.get("topics"):
         kwargs["topics"] = ["violence", "weapons", "illegal drugs", "self harm"]
@@ -102,7 +138,9 @@ def _build(kind: str, cfg: dict[str, Any]) -> dict[str, Any]:
     """Construct the configured scanners. Runs in a worker thread; individual scanner failures are recorded, not raised."""
     import importlib
 
-    module = importlib.import_module("llm_guard.input_scanners" if kind == "input" else "llm_guard.output_scanners")
+    module = importlib.import_module(
+        "llm_guard.input_scanners" if kind == "input" else "llm_guard.output_scanners"
+    )
     names = [str(n) for n in (cfg.get("input_scanners" if kind == "input" else "output_scanners") or [])]
     try:
         threshold: float | None = float(cfg["threshold"]) if cfg.get("threshold") is not None else None
@@ -128,7 +166,9 @@ def _get_scanners_sync(kind: str, cfg: dict[str, Any]) -> dict[str, Any]:
     key = _config_key(kind, cfg)
     with _lock:
         entry = _cache.get(key)
-        if entry is not None and not (entry["failed"] and time.monotonic() - entry["built_at"] > BUILD_RETRY_SECONDS):
+        if entry is not None and not (
+            entry["failed"] and time.monotonic() - entry["built_at"] > BUILD_RETRY_SECONDS
+        ):
             return entry
         entry = _build(kind, cfg)
         _cache[key] = entry
@@ -164,17 +204,32 @@ def _run_scanners(entry: dict[str, Any], prompt: str, output: str | None) -> lis
         try:
             result = scanner.scan(prompt, output) if output is not None else scanner.scan(prompt)
             sanitized, valid, risk = _parse_result(result)
-            rows.append({"scanner": name, "is_valid": valid, "risk_score": risk, "sanitized": sanitized, "duration_ms": round((time.perf_counter() - start) * 1000, 1)})
+            rows.append(
+                {
+                    "scanner": name,
+                    "is_valid": valid,
+                    "risk_score": risk,
+                    "sanitized": sanitized,
+                    "duration_ms": round((time.perf_counter() - start) * 1000, 1),
+                }
+            )
         except Exception as exc:
             rows.append({"scanner": name, "error": f"{type(exc).__name__}: {str(exc)[:200]}"})
     return rows
 
 
-def _findings(rows: list[dict[str, Any]], text: str, location: str, analyzer: str, kind: str) -> list[Finding]:
+def _findings(
+    rows: list[dict[str, Any]], text: str, location: str, analyzer: str, kind: str
+) -> list[Finding]:
     findings: list[Finding] = []
     for row in rows:
         if row.get("error"):
-            log_throttled(f"llm_guard.scan.{row['scanner']}", "guardrails.llm_guard.scan_failed", scanner=row["scanner"], error=row["error"])
+            log_throttled(
+                f"llm_guard.scan.{row['scanner']}",
+                "guardrails.llm_guard.scan_failed",
+                scanner=row["scanner"],
+                error=row["error"],
+            )
             continue
         if row["is_valid"]:
             continue
@@ -188,10 +243,21 @@ def _findings(rows: list[dict[str, Any]], text: str, location: str, analyzer: st
             evidence = snippet(sanitized, 0, min(len(sanitized), 120))
         findings.append(
             make_finding(
-                analyzer, category, sev, f"LLM Guard {name} flagged the {kind}",
+                analyzer,
+                category,
+                sev,
+                f"LLM Guard {name} flagged the {kind}",
                 f"The LLM Guard {name} scanner marked the {kind} as invalid (risk score {risk:.2f}).",
-                evidence, location, max(0.4, min(0.95, risk if risk > 0 else 0.6)), tags=["llm_guard", name.lower()],
-                metadata={"scanner": name, "risk_score": round(risk, 3), "duration_ms": row.get("duration_ms"), "sanitized_changed": bool(sanitized and sanitized != text)},
+                evidence,
+                location,
+                max(0.4, min(0.95, risk if risk > 0 else 0.6)),
+                tags=["llm_guard", name.lower()],
+                metadata={
+                    "scanner": name,
+                    "risk_score": round(risk, 3),
+                    "duration_ms": row.get("duration_ms"),
+                    "sanitized_changed": bool(sanitized and sanitized != text),
+                },
             )
         )
     return findings
@@ -212,7 +278,9 @@ async def _scan(kind: str, prompt: str, output: str | None, location: str, analy
     except (TypeError, ValueError):
         timeout = DEFAULT_TIMEOUT
     try:
-        entry = await asyncio.wait_for(asyncio.to_thread(_get_scanners_sync, kind, cfg), timeout=max(timeout, 60.0))
+        entry = await asyncio.wait_for(
+            asyncio.to_thread(_get_scanners_sync, kind, cfg), timeout=max(timeout, 60.0)
+        )
     except Exception as exc:
         set_error(NAME, f"build: {exc}")
         log_throttled("llm_guard.build", "guardrails.llm_guard.build_failed", error=str(exc)[:300])
@@ -220,12 +288,20 @@ async def _scan(kind: str, prompt: str, output: str | None, location: str, analy
     if not entry["scanners"]:
         return []
     try:
-        rows = await asyncio.wait_for(asyncio.to_thread(_run_scanners, entry, prompt, output), timeout=timeout)
+        rows = await asyncio.wait_for(
+            asyncio.to_thread(_run_scanners, entry, prompt, output), timeout=timeout
+        )
     except Exception as exc:
         set_error(NAME, f"scan: {exc}")
         log_throttled("llm_guard.scan", "guardrails.llm_guard.scan_timeout", error=str(exc)[:300])
         return []
-    return _findings(rows, output if output is not None else prompt, location, analyzer, "response" if output is not None else "request")
+    return _findings(
+        rows,
+        output if output is not None else prompt,
+        location,
+        analyzer,
+        "response" if output is not None else "request",
+    )
 
 
 class LLMGuardInputAnalyzer:
@@ -237,7 +313,9 @@ class LLMGuardInputAnalyzer:
             return await _scan("input", primary_text(normalized), None, "last_user_message", self.name)
         except Exception as exc:
             set_error(NAME, str(exc))
-            log_throttled("llm_guard.input", "guardrails.llm_guard.failed", analyzer=self.name, error=str(exc)[:300])
+            log_throttled(
+                "llm_guard.input", "guardrails.llm_guard.failed", analyzer=self.name, error=str(exc)[:300]
+            )
             return []
 
 
@@ -247,10 +325,14 @@ class LLMGuardOutputAnalyzer:
 
     async def analyze(self, normalized: dict[str, Any], context: dict[str, Any]) -> list[Finding]:
         try:
-            return await _scan("output", primary_text(normalized), response_text(context), "response", self.name)
+            return await _scan(
+                "output", primary_text(normalized), response_text(context), "response", self.name
+            )
         except Exception as exc:
             set_error(NAME, str(exc))
-            log_throttled("llm_guard.output", "guardrails.llm_guard.failed", analyzer=self.name, error=str(exc)[:300])
+            log_throttled(
+                "llm_guard.output", "guardrails.llm_guard.failed", analyzer=self.name, error=str(exc)[:300]
+            )
             return []
 
 
@@ -314,9 +396,22 @@ async def health_check() -> dict[str, Any]:
         return {"name": NAME, "ok": False, "detail": "llm_guard is not installed"}
     try:
         entry = await asyncio.wait_for(asyncio.to_thread(_get_scanners_sync, "input", cfg), timeout=120.0)
-        rows = await asyncio.wait_for(asyncio.to_thread(_run_scanners, entry, "hello, what is the weather today?", None), timeout=60.0)
+        rows = await asyncio.wait_for(
+            asyncio.to_thread(_run_scanners, entry, "hello, what is the weather today?", None), timeout=60.0
+        )
     except Exception as exc:
-        return {"name": NAME, "ok": False, "detail": str(exc)[:300], "duration_ms": round((time.perf_counter() - start) * 1000, 1)}
+        return {
+            "name": NAME,
+            "ok": False,
+            "detail": str(exc)[:300],
+            "duration_ms": round((time.perf_counter() - start) * 1000, 1),
+        }
     errors = [r for r in rows if r.get("error")]
     problems = {**entry["unavailable"], **entry["failed"], **{r["scanner"]: r["error"] for r in errors}}
-    return {"name": NAME, "ok": bool(entry["scanners"]) and not problems, "detail": f"{len(entry['scanners'])} input scanner(s) ready" + (f", problems: {problems}" if problems else ""), "duration_ms": round((time.perf_counter() - start) * 1000, 1)}
+    return {
+        "name": NAME,
+        "ok": bool(entry["scanners"]) and not problems,
+        "detail": f"{len(entry['scanners'])} input scanner(s) ready"
+        + (f", problems: {problems}" if problems else ""),
+        "duration_ms": round((time.perf_counter() - start) * 1000, 1),
+    }

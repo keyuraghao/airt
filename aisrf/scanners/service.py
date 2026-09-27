@@ -1,4 +1,5 @@
 """Service layer for scan campaigns: creation, single runs, matrix runs and cross-target comparison."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -56,10 +57,18 @@ async def create_scan_campaign(
     )
     session.add(campaign)
     await session.flush()
-    log.info("scanners.campaign.created", campaign_id=campaign.id, engine=engine, agent_id=agent_id, planned=len(planned))
+    log.info(
+        "scanners.campaign.created",
+        campaign_id=campaign.id,
+        engine=engine,
+        agent_id=agent_id,
+        planned=len(planned),
+    )
     from ..logging import broadcaster
 
-    broadcaster.publish("campaigns", {"event": "campaign.status", "campaign_id": campaign.id, "status": campaign.status})
+    broadcaster.publish(
+        "campaigns", {"event": "campaign.status", "campaign_id": campaign.id, "status": campaign.status}
+    )
     return campaign
 
 
@@ -93,7 +102,16 @@ async def run_matrix(
         agent = await session.get(Agent, agent_id)
         target_model = target.get("target_model") or ""
         label = f"{name} [{agent.name if agent else agent_id}:{target_model or 'default'}]"
-        campaign = await create_scan_campaign(session, engine=engine, name=label, agent_id=agent_id, target_model=target_model, options=options, created_by=created_by, group_id=group_id)
+        campaign = await create_scan_campaign(
+            session,
+            engine=engine,
+            name=label,
+            agent_id=agent_id,
+            target_model=target_model,
+            options=options,
+            created_by=created_by,
+            group_id=group_id,
+        )
         campaigns.append(campaign)
     log.info("scanners.matrix.created", group_id=group_id, engine=engine, targets=len(campaigns))
     return group_id, campaigns
@@ -130,7 +148,11 @@ async def compare(session: AsyncSession, group_id: str) -> dict[str, Any]:
     for campaign in campaigns:
         summary = campaign.summary or {}
         if not summary:
-            rows = list((await session.execute(select(ProbeResult).where(ProbeResult.campaign_id == campaign.id))).scalars())
+            rows = list(
+                (
+                    await session.execute(select(ProbeResult).where(ProbeResult.campaign_id == campaign.id))
+                ).scalars()
+            )
             summary = base.build_summary(rows)
         per_category = summary.get("per_category") or {}
         by_verdict = summary.get("by_verdict") or {}
@@ -159,12 +181,20 @@ async def compare(session: AsyncSession, group_id: str) -> dict[str, Any]:
         matrix[category] = {}
         for campaign in campaigns:
             stats = per_target_cat.get(campaign.id, {}).get(category)
-            matrix[category][campaign.id] = {"tested": stats["tested"], "vulnerable": stats["vulnerable"], "rate": stats["rate"]} if stats else None
+            matrix[category][campaign.id] = (
+                {"tested": stats["tested"], "vulnerable": stats["vulnerable"], "rate": stats["rate"]}
+                if stats
+                else None
+            )
     verdict_totals = {
-        campaign.id: {vk: (campaign.summary or {}).get("by_verdict", {}).get(vk, 0) for vk in sorted(verdict_keys)}
+        campaign.id: {
+            vk: (campaign.summary or {}).get("by_verdict", {}).get(vk, 0) for vk in sorted(verdict_keys)
+        }
         for campaign in campaigns
     }
-    ranking = sorted(targets, key=lambda t: (t["severity_weighted_score"], t["vulnerability_rate"]), reverse=True)
+    ranking = sorted(
+        targets, key=lambda t: (t["severity_weighted_score"], t["vulnerability_rate"]), reverse=True
+    )
     engine = str((campaigns[0].config or {}).get("engine") or "")
     return {
         "group_id": group_id,
@@ -175,7 +205,16 @@ async def compare(session: AsyncSession, group_id: str) -> dict[str, Any]:
         "verdict_keys": sorted(verdict_keys),
         "matrix": matrix,
         "verdict_totals": verdict_totals,
-        "ranking": [{"campaign_id": t["campaign_id"], "agent_name": t["agent_name"], "target_model": t["target_model"], "severity_weighted_score": t["severity_weighted_score"], "vulnerability_rate": t["vulnerability_rate"]} for t in ranking],
+        "ranking": [
+            {
+                "campaign_id": t["campaign_id"],
+                "agent_name": t["agent_name"],
+                "target_model": t["target_model"],
+                "severity_weighted_score": t["severity_weighted_score"],
+                "vulnerability_rate": t["vulnerability_rate"],
+            }
+            for t in ranking
+        ],
         "most_vulnerable": ranking[0]["campaign_id"] if ranking else None,
         "least_vulnerable": ranking[-1]["campaign_id"] if ranking else None,
     }

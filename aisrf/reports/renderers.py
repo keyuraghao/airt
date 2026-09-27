@@ -2,6 +2,7 @@
 
 render(report, fmt) -> (payload bytes, media type, file extension)
 """
+
 from __future__ import annotations
 
 import csv
@@ -23,19 +24,54 @@ from .model import ChartSection, FindingsSection, KeyValueSection, Report, Secti
 FORMATS: dict[str, dict[str, str]] = {
     "json": {"media_type": "application/json", "extension": "json", "description": "Report document as JSON"},
     "yaml": {"media_type": "application/yaml", "extension": "yaml", "description": "Report document as YAML"},
-    "csv": {"media_type": "text/csv", "extension": "csv", "description": "Comma separated values, one block per section"},
-    "tsv": {"media_type": "text/tab-separated-values", "extension": "tsv", "description": "Tab separated values, one block per section"},
+    "csv": {
+        "media_type": "text/csv",
+        "extension": "csv",
+        "description": "Comma separated values, one block per section",
+    },
+    "tsv": {
+        "media_type": "text/tab-separated-values",
+        "extension": "tsv",
+        "description": "Tab separated values, one block per section",
+    },
     "md": {"media_type": "text/markdown", "extension": "md", "description": "Markdown"},
-    "html": {"media_type": "text/html", "extension": "html", "description": "Self-contained printable HTML with inline charts"},
+    "html": {
+        "media_type": "text/html",
+        "extension": "html",
+        "description": "Self-contained printable HTML with inline charts",
+    },
     "pdf": {"media_type": "application/pdf", "extension": "pdf", "description": "PDF document"},
-    "xlsx": {"media_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "extension": "xlsx", "description": "Excel workbook, one sheet per section"},
+    "xlsx": {
+        "media_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "extension": "xlsx",
+        "description": "Excel workbook, one sheet per section",
+    },
     "txt": {"media_type": "text/plain", "extension": "txt", "description": "Plain text with aligned tables"},
-    "xml": {"media_type": "application/xml", "extension": "xml", "description": "Generic XML of the report document"},
-    "sarif": {"media_type": "application/sarif+json", "extension": "sarif", "description": "SARIF 2.1.0 static analysis results (findings and vulnerable probes)"},
-    "junit": {"media_type": "application/xml", "extension": "xml", "description": "JUnit XML for CI (each probe result or ticket is a testcase)"},
+    "xml": {
+        "media_type": "application/xml",
+        "extension": "xml",
+        "description": "Generic XML of the report document",
+    },
+    "sarif": {
+        "media_type": "application/sarif+json",
+        "extension": "sarif",
+        "description": "SARIF 2.1.0 static analysis results (findings and vulnerable probes)",
+    },
+    "junit": {
+        "media_type": "application/xml",
+        "extension": "xml",
+        "description": "JUnit XML for CI (each probe result or ticket is a testcase)",
+    },
 }
 
-ALIASES: dict[str, str] = {"yml": "yaml", "markdown": "md", "text": "txt", "excel": "xlsx", "junitxml": "junit", "sarif.json": "sarif"}
+ALIASES: dict[str, str] = {
+    "yml": "yaml",
+    "markdown": "md",
+    "text": "txt",
+    "excel": "xlsx",
+    "junitxml": "junit",
+    "sarif.json": "sarif",
+}
 MEDIA_TO_FORMAT: dict[str, str] = {
     "application/json": "json",
     "text/json": "json",
@@ -58,9 +94,34 @@ MEDIA_TO_FORMAT: dict[str, str] = {
 }
 
 # Validated categorical palette (light and dark surfaces) plus text tokens.
-PALETTE_LIGHT: list[str] = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948"]
-PALETTE_DARK: list[str] = ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#008300", "#9085e9", "#e66767"]
-SEVERITY_TO_SARIF: dict[str, str] = {"CRITICAL": "error", "HIGH": "error", "MEDIUM": "warning", "LOW": "note", "INFO": "note", "NONE": "none"}
+PALETTE_LIGHT: list[str] = [
+    "#2a78d6",
+    "#eb6834",
+    "#1baf7a",
+    "#eda100",
+    "#e87ba4",
+    "#008300",
+    "#4a3aa7",
+    "#e34948",
+]
+PALETTE_DARK: list[str] = [
+    "#3987e5",
+    "#d95926",
+    "#199e70",
+    "#c98500",
+    "#d55181",
+    "#008300",
+    "#9085e9",
+    "#e66767",
+]
+SEVERITY_TO_SARIF: dict[str, str] = {
+    "CRITICAL": "error",
+    "HIGH": "error",
+    "MEDIUM": "warning",
+    "LOW": "note",
+    "INFO": "note",
+    "NONE": "none",
+}
 FAIL_VALUES: set[str] = {"VULNERABLE", "CRITICAL", "HIGH"}
 ERROR_VALUES: set[str] = {"ERROR", "FAILED"}
 
@@ -152,17 +213,23 @@ def render_json(report: Report) -> bytes:
 
 
 def render_yaml(report: Report) -> bytes:
-    return yaml.safe_dump(_report_json(report), sort_keys=False, allow_unicode=True, default_flow_style=False).encode("utf-8")
+    return yaml.safe_dump(
+        _report_json(report), sort_keys=False, allow_unicode=True, default_flow_style=False
+    ).encode("utf-8")
 
 
 # --- csv / tsv ----------------------------------------------------------------------
 def _delimited(report: Report, delimiter: str) -> bytes:
     buf = io.StringIO()
     writer = csv.writer(buf, delimiter=delimiter, lineterminator="\n")
-    sections = [s for s in report.sections if s.as_table()[1] or isinstance(s, (TableSection, FindingsSection))]
+    sections = [
+        s for s in report.sections if s.as_table()[1] or isinstance(s, (TableSection, FindingsSection))
+    ]
     single = len(sections) == 1
     if not single:
-        writer.writerow(["# " + report.title, report.subtitle, report.generated_at.isoformat(timespec="seconds")])
+        writer.writerow(
+            ["# " + report.title, report.subtitle, report.generated_at.isoformat(timespec="seconds")]
+        )
     for s in sections:
         columns, rows = s.as_table()
         if not single:
@@ -187,7 +254,10 @@ def _aligned_table(columns: list[str], rows: list[list[Any]], max_width: int = 4
     if not columns:
         return "(empty)"
     cells = [[_truncate(_cell(c).replace("\n", " "), max_width) for c in r] for r in rows]
-    widths = [min(max_width, max([len(columns[i])] + [len(r[i]) for r in cells if i < len(r)])) for i in range(len(columns))]
+    widths = [
+        min(max_width, max([len(columns[i])] + [len(r[i]) for r in cells if i < len(r)]))
+        for i in range(len(columns))
+    ]
     inner = sum(w + 2 for w in widths) + len(widths) - 1
     if not rows and inner < 11:
         widths[-1] += 11 - inner
@@ -299,14 +369,22 @@ def _svg_bar(section: ChartSection) -> str:
     row_h, left, width = 22, 140, 520
     top, height = 8, row_h * len(labels) + 16
     vmax = max(values) if max(values) > 0 else 1.0
-    parts = [f"<svg viewBox='0 0 {width + left + 60} {height}' width='{width + left + 60}' height='{height}' role='img' aria-label='{escape(section.title)}'>"]
-    parts.append(f"<line class='axis' x1='{left}' y1='{top}' x2='{left}' y2='{height - 8}' stroke-width='1'/>")
+    parts = [
+        f"<svg viewBox='0 0 {width + left + 60} {height}' width='{width + left + 60}' height='{height}' role='img' aria-label='{escape(section.title)}'>"
+    ]
+    parts.append(
+        f"<line class='axis' x1='{left}' y1='{top}' x2='{left}' y2='{height - 8}' stroke-width='1'/>"
+    )
     for i, (label, value) in enumerate(zip(labels, values, strict=False)):
         y = top + i * row_h
         w = max(2.0, (value / vmax) * width) if value > 0 else 0.0
-        parts.append(f"<text x='{left - 8}' y='{y + 15}' text-anchor='end'>{escape(_truncate(str(label), 22))}</text>")
+        parts.append(
+            f"<text x='{left - 8}' y='{y + 15}' text-anchor='end'>{escape(_truncate(str(label), 22))}</text>"
+        )
         parts.append(f"<title>{escape(str(label))}: {_cell(value)}</title>")
-        parts.append(f"<rect class='s1' x='{left + 1}' y='{y + 3}' width='{w:.1f}' height='{row_h - 6}' rx='3'><title>{escape(str(label))}: {_cell(value)}</title></rect>")
+        parts.append(
+            f"<rect class='s1' x='{left + 1}' y='{y + 3}' width='{w:.1f}' height='{row_h - 6}' rx='3'><title>{escape(str(label))}: {_cell(value)}</title></rect>"
+        )
         parts.append(f"<text class='val' x='{left + w + 6:.1f}' y='{y + 15}'>{_cell(value)}</text>")
     parts.append("</svg>")
     return "".join(parts)
@@ -319,7 +397,9 @@ def _svg_pie(section: ChartSection) -> str:
         return "<p class='notes'>No data.</p>"
     cx = cy = 90
     r = 80
-    parts = [f"<svg viewBox='0 0 180 180' width='180' height='180' role='img' aria-label='{escape(section.title)}'>"]
+    parts = [
+        f"<svg viewBox='0 0 180 180' width='180' height='180' role='img' aria-label='{escape(section.title)}'>"
+    ]
     angle = -math.pi / 2
     for i, (label, value) in enumerate(zip(labels, values, strict=False)):
         if value <= 0:
@@ -327,13 +407,17 @@ def _svg_pie(section: ChartSection) -> str:
         frac = value / total
         cls = f"s{(i % 8) + 1}"
         if frac >= 0.9999:
-            parts.append(f"<circle class='{cls}' cx='{cx}' cy='{cy}' r='{r}'><title>{escape(str(label))}: {_cell(value)}</title></circle>")
+            parts.append(
+                f"<circle class='{cls}' cx='{cx}' cy='{cy}' r='{r}'><title>{escape(str(label))}: {_cell(value)}</title></circle>"
+            )
             break
         end = angle + frac * 2 * math.pi
         x1, y1 = cx + r * math.cos(angle), cy + r * math.sin(angle)
         x2, y2 = cx + r * math.cos(end), cy + r * math.sin(end)
         large = 1 if frac > 0.5 else 0
-        parts.append(f"<path class='{cls}' d='M{cx},{cy} L{x1:.2f},{y1:.2f} A{r},{r} 0 {large},1 {x2:.2f},{y2:.2f} Z' stroke='var(--bg)' stroke-width='2'><title>{escape(str(label))}: {_cell(value)} ({frac * 100:.1f}%)</title></path>")
+        parts.append(
+            f"<path class='{cls}' d='M{cx},{cy} L{x1:.2f},{y1:.2f} A{r},{r} 0 {large},1 {x2:.2f},{y2:.2f} Z' stroke='var(--bg)' stroke-width='2'><title>{escape(str(label))}: {_cell(value)} ({frac * 100:.1f}%)</title></path>"
+        )
         angle = end
     parts.append("</svg>")
     return "".join(parts)
@@ -348,13 +432,25 @@ def _html_section(s: Section) -> str:
         body = f"<table class='kv'><tbody>{rows}</tbody></table>"
     elif isinstance(s, ChartSection):
         columns, rows = s.as_table()
-        legend = "".join(f"<tr><td><span class='swatch s{(i % 8) + 1}'></span>{escape(_cell(r[0]))}</td><td>{escape(_cell(r[1]))}</td></tr>" for i, r in enumerate(rows)) if s.chart == "pie" else "".join(f"<tr><td>{escape(_cell(r[0]))}</td><td>{escape(_cell(r[1]))}</td></tr>" for r in rows)
+        legend = (
+            "".join(
+                f"<tr><td><span class='swatch s{(i % 8) + 1}'></span>{escape(_cell(r[0]))}</td><td>{escape(_cell(r[1]))}</td></tr>"
+                for i, r in enumerate(rows)
+            )
+            if s.chart == "pie"
+            else "".join(
+                f"<tr><td>{escape(_cell(r[0]))}</td><td>{escape(_cell(r[1]))}</td></tr>" for r in rows
+            )
+        )
         svg = _svg_pie(s) if s.chart == "pie" else _svg_bar(s)
         body = f"<div class='chart'>{svg}<table><thead><tr><th>{escape(columns[0])}</th><th>{escape(columns[1])}</th></tr></thead><tbody>{legend}</tbody></table></div>"
     else:
         columns, rows = s.as_table()
         head = "".join(f"<th>{escape(str(c))}</th>" for c in columns)
-        body_rows = "".join("<tr>" + "".join(f"<td>{_html_value(c)}</td>" for c in r) + "</tr>" for r in rows) or f"<tr><td colspan='{max(1, len(columns))}' class='notes'>(no rows)</td></tr>"
+        body_rows = (
+            "".join("<tr>" + "".join(f"<td>{_html_value(c)}</td>" for c in r) + "</tr>" for r in rows)
+            or f"<tr><td colspan='{max(1, len(columns))}' class='notes'>(no rows)</td></tr>"
+        )
         body = f"<table><thead><tr>{head}</tr></thead><tbody>{body_rows}</tbody></table>"
         if isinstance(s, TableSection) and s.notes:
             body += f"<p class='notes'>{escape(s.notes)}</p>"
@@ -426,11 +522,21 @@ def render_html(report: Report) -> bytes:
 # --- xml ----------------------------------------------------------------------------
 def _xml_safe(text: Any) -> str:
     s = _cell(text)
-    return "".join(ch for ch in s if ch in "\t\n\r" or 0x20 <= ord(ch) <= 0xD7FF or 0xE000 <= ord(ch) <= 0xFFFD)
+    return "".join(
+        ch for ch in s if ch in "\t\n\r" or 0x20 <= ord(ch) <= 0xD7FF or 0xE000 <= ord(ch) <= 0xFFFD
+    )
 
 
 def render_xml(report: Report) -> bytes:
-    root = ET.Element("report", {"title": _xml_safe(report.title), "generated_at": report.generated_at.isoformat(), "generated_by": _xml_safe(report.generated_by), "version": __version__})
+    root = ET.Element(
+        "report",
+        {
+            "title": _xml_safe(report.title),
+            "generated_at": report.generated_at.isoformat(),
+            "generated_by": _xml_safe(report.generated_by),
+            "version": __version__,
+        },
+    )
     ET.SubElement(root, "subtitle").text = _xml_safe(report.subtitle)
     meta = ET.SubElement(root, "meta")
     for k, v in report.meta.items():
@@ -483,14 +589,20 @@ def render_sarif(report: Report) -> bytes:
                 "id": category,
                 "name": category.replace("_", " ").title().replace(" ", ""),
                 "shortDescription": {"text": f"AISRF finding category: {category}"},
-                "fullDescription": {"text": f"Findings raised by AISRF analyzers or red-team probes in the '{category}' category."},
+                "fullDescription": {
+                    "text": f"Findings raised by AISRF analyzers or red-team probes in the '{category}' category."
+                },
                 "defaultConfiguration": {"level": level},
                 "properties": {"tags": ["security", "llm", category]},
             }
         message = str(f.get("message") or f.get("title") or category)
         if f.get("description"):
             message = f"{message}: {f['description']}"
-        props = {k: _plain(v) for k, v in f.items() if k not in ("title", "message", "description") and v not in (None, "")}
+        props = {
+            k: _plain(v)
+            for k, v in f.items()
+            if k not in ("title", "message", "description") and v not in (None, "")
+        }
         props["severity"] = severity
         result: dict[str, Any] = {
             "ruleId": category,
@@ -504,7 +616,12 @@ def render_sarif(report: Report) -> bytes:
         location = str(f.get("location") or f.get("probe_id") or f.get("ticket_id") or "")
         if location:
             result["locations"] = [{"logicalLocations": [{"name": location, "kind": "member"}]}]
-        fingerprint_parts = [category, str(f.get("ticket_id") or ""), str(f.get("probe_id") or ""), str(f.get("title") or "")]
+        fingerprint_parts = [
+            category,
+            str(f.get("ticket_id") or ""),
+            str(f.get("probe_id") or ""),
+            str(f.get("title") or ""),
+        ]
         result["partialFingerprints"] = {"aisrf/v1": "|".join(fingerprint_parts)}
         results.append(result)
     doc = {
@@ -512,11 +629,32 @@ def render_sarif(report: Report) -> bytes:
         "version": "2.1.0",
         "runs": [
             {
-                "tool": {"driver": {"name": "AISRF", "fullName": "AISRF AI Security & Research Framework", "version": __version__, "informationUri": "https://github.com/aisrf", "rules": list(rules.values())}},
-                "automationDetails": {"id": f"aisrf/{report.meta.get('kind', 'report')}", "description": {"text": report.title}},
-                "invocations": [{"executionSuccessful": True, "endTimeUtc": report.generated_at.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")}],
+                "tool": {
+                    "driver": {
+                        "name": "AISRF",
+                        "fullName": "AISRF AI Security & Research Framework",
+                        "version": __version__,
+                        "informationUri": "https://github.com/aisrf",
+                        "rules": list(rules.values()),
+                    }
+                },
+                "automationDetails": {
+                    "id": f"aisrf/{report.meta.get('kind', 'report')}",
+                    "description": {"text": report.title},
+                },
+                "invocations": [
+                    {
+                        "executionSuccessful": True,
+                        "endTimeUtc": report.generated_at.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    }
+                ],
                 "results": results,
-                "properties": {"title": report.title, "subtitle": report.subtitle, "generated_by": report.generated_by, "meta": _report_json(report)["meta"]},
+                "properties": {
+                    "title": report.title,
+                    "subtitle": report.subtitle,
+                    "generated_by": report.generated_by,
+                    "meta": _report_json(report)["meta"],
+                },
             }
         ],
     }
@@ -542,7 +680,11 @@ def _junit_cases_from_table(s: TableSection) -> list[dict[str, Any]]:
         values = {columns[i].lower(): _cell(r[i]) for i in range(min(len(columns), len(r)))}
         name = _cell(r[name_idx]) if r else "row"
         detail = ", ".join(f"{columns[i]}={_cell(r[i])}" for i in range(min(len(columns), len(r))))
-        flagged = [v.upper() for k, v in values.items() if k in ("verdict", "risk", "risk_level", "severity", "status", "level")]
+        flagged = [
+            v.upper()
+            for k, v in values.items()
+            if k in ("verdict", "risk", "risk_level", "severity", "status", "level")
+        ]
         status = "passed"
         message = ""
         if any(v in FAIL_VALUES for v in flagged):
@@ -553,7 +695,16 @@ def _junit_cases_from_table(s: TableSection) -> list[dict[str, Any]]:
             message = "; ".join(f"{k}={v}" for k, v in values.items() if v.upper() in ERROR_VALUES)
         elif "pending" in [v.lower() for v in flagged]:
             status = "skipped"
-        cases.append({"name": name, "classname": s.title, "status": status, "message": message, "detail": detail, "time": values.get("latency ms") or values.get("latency_ms") or ""})
+        cases.append(
+            {
+                "name": name,
+                "classname": s.title,
+                "status": status,
+                "message": message,
+                "detail": detail,
+                "time": values.get("latency ms") or values.get("latency_ms") or "",
+            }
+        )
     return cases
 
 
@@ -567,7 +718,16 @@ def _junit_cases_from_findings(s: FindingsSection) -> list[dict[str, Any]]:
         if f.get("ticket_id") or f.get("probe_id"):
             name += f" [{f.get('probe_id') or f.get('ticket_id')}]"
         detail = json.dumps({k: _plain(v) for k, v in f.items()}, indent=1, default=str)
-        cases.append({"name": name, "classname": s.title, "status": "failed" if failed else "passed", "message": f"{severity} {f.get('category', '')} {verdict}".strip(), "detail": detail, "time": ""})
+        cases.append(
+            {
+                "name": name,
+                "classname": s.title,
+                "status": "failed" if failed else "passed",
+                "message": f"{severity} {f.get('category', '')} {verdict}".strip(),
+                "detail": detail,
+                "time": "",
+            }
+        )
     return cases
 
 
@@ -577,14 +737,34 @@ def render_junit(report: Report) -> bytes:
     if case_tables:
         suites = [(s.title, _junit_cases_from_table(s)) for s in case_tables]
     else:
-        suites = [(s.title, _junit_cases_from_findings(s)) for s in report.sections if isinstance(s, FindingsSection)]
+        suites = [
+            (s.title, _junit_cases_from_findings(s))
+            for s in report.sections
+            if isinstance(s, FindingsSection)
+        ]
     if not suites or not any(cases for _, cases in suites):
-        suites = [("report", [{"name": report.title, "classname": "report", "status": "passed", "message": "", "detail": "no testcases derived from this report", "time": ""}])]
+        suites = [
+            (
+                "report",
+                [
+                    {
+                        "name": report.title,
+                        "classname": "report",
+                        "status": "passed",
+                        "message": "",
+                        "detail": "no testcases derived from this report",
+                        "time": "",
+                    }
+                ],
+            )
+        ]
     root = ET.Element("testsuites", {"name": _xml_safe(report.title)})
     totals = {"tests": 0, "failures": 0, "errors": 0, "skipped": 0}
     ts = report.generated_at.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%S")
     for title, cases in suites:
-        suite = ET.SubElement(root, "testsuite", {"name": _xml_safe(title), "timestamp": ts, "hostname": "aisrf"})
+        suite = ET.SubElement(
+            root, "testsuite", {"name": _xml_safe(title), "timestamp": ts, "hostname": "aisrf"}
+        )
         counts = {"tests": len(cases), "failures": 0, "errors": 0, "skipped": 0}
         for c in cases:
             secs = "0"
@@ -592,13 +772,27 @@ def render_junit(report: Report) -> bytes:
                 secs = f"{float(c['time']) / 1000.0:.3f}" if c["time"] else "0"
             except ValueError:
                 secs = "0"
-            tc = ET.SubElement(suite, "testcase", {"name": _xml_safe(c["name"]), "classname": _xml_safe(f"aisrf.{_slug(report.meta.get('kind', 'report'))}.{_slug(c['classname'])}"), "time": secs})
+            tc = ET.SubElement(
+                suite,
+                "testcase",
+                {
+                    "name": _xml_safe(c["name"]),
+                    "classname": _xml_safe(
+                        f"aisrf.{_slug(report.meta.get('kind', 'report'))}.{_slug(c['classname'])}"
+                    ),
+                    "time": secs,
+                },
+            )
             if c["status"] == "failed":
                 counts["failures"] += 1
-                ET.SubElement(tc, "failure", {"message": _xml_safe(c["message"]), "type": "AssertionError"}).text = _xml_safe(c["detail"])
+                ET.SubElement(
+                    tc, "failure", {"message": _xml_safe(c["message"]), "type": "AssertionError"}
+                ).text = _xml_safe(c["detail"])
             elif c["status"] == "error":
                 counts["errors"] += 1
-                ET.SubElement(tc, "error", {"message": _xml_safe(c["message"]), "type": "Error"}).text = _xml_safe(c["detail"])
+                ET.SubElement(
+                    tc, "error", {"message": _xml_safe(c["message"]), "type": "Error"}
+                ).text = _xml_safe(c["detail"])
             elif c["status"] == "skipped":
                 counts["skipped"] += 1
                 ET.SubElement(tc, "skipped", {"message": "pending"})
@@ -647,12 +841,26 @@ def render_xlsx(report: Report) -> bytes:
             ws.append([_plain(c) for c in r])
         ws.freeze_panes = ws.cell(row=start_row + 1, column=1)
         for i, col in enumerate(columns, start=1):
-            longest = max([len(str(col))] + [len(_cell(r[i - 1])) for r in rows if i - 1 < len(r)]) if rows else len(str(col))
+            longest = (
+                max([len(str(col))] + [len(_cell(r[i - 1])) for r in rows if i - 1 < len(r)])
+                if rows
+                else len(str(col))
+            )
             ws.column_dimensions[get_column_letter(i)].width = min(60, max(10, longest + 2))
         ws.auto_filter.ref = ws.dimensions
 
     cover = wb.create_sheet(sheet_name("Report"))
-    write_table(cover, ["Key", "Value"], [["Title", report.title], ["Subtitle", report.subtitle], ["Generated at", report.generated_at.isoformat()], ["Generated by", report.generated_by], *[[k, _plain(v)] for k, v in report.meta.items()]])
+    write_table(
+        cover,
+        ["Key", "Value"],
+        [
+            ["Title", report.title],
+            ["Subtitle", report.subtitle],
+            ["Generated at", report.generated_at.isoformat()],
+            ["Generated by", report.generated_by],
+            *[[k, _plain(v)] for k, v in report.meta.items()],
+        ],
+    )
     for s in report.sections:
         ws = wb.create_sheet(sheet_name(s.title))
         if isinstance(s, TextSection):
@@ -681,7 +889,9 @@ def render_pdf(report: Report) -> bytes:
     from reportlab.lib.units import mm
     from reportlab.platypus import KeepTogether, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
-    wide = any(len(s.as_table()[0]) > 6 for s in report.sections if isinstance(s, (TableSection, FindingsSection)))
+    wide = any(
+        len(s.as_table()[0]) > 6 for s in report.sections if isinstance(s, (TableSection, FindingsSection))
+    )
     pagesize = landscape(A4) if wide else A4
     styles = getSampleStyleSheet()
     body = ParagraphStyle("body", parent=styles["BodyText"], fontSize=8.5, leading=11, alignment=TA_LEFT)
@@ -689,7 +899,9 @@ def render_pdf(report: Report) -> bytes:
     head_style = ParagraphStyle("head", parent=cell_style, textColor=colors.white, fontName="Helvetica-Bold")
     mono = ParagraphStyle("mono", parent=body, fontName="Courier", fontSize=7.5, leading=9.5)
     title_style = styles["Title"]
-    h2 = ParagraphStyle("h2", parent=styles["Heading2"], spaceBefore=10, spaceAfter=4, textColor=colors.HexColor("#1c5cab"))
+    h2 = ParagraphStyle(
+        "h2", parent=styles["Heading2"], spaceBefore=10, spaceAfter=4, textColor=colors.HexColor("#1c5cab")
+    )
     subtitle_style = ParagraphStyle("sub", parent=body, textColor=colors.HexColor("#5f5e58"), fontSize=9.5)
     avail_width = pagesize[0] - 30 * mm
 
@@ -781,7 +993,14 @@ def render_pdf(report: Report) -> bytes:
     story: list[Any] = [Paragraph(escape(report.title), title_style)]
     if report.subtitle:
         story.append(Paragraph(escape(report.subtitle), subtitle_style))
-    story.append(Paragraph(escape(f"Generated {report.generated_at.isoformat(timespec='seconds')} by {report.generated_by}, AISRF {__version__}"), subtitle_style))
+    story.append(
+        Paragraph(
+            escape(
+                f"Generated {report.generated_at.isoformat(timespec='seconds')} by {report.generated_by}, AISRF {__version__}"
+            ),
+            subtitle_style,
+        )
+    )
     story.append(Spacer(1, 8))
     for s in report.sections:
         block: list[Any] = [Paragraph(escape(s.title), h2)]
@@ -820,7 +1039,17 @@ def render_pdf(report: Report) -> bytes:
         canvas.restoreState()
 
     buf = io.BytesIO()
-    doc = SimpleDocTemplate(buf, pagesize=pagesize, leftMargin=15 * mm, rightMargin=15 * mm, topMargin=16 * mm, bottomMargin=14 * mm, title=report.title, author=report.generated_by, subject=report.subtitle)
+    doc = SimpleDocTemplate(
+        buf,
+        pagesize=pagesize,
+        leftMargin=15 * mm,
+        rightMargin=15 * mm,
+        topMargin=16 * mm,
+        bottomMargin=14 * mm,
+        title=report.title,
+        author=report.generated_by,
+        subject=report.subtitle,
+    )
     doc.build(story, onFirstPage=on_page, onLaterPages=on_page)
     return buf.getvalue()
 

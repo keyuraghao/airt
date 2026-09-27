@@ -1,4 +1,5 @@
 """Tests for the MCP server (in-process and mounted at /mcp) and the typer CLI."""
+
 from __future__ import annotations
 
 import importlib.util
@@ -78,7 +79,16 @@ from aisrf import __version__
 from aisrf.main import create_app
 from aisrf.mcp_server import build_server
 
-INIT_BODY = {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2025-06-18", "capabilities": {}, "clientInfo": {"name": "pytest", "version": "0"}}}
+INIT_BODY = {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "initialize",
+    "params": {
+        "protocolVersion": "2025-06-18",
+        "capabilities": {},
+        "clientInfo": {"name": "pytest", "version": "0"},
+    },
+}
 MCP_HEADERS = {"Accept": "application/json, text/event-stream", "Content-Type": "application/json"}
 
 
@@ -95,7 +105,9 @@ async def app() -> AsyncIterator[Any]:
 
 @pytest.fixture
 async def client(app: Any) -> AsyncIterator[httpx.AsyncClient]:
-    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://aisrf.internal") as c:
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://aisrf.internal"
+    ) as c:
         yield c
 
 
@@ -111,17 +123,34 @@ def _payload(result: Any) -> Any:
 async def test_tools_in_process(app: Any, client: httpx.AsyncClient) -> None:
     server = build_server("http://aisrf.internal", ADMIN_TOKEN, transport_client=client)
     names = {t.name for t in await server.list_tools()}
-    assert {"list_tickets", "approve_ticket", "create_agent", "create_campaign", "generate_report", "verify_audit", "health", "metrics"} <= names
+    assert {
+        "list_tickets",
+        "approve_ticket",
+        "create_agent",
+        "create_campaign",
+        "generate_report",
+        "verify_audit",
+        "health",
+        "metrics",
+    } <= names
     stats = _payload(await server.call_tool("ticket_stats", {}))
     assert isinstance(stats, dict) and "pending" in stats
     tickets = _payload(await server.call_tool("list_tickets", {"status": "PENDING", "limit": 5}))
     assert isinstance(tickets, dict) and "items" in tickets and tickets["total"] >= 0
-    created = _payload(await server.call_tool("create_agent", {"name": "mcp-agent", "upstream_provider": "anthropic", "require_approval": False}))
+    created = _payload(
+        await server.call_tool(
+            "create_agent", {"name": "mcp-agent", "upstream_provider": "anthropic", "require_approval": False}
+        )
+    )
     assert created.get("api_key", "").startswith("aisrf_"), created
     assert created["upstream_provider"] == "anthropic"
     fetched = _payload(await server.call_tool("get_agent", {"agent_id": created["id"]}))
     assert fetched["name"] == "mcp-agent" and "stats" in fetched
-    patched = _payload(await server.call_tool("update_agent", {"agent_id": created["id"], "changes": {"description": "patched"}}))
+    patched = _payload(
+        await server.call_tool(
+            "update_agent", {"agent_id": created["id"], "changes": {"description": "patched"}}
+        )
+    )
     assert patched["description"] == "patched"
     listing = _payload(await server.call_tool("list_agents", {}))
     assert listing["count"] >= 1 and any(a["id"] == created["id"] for a in listing["items"])
@@ -131,8 +160,15 @@ async def test_tools_in_process(app: Any, client: httpx.AsyncClient) -> None:
     assert audit["ok"] is True
     health = _payload(await server.call_tool("health", {}))
     assert health["status"] == "ok"
-    report = _payload(await server.call_tool("generate_report", {"kind": "summary", "format": "json", "output_path": str(_TMP / "out" / "summary.json")}))
-    assert report["bytes"] > 0 and Path(report["path"]).exists() and report["media_type"] == "application/json"
+    report = _payload(
+        await server.call_tool(
+            "generate_report",
+            {"kind": "summary", "format": "json", "output_path": str(_TMP / "out" / "summary.json")},
+        )
+    )
+    assert (
+        report["bytes"] > 0 and Path(report["path"]).exists() and report["media_type"] == "application/json"
+    )
     corpus = _payload(await server.call_tool("list_corpus", {}))
     assert isinstance(corpus, dict)
     bad_token = build_server("http://aisrf.internal", "wrong", transport_client=client)
@@ -160,7 +196,9 @@ async def test_mcp_endpoint_requires_token(app: Any, client: httpx.AsyncClient) 
     settings = aisrf.config.get_settings()
     settings.admin_api_token = None
     try:
-        disabled = await client.post("/mcp", json=INIT_BODY, headers={**MCP_HEADERS, "Authorization": f"Bearer {ADMIN_TOKEN}"})
+        disabled = await client.post(
+            "/mcp", json=INIT_BODY, headers={**MCP_HEADERS, "Authorization": f"Bearer {ADMIN_TOKEN}"}
+        )
         assert disabled.status_code == 503 and "error" in disabled.json()
     finally:
         settings.admin_api_token = ADMIN_TOKEN
@@ -173,11 +211,22 @@ async def test_mcp_endpoint_handshake(app: Any, client: httpx.AsyncClient) -> No
     body = response.json()
     assert body["id"] == 1 and body["result"]["serverInfo"]["name"] == "aisrf"
     assert "protocolVersion" in body["result"]
-    listed = await client.post("/mcp", json={"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}}, headers=headers)
+    listed = await client.post(
+        "/mcp", json={"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}}, headers=headers
+    )
     assert listed.status_code == 200
     names = {t["name"] for t in listed.json()["result"]["tools"]}
     assert "list_tickets" in names and "generate_report" in names
-    called = await client.post("/mcp", json={"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "health", "arguments": {}}}, headers=headers)
+    called = await client.post(
+        "/mcp",
+        json={
+            "jsonrpc": "2.0",
+            "id": 3,
+            "method": "tools/call",
+            "params": {"name": "health", "arguments": {}},
+        },
+        headers=headers,
+    )
     assert called.status_code == 200
     assert called.json()["result"]["structuredContent"]["status"] == "ok"
 
@@ -190,14 +239,30 @@ def test_cli_version_and_agent_create() -> None:
     runner = CliRunner(env={"COLUMNS": "200"})
     result = runner.invoke(cli, ["version"])
     assert result.exit_code == 0 and __version__ in result.output
-    result = runner.invoke(cli, ["agent", "create", "cli-agent", "--provider", "openai", "--no-approval", "--auto-deny-at", "80", "--tag", "ci"])
+    result = runner.invoke(
+        cli,
+        [
+            "agent",
+            "create",
+            "cli-agent",
+            "--provider",
+            "openai",
+            "--no-approval",
+            "--auto-deny-at",
+            "80",
+            "--tag",
+            "ci",
+        ],
+    )
     assert result.exit_code == 0, result.output
     assert "API key: aisrf_" in result.output
     result = runner.invoke(cli, ["agent", "list"])
     assert result.exit_code == 0 and "cli-agent" in result.output
     result = runner.invoke(cli, ["agent", "create", "cli-agent"])
     assert result.exit_code == 1 and "already exists" in result.output
-    result = runner.invoke(cli, ["create-reviewer", "cli-reviewer", "--password", "secret123", "--role", "viewer"])
+    result = runner.invoke(
+        cli, ["create-reviewer", "cli-reviewer", "--password", "secret123", "--role", "viewer"]
+    )
     assert result.exit_code == 0 and "cli-reviewer" in result.output
     result = runner.invoke(cli, ["tickets", "list", "--url", "http://127.0.0.1:1", "--token", "x"])
     assert result.exit_code == 1 and "cannot reach" in result.output

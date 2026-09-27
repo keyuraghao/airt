@@ -30,16 +30,36 @@ COMMENT_PREFIXES = ("#", "//", "/*", "*", "<!--", "--")
 
 # Identifier heuristics. Broad on purpose: a prompt built from *any* runtime value deserves a look;
 # confidence is raised when the name is clearly request-, user- or model-derived.
-UNTRUSTED_STRONG = re.compile(r"(?i)(^|[._])(request|req|user_?input|user_?message|user_?msg|user_?query|user_?text|query|question|params?|args|form|body|payload|upload|uploaded|untrusted|external)($|[._\[])")
-UNTRUSTED = re.compile(r"(?i)(user|input|query|question|message|msg|text|content|body|request|req|param|arg|payload|form|data|email|mail|doc|page|html|chunk|context|history|prompt|upload|file|url|search|comment|review|note|transcript|conversation|ticket|issue|record|row|field|value|item|result)")
-MODEL_OUTPUT = re.compile(r"(?i)(response|completion|answer|output|reply|generated|generation|llm|model|assistant|choices|choice|message\.content|content\[0\]|\.text$|result|summary|suggestion|plan|code|command|cmd|sql|query)")
-TOOL_ARG = re.compile(r"(?i)(arg|argument|param|input|query|command|cmd|expression|expr|code|path|filename|file|url|address|recipient|to|sql|hostname|host|target|name|amount|id)")
-PROMPT_WORDS = re.compile(r"(?i)\b(you are|assistant|system|prompt|instruction|instructions|answer|summari[sz]e|translate|respond|context:|question:|user:|the user|following (text|document|email|message|content|code)|rewrite|classify|extract|generate|write a|task:|role)\b")
-LLM_CALL = re.compile(r"(chat\.completions\.create|\.messages\.create|responses\.create|\.generate_content\(|generate_content_async\(|\bgenerateText\(|\bstreamText\(|\bgenerateObject\(|ChatCompletion\.create|litellm\.completion|ollama\.(chat|generate)|\.beta\.threads|\.chat\.send_message|llm\.(invoke|ainvoke|predict|generate|call|complete|stream)\(|chain\.(invoke|ainvoke|run|arun)\(|agent(_executor)?\.(invoke|ainvoke|run|arun)\(|\bmodel\.(invoke|ainvoke|generate|predict|stream)\(|\.complete\(|client\.chat\(|\bcompletion\(|\bgenerate\(|\.run_sync\(|\bcrew\.kickoff\()")
-ROUTE = re.compile(r"(@app\.(route|get|post|put|patch|delete|api_route)|@router\.(get|post|put|patch|delete|api_route)|@(bp|blueprint)\.(route|get|post)|@api_view|@csrf_exempt|\b(app|router)\.(get|post|put|patch|delete|use)\(\s*['\"/]|\bexpress\(\)|@(Get|Post|Put|Patch|Delete)\(|export (async )?function (GET|POST|PUT|DELETE)\b|request\.(json|args|form|GET|POST|body|data|values)|req\.(body|query|params)|await request\.|Request\b.*\)\s*(->|:)|HttpRequest)")
-RAG = re.compile(r"(similarity_search|as_retriever|add_texts|add_documents|\.upsert\(|embed(_query|_documents)?\(|VectorStore|retriever|Retriever|\.query\(.*vector|query_vector|\.search\(.*(vector|embedding)|from_documents\(|index\.query\(|collection\.(add|query)\(|knn|Embeddings?\()")
-AGENT = re.compile(r"(initialize_agent|AgentExecutor|create_(react|openai_tools|tool_calling|openai_functions|structured_chat)_agent|\bCrew\(|AssistantAgent|StateGraph|tool_calls|function_call|\bAgent\(|Runner\.run|\.run_agent\(|autogen|smolagents|CodeAgent|ToolCallingAgent)")
-FRONTEND = re.compile(r"(\bReact\b|from ['\"]react['\"]|\bVue\b|document\.(getElementById|querySelector|body)|window\.|useState\(|<template>|dangerouslySetInnerHTML|innerHTML)")
+UNTRUSTED_STRONG = re.compile(
+    r"(?i)(^|[._])(request|req|user_?input|user_?message|user_?msg|user_?query|user_?text|query|question|params?|args|form|body|payload|upload|uploaded|untrusted|external)($|[._\[])"
+)
+UNTRUSTED = re.compile(
+    r"(?i)(user|input|query|question|message|msg|text|content|body|request|req|param|arg|payload|form|data|email|mail|doc|page|html|chunk|context|history|prompt|upload|file|url|search|comment|review|note|transcript|conversation|ticket|issue|record|row|field|value|item|result)"
+)
+MODEL_OUTPUT = re.compile(
+    r"(?i)(response|completion|answer|output|reply|generated|generation|llm|model|assistant|choices|choice|message\.content|content\[0\]|\.text$|result|summary|suggestion|plan|code|command|cmd|sql|query)"
+)
+TOOL_ARG = re.compile(
+    r"(?i)(arg|argument|param|input|query|command|cmd|expression|expr|code|path|filename|file|url|address|recipient|to|sql|hostname|host|target|name|amount|id)"
+)
+PROMPT_WORDS = re.compile(
+    r"(?i)\b(you are|assistant|system|prompt|instruction|instructions|answer|summari[sz]e|translate|respond|context:|question:|user:|the user|following (text|document|email|message|content|code)|rewrite|classify|extract|generate|write a|task:|role)\b"
+)
+LLM_CALL = re.compile(
+    r"(chat\.completions\.create|\.messages\.create|responses\.create|\.generate_content\(|generate_content_async\(|\bgenerateText\(|\bstreamText\(|\bgenerateObject\(|ChatCompletion\.create|litellm\.completion|ollama\.(chat|generate)|\.beta\.threads|\.chat\.send_message|llm\.(invoke|ainvoke|predict|generate|call|complete|stream)\(|chain\.(invoke|ainvoke|run|arun)\(|agent(_executor)?\.(invoke|ainvoke|run|arun)\(|\bmodel\.(invoke|ainvoke|generate|predict|stream)\(|\.complete\(|client\.chat\(|\bcompletion\(|\bgenerate\(|\.run_sync\(|\bcrew\.kickoff\()"
+)
+ROUTE = re.compile(
+    r"(@app\.(route|get|post|put|patch|delete|api_route)|@router\.(get|post|put|patch|delete|api_route)|@(bp|blueprint)\.(route|get|post)|@api_view|@csrf_exempt|\b(app|router)\.(get|post|put|patch|delete|use)\(\s*['\"/]|\bexpress\(\)|@(Get|Post|Put|Patch|Delete)\(|export (async )?function (GET|POST|PUT|DELETE)\b|request\.(json|args|form|GET|POST|body|data|values)|req\.(body|query|params)|await request\.|Request\b.*\)\s*(->|:)|HttpRequest)"
+)
+RAG = re.compile(
+    r"(similarity_search|as_retriever|add_texts|add_documents|\.upsert\(|embed(_query|_documents)?\(|VectorStore|retriever|Retriever|\.query\(.*vector|query_vector|\.search\(.*(vector|embedding)|from_documents\(|index\.query\(|collection\.(add|query)\(|knn|Embeddings?\()"
+)
+AGENT = re.compile(
+    r"(initialize_agent|AgentExecutor|create_(react|openai_tools|tool_calling|openai_functions|structured_chat)_agent|\bCrew\(|AssistantAgent|StateGraph|tool_calls|function_call|\bAgent\(|Runner\.run|\.run_agent\(|autogen|smolagents|CodeAgent|ToolCallingAgent)"
+)
+FRONTEND = re.compile(
+    r"(\bReact\b|from ['\"]react['\"]|\bVue\b|document\.(getElementById|querySelector|body)|window\.|useState\(|<template>|dangerouslySetInnerHTML|innerHTML)"
+)
 
 
 @dataclass
@@ -99,7 +119,9 @@ class FileContext:
             flags.add("agent")
         if self.language in ("vue", "svelte", "html") or (self.language in JS and FRONTEND.search(self.text)):
             flags.add("frontend")
-        if self.language in ("python", "javascript", "typescript") and re.search(r"(?m)^\s*(class|def|function)\s|=>", self.text):
+        if self.language in ("python", "javascript", "typescript") and re.search(
+            r"(?m)^\s*(class|def|function)\s|=>", self.text
+        ):
             flags.add("code")
         return flags
 

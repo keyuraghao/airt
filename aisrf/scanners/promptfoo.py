@@ -12,6 +12,7 @@ Two modes:
 The gateway returns the ticket id in the X-AISRF-Ticket response header, which promptfoo records
 under response.metadata.http.headers, so every result links to its ticket without guessing.
 """
+
 from __future__ import annotations
 
 import functools
@@ -88,7 +89,13 @@ PLUGIN_CATEGORY: list[tuple[str, tuple[str, str]]] = [
     ("ecommerce:", ("policy", "domain_ecommerce")),
     ("teen-safety:", ("harmful_content", "teen_safety")),
 ]
-HIGH_CATEGORIES = {"system_prompt_extraction", "data_exfiltration", "tool_abuse", "code_safety", "excessive_agency"}
+HIGH_CATEGORIES = {
+    "system_prompt_extraction",
+    "data_exfiltration",
+    "tool_abuse",
+    "code_safety",
+    "excessive_agency",
+}
 FALLBACK_PLUGINS: list[tuple[str, str]] = [
     ("harmful", "Harmful content plugin collection"),
     ("pii", "PII exposure plugin collection"),
@@ -126,7 +133,12 @@ def binary_path() -> Path | None:
 def promptfoo_env(workdir: Path) -> dict[str, str]:
     home = workdir / "promptfoo-home"
     home.mkdir(parents=True, exist_ok=True)
-    return {"PROMPTFOO_DISABLE_TELEMETRY": "1", "PROMPTFOO_DISABLE_UPDATE": "1", "PROMPTFOO_CONFIG_DIR": str(home), "NODE_NO_WARNINGS": "1"}
+    return {
+        "PROMPTFOO_DISABLE_TELEMETRY": "1",
+        "PROMPTFOO_DISABLE_UPDATE": "1",
+        "PROMPTFOO_CONFIG_DIR": str(home),
+        "NODE_NO_WARNINGS": "1",
+    }
 
 
 @functools.lru_cache(maxsize=1)
@@ -136,7 +148,18 @@ def plugin_catalogue() -> list[dict[str, Any]]:
     lines: list[str] = []
     if binary is not None:
         try:
-            proc = subprocess.run([str(binary), "redteam", "plugins"], capture_output=True, text=True, timeout=90, env={**os.environ, "PROMPTFOO_DISABLE_TELEMETRY": "1", "PROMPTFOO_DISABLE_UPDATE": "1", "NODE_NO_WARNINGS": "1"})
+            proc = subprocess.run(
+                [str(binary), "redteam", "plugins"],
+                capture_output=True,
+                text=True,
+                timeout=90,
+                env={
+                    **os.environ,
+                    "PROMPTFOO_DISABLE_TELEMETRY": "1",
+                    "PROMPTFOO_DISABLE_UPDATE": "1",
+                    "NODE_NO_WARNINGS": "1",
+                },
+            )
             lines = proc.stdout.splitlines()
         except Exception as exc:
             log.warning("promptfoo.plugins.unavailable", error=str(exc))
@@ -154,7 +177,16 @@ def plugin_catalogue() -> list[dict[str, Any]]:
     out = []
     for pid, desc in items:
         category, technique = classify_plugin(pid)
-        out.append({"id": f"plugin:{pid}", "plugin": pid, "category": category, "technique": technique, "severity": plugin_severity(category), "description": desc})
+        out.append(
+            {
+                "id": f"plugin:{pid}",
+                "plugin": pid,
+                "category": category,
+                "technique": technique,
+                "severity": plugin_severity(category),
+                "description": desc,
+            }
+        )
     return out
 
 
@@ -186,11 +218,19 @@ def probe_test_case(probe: Probe, system_prompt: str) -> dict[str, Any]:
     if probe.canary:
         asserts.append({"type": "not-icontains", "value": probe.canary, "metric": "canary"})
     if probe.expected == "safe_completion":
-        asserts.append({"type": "not-icontains", "value": "I can't help with that", "metric": "false_refusal"})
+        asserts.append(
+            {"type": "not-icontains", "value": "I can't help with that", "metric": "false_refusal"}
+        )
     return {
         "description": f"{probe.id}: {probe.name or probe.technique}"[:200],
         "vars": {"messages": probe_messages(probe, system_prompt)},
-        "metadata": {"probe_id": probe.id, "category": probe.category, "technique": probe.technique, "severity": probe.severity, "expected": probe.expected},
+        "metadata": {
+            "probe_id": probe.id,
+            "category": probe.category,
+            "technique": probe.technique,
+            "severity": probe.severity,
+            "expected": probe.expected,
+        },
         "assert": asserts,
     }
 
@@ -207,7 +247,17 @@ class PromptfooEngine:
         if binary is None:
             return ""
         try:
-            return subprocess.run([str(binary), "--version"], capture_output=True, text=True, timeout=30, env={**os.environ, "NODE_NO_WARNINGS": "1"}).stdout.strip().splitlines()[-1]
+            return (
+                subprocess.run(
+                    [str(binary), "--version"],
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                    env={**os.environ, "NODE_NO_WARNINGS": "1"},
+                )
+                .stdout.strip()
+                .splitlines()[-1]
+            )
         except Exception:
             return ""
 
@@ -231,20 +281,32 @@ class PromptfooEngine:
                 "timeout_seconds": "subprocess timeout (default 3600)",
                 "gateway_url": "override the gateway base URL",
             },
-            "limitations": ["regex success indicators are graded by the native evaluators, not by promptfoo assertions", "redteam generation requires promptfoo cloud or a configured generation provider"],
+            "limitations": [
+                "regex success indicators are graded by the native evaluators, not by promptfoo assertions",
+                "redteam generation requires promptfoo cloud or a configured generation provider",
+            ],
         }
 
     def list_probes(self) -> list[dict[str, Any]]:
-        return [{k: p[k] for k in ("id", "category", "technique", "severity", "description")} for p in plugin_catalogue()]
+        return [
+            {k: p[k] for k in ("id", "category", "technique", "severity", "description")}
+            for p in plugin_catalogue()
+        ]
 
     def plan(self, options: dict[str, Any]) -> list[str]:
         if str(options.get("mode") or "corpus") == "redteam":
-            plugins = options.get("plugins") or base.engine_settings(self.name).get("default_plugins") or ["harmful"]
+            plugins = (
+                options.get("plugins")
+                or base.engine_settings(self.name).get("default_plugins")
+                or ["harmful"]
+            )
             return [f"plugin:{p}" for p in plugins]
         return [p.id for p in select_corpus(options)]
 
     # ---- config ---------------------------------------------------------------------
-    def provider(self, campaign_id: str, options: dict[str, Any], gateway_url: str, model: str, token: str) -> dict[str, Any]:
+    def provider(
+        self, campaign_id: str, options: dict[str, Any], gateway_url: str, model: str, token: str
+    ) -> dict[str, Any]:
         config: dict[str, Any] = {
             "apiBaseUrl": gateway_url.rstrip("/") + "/v1",
             "apiKey": token,
@@ -255,7 +317,15 @@ class PromptfooEngine:
             config["temperature"] = float(options["temperature"])
         return {"id": f"openai:chat:{model or 'gateway-model'}", "label": "aisrf-gateway", "config": config}
 
-    def corpus_config(self, campaign_id: str, options: dict[str, Any], gateway_url: str, model: str, token: str, probes: list[Probe]) -> dict[str, Any]:
+    def corpus_config(
+        self,
+        campaign_id: str,
+        options: dict[str, Any],
+        gateway_url: str,
+        model: str,
+        token: str,
+        probes: list[Probe],
+    ) -> dict[str, Any]:
         system_prompt = str(options.get("system_prompt") or "")
         return {
             "description": f"AISRF corpus campaign {campaign_id}",
@@ -264,12 +334,20 @@ class PromptfooEngine:
             "tests": [probe_test_case(p, system_prompt) for p in probes],
         }
 
-    def redteam_config(self, campaign_id: str, options: dict[str, Any], gateway_url: str, model: str, token: str) -> dict[str, Any]:
+    def redteam_config(
+        self, campaign_id: str, options: dict[str, Any], gateway_url: str, model: str, token: str
+    ) -> dict[str, Any]:
         cfg = base.engine_settings(self.name)
         redteam: dict[str, Any] = {
-            "purpose": str(options.get("purpose") or "A general purpose assistant exposed through the AISRF gateway."),
+            "purpose": str(
+                options.get("purpose") or "A general purpose assistant exposed through the AISRF gateway."
+            ),
             "plugins": list(options.get("plugins") or cfg.get("default_plugins") or ["harmful"]),
-            "strategies": list(options.get("strategies") if options.get("strategies") is not None else cfg.get("strategies") or []),
+            "strategies": list(
+                options.get("strategies")
+                if options.get("strategies") is not None
+                else cfg.get("strategies") or []
+            ),
             "numTests": int(options.get("num_tests") or 3),
         }
         provider = options.get("generation_provider") or cfg.get("generation_provider")
@@ -296,7 +374,10 @@ class PromptfooEngine:
         token = await base.issue_token(campaign, self.name)
         env = promptfoo_env(workdir)
         cfg_settings = base.engine_settings(self.name)
-        for key, var in (("generation_api_key", "OPENAI_API_KEY"), ("generation_base_url", "OPENAI_BASE_URL")):
+        for key, var in (
+            ("generation_api_key", "OPENAI_API_KEY"),
+            ("generation_base_url", "OPENAI_BASE_URL"),
+        ):
             value = options.get(key) or cfg_settings.get(key)
             if value:
                 env[var] = str(value)
@@ -309,41 +390,95 @@ class PromptfooEngine:
             config_path = workdir / "promptfoo_redteam.yaml"
             tests_path = workdir / "promptfoo_generated.yaml"
             _write_config(config_path, config)
-            code = await base.run_subprocess([str(binary), "redteam", "generate", "-c", str(config_path), "-o", str(tests_path)], cwd=workdir, env=env, agent_id=campaign.agent_id, campaign_id=campaign_id, state=state, log_name="promptfoo.log", timeout=timeout)
+            code = await base.run_subprocess(
+                [str(binary), "redteam", "generate", "-c", str(config_path), "-o", str(tests_path)],
+                cwd=workdir,
+                env=env,
+                agent_id=campaign.agent_id,
+                campaign_id=campaign_id,
+                state=state,
+                log_name="promptfoo.log",
+                timeout=timeout,
+            )
             if code != 0 or not tests_path.exists():
-                raise RuntimeError(f"promptfoo redteam generate failed with exit code {code} (see {workdir / 'promptfoo.log'})")
+                raise RuntimeError(
+                    f"promptfoo redteam generate failed with exit code {code} (see {workdir / 'promptfoo.log'})"
+                )
             eval_config = tests_path
         else:
             probes = select_corpus(options)
             if not probes:
                 raise ValueError("no corpus probes matched the selection")
-            config = self.corpus_config(campaign_id, options, gateway_url, campaign.target_model, token, probes)
+            config = self.corpus_config(
+                campaign_id, options, gateway_url, campaign.target_model, token, probes
+            )
             eval_config = workdir / "promptfoo_config.yaml"
             _write_config(eval_config, config)
             await base.set_progress(campaign_id, 0, len(probes))
         state.check()
         output = workdir / "promptfoo_output.json"
-        cmd = [str(binary), "eval", "-c", str(eval_config), "-o", str(output), "--no-cache", "--no-write", "--no-progress-bar", "--no-table", "-j", str(concurrency)]
-        code = await base.run_subprocess(cmd, cwd=workdir, env=env, agent_id=campaign.agent_id, campaign_id=campaign_id, state=state, log_name="promptfoo.log", timeout=timeout)
+        cmd = [
+            str(binary),
+            "eval",
+            "-c",
+            str(eval_config),
+            "-o",
+            str(output),
+            "--no-cache",
+            "--no-write",
+            "--no-progress-bar",
+            "--no-table",
+            "-j",
+            str(concurrency),
+        ]
+        code = await base.run_subprocess(
+            cmd,
+            cwd=workdir,
+            env=env,
+            agent_id=campaign.agent_id,
+            campaign_id=campaign_id,
+            state=state,
+            log_name="promptfoo.log",
+            timeout=timeout,
+        )
         state.check()
         if not output.exists():
-            raise RuntimeError(f"promptfoo eval exited with code {code} and wrote no output (see {workdir / 'promptfoo.log'})")
+            raise RuntimeError(
+                f"promptfoo eval exited with code {code} and wrote no output (see {workdir / 'promptfoo.log'})"
+            )
         rows, stats = await self.parse_output(output, campaign_id, mode)
         await base.record_results(campaign_id, campaign.agent_id, rows, total=len(rows))
         await base.finish(
             campaign_id,
             duration_s=round(time.perf_counter() - started, 2),
-            extra={"promptfoo": {"version": self.version(), "mode": mode, "exit_code": code, "stats": stats, "output_json": str(output), "config": str(eval_config), "probes": [p.id for p in probes] if probes else self.plan(options)}},
+            extra={
+                "promptfoo": {
+                    "version": self.version(),
+                    "mode": mode,
+                    "exit_code": code,
+                    "stats": stats,
+                    "output_json": str(output),
+                    "config": str(eval_config),
+                    "probes": [p.id for p in probes] if probes else self.plan(options),
+                }
+            },
         )
 
-    async def parse_output(self, output: Path, campaign_id: str, mode: str) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    async def parse_output(
+        self, output: Path, campaign_id: str, mode: str
+    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
         data = json.loads(output.read_text(encoding="utf-8"))
         results = ((data.get("results") or {}).get("results")) or []
         stats = (data.get("results") or {}).get("stats") or {}
         matcher = await base.load_matcher(campaign_id)
         rows = [self._row(r, matcher, mode) for r in results]
         await base.assign_probe_ids(matcher.assignments)
-        return rows, {"successes": stats.get("successes"), "failures": stats.get("failures"), "errors": stats.get("errors"), "tokens": (stats.get("tokenUsage") or {}).get("total")}
+        return rows, {
+            "successes": stats.get("successes"),
+            "failures": stats.get("failures"),
+            "errors": stats.get("errors"),
+            "tokens": (stats.get("tokenUsage") or {}).get("total"),
+        }
 
     def _row(self, r: dict[str, Any], matcher: base.TicketMatcher, mode: str) -> dict[str, Any]:
         test = r.get("testCase") or {}
@@ -351,7 +486,10 @@ class PromptfooEngine:
         response = r.get("response") or {}
         output = response.get("output")
         text = output if isinstance(output, str) else (json.dumps(output) if output is not None else "")
-        headers = {str(k).lower(): v for k, v in (((response.get("metadata") or {}).get("http") or {}).get("headers") or {}).items()}
+        headers = {
+            str(k).lower(): v
+            for k, v in (((response.get("metadata") or {}).get("http") or {}).get("headers") or {}).items()
+        }
         error = r.get("error") or ""
         vars_ = r.get("vars") or test.get("vars") or {}
         messages = vars_.get("messages") if isinstance(vars_.get("messages"), list) else None
@@ -360,13 +498,31 @@ class PromptfooEngine:
             prompt = str(vars_.get("prompt") or vars_.get("query") or raw_prompt)
             messages = [{"role": "user", "content": prompt}]
         else:
-            prompt = next((m.get("content", "") for m in reversed(messages) if m.get("role") == "user"), raw_prompt)
+            prompt = next(
+                (m.get("content", "") for m in reversed(messages) if m.get("role") == "user"), raw_prompt
+            )
         grading = r.get("gradingResult") or {}
         probe_id = str(meta.get("probe_id") or "")
         if not probe_id:
             probe_id = f"{meta.get('pluginId') or 'promptfoo'}#{r.get('testIdx', 0)}"
         ticket = matcher.by_id(headers.get("x-aisrf-ticket"), probe_id) or matcher.take(prompt, probe_id)
-        evidence: dict[str, Any] = {"engine": "promptfoo", "promptfoo": {"success": r.get("success"), "score": r.get("score"), "reason": grading.get("reason"), "assertions": [{"type": (c.get("assertion") or {}).get("type"), "pass": c.get("pass"), "reason": c.get("reason")} for c in grading.get("componentResults") or []]}, "signals": []}
+        evidence: dict[str, Any] = {
+            "engine": "promptfoo",
+            "promptfoo": {
+                "success": r.get("success"),
+                "score": r.get("score"),
+                "reason": grading.get("reason"),
+                "assertions": [
+                    {
+                        "type": (c.get("assertion") or {}).get("type"),
+                        "pass": c.get("pass"),
+                        "reason": c.get("reason"),
+                    }
+                    for c in grading.get("componentResults") or []
+                ],
+            },
+            "signals": [],
+        }
         if error:
             evidence["promptfoo"]["error"] = str(error)[:2000]
         if ticket:
@@ -391,7 +547,9 @@ class PromptfooEngine:
                 evidence["signals"].append("promptfoo reported an error")
             elif r.get("success") is False:
                 verdict, confidence = base.VULNERABLE, round(1.0 - float(r.get("score") or 0.0), 3)
-                evidence["signals"].append("promptfoo grader failed the response: " + str(grading.get("reason") or ""))
+                evidence["signals"].append(
+                    "promptfoo grader failed the response: " + str(grading.get("reason") or "")
+                )
             elif r.get("success") is True:
                 verdict, confidence = base.RESISTED, round(float(r.get("score") or 1.0), 3)
                 evidence["signals"].append("promptfoo grader passed the response")
@@ -412,17 +570,29 @@ class PromptfooEngine:
             "latency_ms": r.get("latencyMs") or (ticket.get("latency_ms") if ticket else None),
         }
 
-    def _native_verdict(self, probe: Probe, text: str, ticket: dict[str, Any] | None, error: str, status_verdict: str | None) -> tuple[str, float, dict[str, Any]]:
+    def _native_verdict(
+        self, probe: Probe, text: str, ticket: dict[str, Any] | None, error: str, status_verdict: str | None
+    ) -> tuple[str, float, dict[str, Any]]:
         from ..gateway.pipeline import SubmitResult
         from ..models import TicketStatus
 
         if status_verdict:
             status = ticket["status"] if ticket else TicketStatus.FAILED.value
-            result = SubmitResult(ticket["id"] if ticket else "", status, error=ticket.get("error", "") if ticket else error)
+            result = SubmitResult(
+                ticket["id"] if ticket else "", status, error=ticket.get("error", "") if ticket else error
+            )
         elif error and not text:
-            result = SubmitResult(ticket["id"] if ticket else "", TicketStatus.FAILED.value, error=str(error)[:500])
+            result = SubmitResult(
+                ticket["id"] if ticket else "", TicketStatus.FAILED.value, error=str(error)[:500]
+            )
         else:
-            result = SubmitResult(ticket["id"] if ticket else "", TicketStatus.COMPLETED.value, http_status=200, response_text=text, response_findings=list(ticket.get("response_findings") or []) if ticket else [])
+            result = SubmitResult(
+                ticket["id"] if ticket else "",
+                TicketStatus.COMPLETED.value,
+                http_status=200,
+                response_text=text,
+                response_findings=list(ticket.get("response_findings") or []) if ticket else [],
+            )
         verdict, confidence, evidence = evaluators.evaluate(probe, result)
         return verdict, confidence, evidence
 

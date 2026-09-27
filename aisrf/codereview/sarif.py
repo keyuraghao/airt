@@ -24,7 +24,16 @@ def _rule_entry(f: dict[str, Any]) -> dict[str, Any]:
     severity = str(f.get("severity") or "MEDIUM").upper()
     if rule is not None:
         d = rule.to_dict()
-        help_text = "\n".join([d["description"], "", "Why it matters: " + d["why"], "", "Remediation:", *[f"- {s}" for s in d["remediation"]]])
+        help_text = "\n".join(
+            [
+                d["description"],
+                "",
+                "Why it matters: " + d["why"],
+                "",
+                "Remediation:",
+                *[f"- {s}" for s in d["remediation"]],
+            ]
+        )
         return {
             "id": rid,
             "name": "".join(w.capitalize() for w in rule.title.replace("-", " ").split()),
@@ -34,8 +43,16 @@ def _rule_entry(f: dict[str, Any]) -> dict[str, Any]:
             "helpUri": d["references"][0] if d["references"] else "https://genai.owasp.org/llm-top-10/",
             "defaultConfiguration": {"level": LEVELS.get(rule.severity, "warning")},
             "properties": {
-                "tags": ["security", "llm", rule.pack, *[f"owasp-{o.lower()}" for o in d["owasp"]], *( [f"external/cwe/{d['cwe'].lower()}"] if d["cwe"] else [])],
-                "precision": "high" if rule.confidence >= 0.7 else ("medium" if rule.confidence >= 0.45 else "low"),
+                "tags": [
+                    "security",
+                    "llm",
+                    rule.pack,
+                    *[f"owasp-{o.lower()}" for o in d["owasp"]],
+                    *([f"external/cwe/{d['cwe'].lower()}"] if d["cwe"] else []),
+                ],
+                "precision": "high"
+                if rule.confidence >= 0.7
+                else ("medium" if rule.confidence >= 0.45 else "low"),
                 "security-severity": SECURITY_SEVERITY.get(rule.severity, "5.5"),
                 "pack": rule.pack,
                 "owasp": d["owasp"],
@@ -61,7 +78,9 @@ def _rule_entry(f: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def sarif_document(run: dict[str, Any], findings: list[dict[str, Any]], *, include_dismissed: bool = False) -> dict[str, Any]:
+def sarif_document(
+    run: dict[str, Any], findings: list[dict[str, Any]], *, include_dismissed: bool = False
+) -> dict[str, Any]:
     rules: dict[str, dict[str, Any]] = {}
     results: list[dict[str, Any]] = []
     for f in findings:
@@ -91,7 +110,10 @@ def sarif_document(run: dict[str, Any], findings: list[dict[str, Any]], *, inclu
                     }
                 }
             ],
-            "partialFingerprints": {"aisrf/v1": str(f.get("fingerprint") or ""), "primaryLocationLineHash": f"{path}:{start}"},
+            "partialFingerprints": {
+                "aisrf/v1": str(f.get("fingerprint") or ""),
+                "primaryLocationLineHash": f"{path}:{start}",
+            },
             "properties": {
                 "severity": severity,
                 "confidence": f.get("confidence"),
@@ -104,15 +126,31 @@ def sarif_document(run: dict[str, Any], findings: list[dict[str, Any]], *, inclu
             },
         }
         if f.get("snippet"):
-            result["locations"][0]["physicalLocation"]["region"]["snippet"] = {"text": str(f["snippet"])[:2000]}
+            result["locations"][0]["physicalLocation"]["region"]["snippet"] = {
+                "text": str(f["snippet"])[:2000]
+            }
             result["message"]["markdown"] = f"{message}\n\n```\n{str(f['snippet'])[:600]}\n```"
         if status != "open":
-            result["suppressions"] = [{"kind": "external", "status": "accepted", "justification": str(f.get("reviewer_note") or status)}]
+            result["suppressions"] = [
+                {
+                    "kind": "external",
+                    "status": "accepted",
+                    "justification": str(f.get("reviewer_note") or status),
+                }
+            ]
         if f.get("remediation"):
             result["fixes"] = [{"description": {"text": str(f["remediation"])[:1000]}}]
         results.append(result)
     finished = run.get("finished_at") or run.get("created_at") or datetime.now(UTC).isoformat()
-    taxa = [{"id": oid, "name": info["name"], "shortDescription": {"text": info["description"]}, "helpUri": info["url"]} for oid, info in OWASP_LLM_TOP10.items()]
+    taxa = [
+        {
+            "id": oid,
+            "name": info["name"],
+            "shortDescription": {"text": info["description"]},
+            "helpUri": info["url"],
+        }
+        for oid, info in OWASP_LLM_TOP10.items()
+    ]
     return {
         "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
         "version": "2.1.0",
@@ -129,11 +167,42 @@ def sarif_document(run: dict[str, Any], findings: list[dict[str, Any]], *, inclu
                         "supportedTaxonomies": [{"name": "OWASP LLM Top 10 2025"}],
                     }
                 },
-                "taxonomies": [{"name": "OWASP LLM Top 10 2025", "organization": "OWASP", "shortDescription": {"text": "OWASP Top 10 for LLM Applications 2025"}, "taxa": taxa}],
-                "automationDetails": {"id": f"aisrf/codereview/{run.get('id', 'run')}", "description": {"text": str(run.get("name") or "AISRF code review")}},
-                "invocations": [{"executionSuccessful": str(run.get("status")) == "COMPLETED", "endTimeUtc": str(finished)[:19] + "Z" if "T" in str(finished) else str(finished)}],
-                "originalUriBaseIds": {"%SRCROOT%": {"uri": "file:///", "description": {"text": "Root of the reviewed source tree"}}},
-                "versionControlProvenance": ([{"repositoryUri": run.get("source_ref"), "revisionId": ((run.get("inventory") or {}).get("intake") or {}).get("commit", "")}] if run.get("source_type") == "git" else []),
+                "taxonomies": [
+                    {
+                        "name": "OWASP LLM Top 10 2025",
+                        "organization": "OWASP",
+                        "shortDescription": {"text": "OWASP Top 10 for LLM Applications 2025"},
+                        "taxa": taxa,
+                    }
+                ],
+                "automationDetails": {
+                    "id": f"aisrf/codereview/{run.get('id', 'run')}",
+                    "description": {"text": str(run.get("name") or "AISRF code review")},
+                },
+                "invocations": [
+                    {
+                        "executionSuccessful": str(run.get("status")) == "COMPLETED",
+                        "endTimeUtc": str(finished)[:19] + "Z" if "T" in str(finished) else str(finished),
+                    }
+                ],
+                "originalUriBaseIds": {
+                    "%SRCROOT%": {
+                        "uri": "file:///",
+                        "description": {"text": "Root of the reviewed source tree"},
+                    }
+                },
+                "versionControlProvenance": (
+                    [
+                        {
+                            "repositoryUri": run.get("source_ref"),
+                            "revisionId": ((run.get("inventory") or {}).get("intake") or {}).get(
+                                "commit", ""
+                            ),
+                        }
+                    ]
+                    if run.get("source_type") == "git"
+                    else []
+                ),
                 "results": results,
                 "properties": {
                     "run_id": run.get("id"),

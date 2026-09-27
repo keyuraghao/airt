@@ -39,7 +39,9 @@ def typesafe_route(agent: Agent, findings: list[dict[str, Any]]) -> PolicyDecisi
         if f.get("analyzer") != "typesafe_guard":
             continue
         ts = (f.get("metadata") or {}).get("typesafe")
-        if isinstance(ts, dict) and (best is None or float(ts.get("confidence") or 0) > float(best.get("confidence") or 0)):
+        if isinstance(ts, dict) and (
+            best is None or float(ts.get("confidence") or 0) > float(best.get("confidence") or 0)
+        ):
             best = ts
     if not best:
         return None
@@ -62,7 +64,9 @@ def typesafe_route(agent: Agent, findings: list[dict[str, Any]]) -> PolicyDecisi
             return None
         return PolicyDecision(
             "approve",
-            [f"TypeSafe verdict benign with confidence {confidence:.2f} >= {approve_at} and no HIGH or CRITICAL finding"],
+            [
+                f"TypeSafe verdict benign with confidence {confidence:.2f} >= {approve_at} and no HIGH or CRITICAL finding"
+            ],
             ["typesafe.auto_approve"],
         )
     return None

@@ -51,13 +51,30 @@ def _pick_files(files: list[SourceFile], findings: list[Finding], max_files: int
         per_file[f.file] = per_file.get(f.file, 0) + 1
     scored: list[tuple[float, SourceFile]] = []
     for sf in files:
-        if not sf.is_text or sf.language not in ("python", "javascript", "typescript", "vue", "svelte", "java", "go", "csharp", "ruby", "php", "kotlin", "swift", "rust"):
+        if not sf.is_text or sf.language not in (
+            "python",
+            "javascript",
+            "typescript",
+            "vue",
+            "svelte",
+            "java",
+            "go",
+            "csharp",
+            "ruby",
+            "php",
+            "kotlin",
+            "swift",
+            "rust",
+        ):
             continue
         text = sf.read_text()
         if not text.strip():
             continue
         ctx = FileContext(sf.path, sf.language, text)
-        score = per_file.get(sf.path, 0) * 2.0 + len(ctx.flags & {"ai", "tool", "rag", "agent", "mcp", "route"}) * 1.5
+        score = (
+            per_file.get(sf.path, 0) * 2.0
+            + len(ctx.flags & {"ai", "tool", "rag", "agent", "mcp", "route"}) * 1.5
+        )
         if score <= 0:
             continue
         scored.append((score, sf))
@@ -88,7 +105,9 @@ def parse_response(content: str) -> list[dict[str, Any]]:
     return [d for d in data if isinstance(d, dict)] if isinstance(data, list) else []
 
 
-def to_findings(items: list[dict[str, Any]], path: str, language: str, lines: list[str], default_confidence: float) -> list[Finding]:
+def to_findings(
+    items: list[dict[str, Any]], path: str, language: str, lines: list[str], default_confidence: float
+) -> list[Finding]:
     out: list[Finding] = []
     for item in items[:20]:
         pack = str(item.get("pack") or "general").strip().lower()
@@ -133,18 +152,41 @@ def to_findings(items: list[dict[str, Any]], path: str, language: str, lines: li
     return out
 
 
-async def _ask(client: httpx.AsyncClient, provider: str, base_url: str, api_key: str, model: str, prompt: str, timeout: float) -> str:
+async def _ask(
+    client: httpx.AsyncClient,
+    provider: str,
+    base_url: str,
+    api_key: str,
+    model: str,
+    prompt: str,
+    timeout: float,
+) -> str:
     if provider == "anthropic":
         url = base_url.rstrip("/") + "/v1/messages"
-        headers = {"x-api-key": api_key, "anthropic-version": "2023-06-01", "content-type": "application/json"}
-        body = {"model": model, "max_tokens": 2000, "temperature": 0, "system": RUBRIC, "messages": [{"role": "user", "content": prompt}]}
+        headers = {
+            "x-api-key": api_key,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json",
+        }
+        body = {
+            "model": model,
+            "max_tokens": 2000,
+            "temperature": 0,
+            "system": RUBRIC,
+            "messages": [{"role": "user", "content": prompt}],
+        }
         r = await client.post(url, headers=headers, json=body, timeout=timeout)
         r.raise_for_status()
         data = r.json()
         return "".join(part.get("text", "") for part in data.get("content") or [] if isinstance(part, dict))
     url = base_url.rstrip("/") + "/chat/completions"
     headers = {"Authorization": f"Bearer {api_key}", "content-type": "application/json"}
-    body = {"model": model, "temperature": 0, "max_tokens": 2000, "messages": [{"role": "system", "content": RUBRIC}, {"role": "user", "content": prompt}]}
+    body = {
+        "model": model,
+        "temperature": 0,
+        "max_tokens": 2000,
+        "messages": [{"role": "system", "content": RUBRIC}, {"role": "user", "content": prompt}],
+    }
     r = await client.post(url, headers=headers, json=body, timeout=timeout)
     r.raise_for_status()
     data = r.json()
@@ -166,13 +208,21 @@ async def run_llm_review(
 ) -> tuple[list[Finding], dict[str, Any]]:
     settings = get_settings()
     opts = cfg.get("llm_review") or {}
-    status: dict[str, Any] = {"engine": "llm", "available": enabled(cfg), "findings": 0, "files": 0, "errors": 0}
+    status: dict[str, Any] = {
+        "engine": "llm",
+        "available": enabled(cfg),
+        "findings": 0,
+        "files": 0,
+        "errors": 0,
+    }
     if not status["available"]:
         status["error"] = "LLM-assisted review is disabled"
         return [], status
     api_key = settings.judge_api_key or ""
     provider = (settings.judge_provider or "openai").lower()
-    base_url = settings.judge_base_url or ("https://api.anthropic.com" if provider == "anthropic" else "https://api.openai.com/v1")
+    base_url = settings.judge_base_url or (
+        "https://api.anthropic.com" if provider == "anthropic" else "https://api.openai.com/v1"
+    )
     if not api_key:
         status["error"] = "judge_api_key is not configured"
         return [], status
@@ -191,13 +241,17 @@ async def run_llm_review(
             text = sf.read_text()
             prompt = f"File: {sf.path} (language: {sf.language})\n\n{_excerpt(text, max_chars)}"
             try:
-                content = await _ask(client, provider, base_url, api_key, settings.judge_model, prompt, timeout)
+                content = await _ask(
+                    client, provider, base_url, api_key, settings.judge_model, prompt, timeout
+                )
                 items = parse_response(content)
                 out.extend(to_findings(items, sf.path, sf.language, text.splitlines(), default_conf))
                 status["files"] += 1
             except Exception as exc:
                 status["errors"] += 1
-                log.warning("codereview.llm.error", file=sf.path, error=f"{type(exc).__name__}: {str(exc)[:200]}")
+                log.warning(
+                    "codereview.llm.error", file=sf.path, error=f"{type(exc).__name__}: {str(exc)[:200]}"
+                )
     finally:
         if own_client:
             await client.aclose()

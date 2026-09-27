@@ -55,7 +55,12 @@ DEFAULTS: dict[str, Any] = {
     "download_timeout_seconds": 120,
     "semgrep_timeout_seconds": 180,
     "bandit_timeout_seconds": 120,
-    "default_engines": ["rules", "semgrep", "bandit", "typesafe"],  # typesafe is a no-op until integrations.typesafe is enabled
+    "default_engines": [
+        "rules",
+        "semgrep",
+        "bandit",
+        "typesafe",
+    ],  # typesafe is a no-op until integrations.typesafe is enabled
     "semgrep_binary": "",  # empty = auto-detect (project venv first, then PATH)
     "bandit_binary": "",
     "llm_review": {

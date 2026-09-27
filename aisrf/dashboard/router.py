@@ -3,6 +3,7 @@
 Jinja2 only renders the page shell and the authenticated principal; every page then loads its
 data from the REST API and the SSE streams so that views stay live without reloads.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -49,7 +50,9 @@ def _login_redirect(request: Request) -> RedirectResponse:
     return RedirectResponse(url=f"/login?next={quote(nxt, safe='')}", status_code=303)
 
 
-def _render(request: Request, template: str, page: str, principal: Principal | None, **extra: object) -> Response:
+def _render(
+    request: Request, template: str, page: str, principal: Principal | None, **extra: object
+) -> Response:
     settings = get_settings()
     context = {
         "principal": principal,
@@ -64,14 +67,18 @@ def _render(request: Request, template: str, page: str, principal: Principal | N
     return templates.TemplateResponse(request, template, context)
 
 
-def _page(request: Request, template: str, page: str, principal: Principal | None, **extra: object) -> Response:
+def _page(
+    request: Request, template: str, page: str, principal: Principal | None, **extra: object
+) -> Response:
     if principal is None:
         return _login_redirect(request)
     return _render(request, template, page, principal, **extra)
 
 
 @router.get("/login")
-async def login_page(request: Request, next: str = "/", p: Principal | None = Depends(optional_principal)) -> Response:
+async def login_page(
+    request: Request, next: str = "/", p: Principal | None = Depends(optional_principal)
+) -> Response:
     if p is not None:
         target = next if next.startswith("/") and not next.startswith("//") else "/"
         return RedirectResponse(url=target, status_code=303)
@@ -89,7 +96,9 @@ async def tickets_page(request: Request, p: Principal | None = Depends(optional_
 
 
 @router.get("/tickets/{ticket_id}")
-async def ticket_page(request: Request, ticket_id: str, p: Principal | None = Depends(optional_principal)) -> Response:
+async def ticket_page(
+    request: Request, ticket_id: str, p: Principal | None = Depends(optional_principal)
+) -> Response:
     return _page(request, "ticket.html", "ticket", p, ticket_id=ticket_id)
 
 
@@ -99,7 +108,9 @@ async def agents_page(request: Request, p: Principal | None = Depends(optional_p
 
 
 @router.get("/agents/{agent_id}")
-async def agent_page(request: Request, agent_id: str, p: Principal | None = Depends(optional_principal)) -> Response:
+async def agent_page(
+    request: Request, agent_id: str, p: Principal | None = Depends(optional_principal)
+) -> Response:
     return _page(request, "agent.html", "agent", p, agent_id=agent_id)
 
 
@@ -114,12 +125,16 @@ async def redteam_page(request: Request, p: Principal | None = Depends(optional_
 
 
 @router.get("/redteam/groups/{group_id}")
-async def group_page(request: Request, group_id: str, p: Principal | None = Depends(optional_principal)) -> Response:
+async def group_page(
+    request: Request, group_id: str, p: Principal | None = Depends(optional_principal)
+) -> Response:
     return _page(request, "group.html", "group", p, group_id=group_id)
 
 
 @router.get("/redteam/{campaign_id}")
-async def campaign_page(request: Request, campaign_id: str, p: Principal | None = Depends(optional_principal)) -> Response:
+async def campaign_page(
+    request: Request, campaign_id: str, p: Principal | None = Depends(optional_principal)
+) -> Response:
     return _page(request, "campaign.html", "campaign", p, campaign_id=campaign_id)
 
 
@@ -129,7 +144,9 @@ async def codereview_page(request: Request, p: Principal | None = Depends(option
 
 
 @router.get("/codereview/{run_id}")
-async def codereview_run_page(request: Request, run_id: str, p: Principal | None = Depends(optional_principal)) -> Response:
+async def codereview_run_page(
+    request: Request, run_id: str, p: Principal | None = Depends(optional_principal)
+) -> Response:
     return _page(request, "codereview_run.html", "codereview_run", p, run_id=run_id)
 
 

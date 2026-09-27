@@ -21,7 +21,7 @@ from aisrf.codereview.secrets import mask_secrets, redact_url
 
 # --- fixture repository ------------------------------------------------------------------------
 FILES: dict[str, str] = {
-    "app/chat.py": '''
+    "app/chat.py": """
 import logging
 from flask import Flask, request, jsonify, render_template_string
 from openai import OpenAI
@@ -48,7 +48,7 @@ def raw():
     body = request.get_json()
     response = client.chat.completions.create(model="gpt-4o", messages=body["messages"])
     return jsonify({"answer": response.choices[0].message.content})
-''',
+""",
     "agent/tools.py": '''
 import subprocess
 from langchain.tools import tool
@@ -90,7 +90,7 @@ def agent_loop(llm, messages, tools):
             fn = globals()[call.name]
             messages.append({"role": "tool", "content": fn(**call.arguments)})
 ''',
-    "web/render.js": '''
+    "web/render.js": """
 import { marked } from "marked";
 import OpenAI from "openai";
 
@@ -103,8 +103,8 @@ export async function askAssistant(question) {
   document.getElementById("chat-md").innerHTML = marked(answer);
   return answer;
 }
-''',
-    "ml/loader.py": '''
+""",
+    "ml/loader.py": """
 import torch
 import requests
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -119,8 +119,8 @@ def fetch_and_load(url):
 
 tokenizer = AutoTokenizer.from_pretrained("acme/support-tokenizer")
 model = AutoModelForCausalLM.from_pretrained("acme/support-model", trust_remote_code=True)
-''',
-    "rag/retrieval.py": '''
+""",
+    "rag/retrieval.py": """
 import logging
 from flask import request
 from langchain_community.vectorstores import Chroma
@@ -137,15 +137,15 @@ def answer(llm):
     prompt = f"Answer the question using the context. Context: {context} Question: {question}"
     logger.info("full prompt: %s", prompt)
     return llm.invoke(prompt)
-''',
-    "web/Answer.jsx": '''
+""",
+    "web/Answer.jsx": """
 import React from "react";
 import ReactMarkdown from "react-markdown";
 
 export function Answer({ response }) {
   return <ReactMarkdown>{response.answer}</ReactMarkdown>;
 }
-''',
+""",
     "requirements.txt": "flask\nopenai>=1.0\ntorch\ntransformers==4.44.0\nlangchain\n",
     "Dockerfile": 'FROM python:latest\nRUN pip install torch transformers\nCOPY . /app\nCMD ["python", "/app/app/chat.py"]\n',
     ".env": "OPENAI_API_KEY=sk-proj-abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGH\nDATABASE_URL=postgres://user:pass@db/app\n",
@@ -163,13 +163,13 @@ def get_user(conn: sqlite3.Connection, user_id: int) -> tuple:
 def config() -> dict:
     return {"debug": False, "region": os.environ.get("REGION", "eu")}
 ''',
-    "clean/util.js": '''
+    "clean/util.js": """
 export function formatName(first, last) {
   const node = document.getElementById("name");
   node.textContent = first + " " + last;
   return node.textContent;
 }
-''',
+""",
     "README.md": "# Fixture\n\nA small LLM application used by the AISRF code review tests.\n",
 }
 EXPECTED_RULES = {
@@ -229,7 +229,9 @@ async def wait_for_run(client, run_id: str, timeout: float = 120) -> dict:
         run = r.json()
         if run["status"] in ("COMPLETED", "FAILED", "CANCELLED"):
             return run
-        assert asyncio.get_running_loop().time() < deadline, f"run did not finish: {run['status']} {run.get('stage')}"
+        assert asyncio.get_running_loop().time() < deadline, (
+            f"run did not finish: {run['status']} {run.get('stage')}"
+        )
         await asyncio.sleep(0.2)
 
 
@@ -248,19 +250,83 @@ def test_catalogue_is_consistent() -> None:
 
 
 def test_secret_masking_and_url_redaction() -> None:
-    assert "sk-proj-abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGH" not in mask_secrets('key = "sk-proj-abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGH"')
+    assert "sk-proj-abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGH" not in mask_secrets(
+        'key = "sk-proj-abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGH"'
+    )
     assert mask_secrets("ghp_" + "a" * 40) == "ghp_...[masked]"
-    assert redact_url("https://x-access-token:ghp_secret@github.com/org/repo.git") == "https://github.com/org/repo.git"
-    f = Finding("AISRF-GN-001", "general", "rules", "CRITICAL", 0.9, "t", "d", "r", "a.py", 1, 1, 'api_key = "hf_ABCDEFGHIJKLMNOPQRSTUVWXYZ12345"')
+    assert (
+        redact_url("https://x-access-token:ghp_secret@github.com/org/repo.git")
+        == "https://github.com/org/repo.git"
+    )
+    f = Finding(
+        "AISRF-GN-001",
+        "general",
+        "rules",
+        "CRITICAL",
+        0.9,
+        "t",
+        "d",
+        "r",
+        "a.py",
+        1,
+        1,
+        'api_key = "hf_ABCDEFGHIJKLMNOPQRSTUVWXYZ12345"',
+    )
     assert "hf_ABCDEFGHIJKLMNOPQRSTUVWXYZ12345" not in f.snippet and f.fingerprint
 
 
 def test_dedupe_and_risk_score() -> None:
-    a = Finding("AISRF-MS-001", "model_supply_chain", "rules", "CRITICAL", 0.7, "t", "d", "r", "m.py", 3, 3, "torch.load(p)", cwe="CWE-502")
-    b = Finding("AISRF-MS-001", "model_supply_chain", "semgrep", "CRITICAL", 0.85, "t", "d", "r", "m.py", 3, 3, "torch.load(p)", cwe="CWE-502")
-    c = Finding("BANDIT-B614", "general", "bandit", "MEDIUM", 0.6, "t", "d", "r", "m.py", 3, 3, "torch.load(p)", cwe="CWE-502")
+    a = Finding(
+        "AISRF-MS-001",
+        "model_supply_chain",
+        "rules",
+        "CRITICAL",
+        0.7,
+        "t",
+        "d",
+        "r",
+        "m.py",
+        3,
+        3,
+        "torch.load(p)",
+        cwe="CWE-502",
+    )
+    b = Finding(
+        "AISRF-MS-001",
+        "model_supply_chain",
+        "semgrep",
+        "CRITICAL",
+        0.85,
+        "t",
+        "d",
+        "r",
+        "m.py",
+        3,
+        3,
+        "torch.load(p)",
+        cwe="CWE-502",
+    )
+    c = Finding(
+        "BANDIT-B614",
+        "general",
+        "bandit",
+        "MEDIUM",
+        0.6,
+        "t",
+        "d",
+        "r",
+        "m.py",
+        3,
+        3,
+        "torch.load(p)",
+        cwe="CWE-502",
+    )
     unique = dedupe([a, b, c])
-    assert len(unique) == 1 and unique[0].confidence == 0.85 and set(unique[0].metadata["engines"]) == {"rules", "semgrep", "bandit"}
+    assert (
+        len(unique) == 1
+        and unique[0].confidence == 0.85
+        and set(unique[0].metadata["engines"]) == {"rules", "semgrep", "bandit"}
+    )
     assert risk_score([]) == 0
     assert risk_score([a]) >= 60 and risk_score([a, a, a]) <= 100
     assert risk_score([{"severity": "LOW", "confidence": 0.5, "status": "false_positive"}]) == 0
@@ -301,7 +367,12 @@ async def test_upload_run_end_to_end(client, admin_headers, fixture_zip: bytes, 
     assert all(r["owasp_labels"] for p in catalogue["packs"] for r in p["rules"])
 
     options = {"engines": ["rules", "semgrep", "bandit"]}
-    r = await client.post("/api/codereview/runs/upload", headers=admin_headers, files={"file": ("fixture.zip", fixture_zip, "application/zip")}, data={"name": "fixture run", "options": json.dumps(options)})
+    r = await client.post(
+        "/api/codereview/runs/upload",
+        headers=admin_headers,
+        files={"file": ("fixture.zip", fixture_zip, "application/zip")},
+        data={"name": "fixture run", "options": json.dumps(options)},
+    )
     assert r.status_code == 201, r.text
     run_id = r.json()["id"]
     run = await wait_for_run(client, run_id)
@@ -312,7 +383,11 @@ async def test_upload_run_end_to_end(client, admin_headers, fixture_zip: bytes, 
     frameworks = {f["name"] for f in inv["frameworks"]}
     assert {"openai", "langchain", "torch", "transformers"} <= frameworks
     assert inv["languages"]["python"]["files"] >= 4 and any(m["kind"] == "pip" for m in inv["manifests"])
-    assert inv["dockerfiles"] == ["Dockerfile"] and ".env" in inv["secret_files"] and inv["tool_calling"]["detected"]
+    assert (
+        inv["dockerfiles"] == ["Dockerfile"]
+        and ".env" in inv["secret_files"]
+        and inv["tool_calling"]["detected"]
+    )
     summary = run["summary"]
     assert summary["risk_score"] >= 80 and summary["risk_level"] in ("HIGH", "CRITICAL")
     engines = summary["engines"]
@@ -327,7 +402,9 @@ async def test_upload_run_end_to_end(client, admin_headers, fixture_zip: bytes, 
         warnings.warn("semgrep or bandit not installed; external engines not exercised", stacklevel=1)
     assert set(summary["by_pack"]) == set(PACKS)
 
-    listing = (await client.get(f"/api/codereview/runs/{run_id}/findings?limit=2000", headers=admin_headers)).json()
+    listing = (
+        await client.get(f"/api/codereview/runs/{run_id}/findings?limit=2000", headers=admin_headers)
+    ).json()
     findings = listing["items"]
     assert listing["total"] == run["finding_count"] == len(findings)
     seen = {(f["rule_id"], f["file"]) for f in findings}
@@ -338,44 +415,94 @@ async def test_upload_run_end_to_end(client, admin_headers, fixture_zip: bytes, 
     assert {f["engine"] for f in findings} >= expected_engines
     assert any(f["rule_id"].startswith("BANDIT-") for f in findings)
     key_findings = [f for f in findings if f["rule_id"] == "AISRF-GN-001"]
-    assert key_findings and all("abcdefghijklmnopqrstuvwxyz0123456789" not in f["snippet"] for f in key_findings)
+    assert key_findings and all(
+        "abcdefghijklmnopqrstuvwxyz0123456789" not in f["snippet"] for f in key_findings
+    )
     for f in findings:
-        assert f["owasp"] and f["owasp_labels"] and f["severity"] in ("CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO")
+        assert (
+            f["owasp"]
+            and f["owasp_labels"]
+            and f["severity"] in ("CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO")
+        )
 
     # filters
-    high = (await client.get(f"/api/codereview/runs/{run_id}/findings?severity=CRITICAL,HIGH", headers=admin_headers)).json()["items"]
+    high = (
+        await client.get(
+            f"/api/codereview/runs/{run_id}/findings?severity=CRITICAL,HIGH", headers=admin_headers
+        )
+    ).json()["items"]
     assert high and all(f["severity"] in ("CRITICAL", "HIGH") for f in high)
-    ms = (await client.get(f"/api/codereview/runs/{run_id}/findings?pack=model_supply_chain&engine=rules", headers=admin_headers)).json()["items"]
+    ms = (
+        await client.get(
+            f"/api/codereview/runs/{run_id}/findings?pack=model_supply_chain&engine=rules",
+            headers=admin_headers,
+        )
+    ).json()["items"]
     assert ms and all(f["pack"] == "model_supply_chain" and f["engine"] == "rules" for f in ms)
-    by_file = (await client.get(f"/api/codereview/runs/{run_id}/findings?file=ml/loader.py", headers=admin_headers)).json()["items"]
+    by_file = (
+        await client.get(f"/api/codereview/runs/{run_id}/findings?file=ml/loader.py", headers=admin_headers)
+    ).json()["items"]
     assert by_file and all(f["file"] == "ml/loader.py" for f in by_file)
-    searched = (await client.get(f"/api/codereview/runs/{run_id}/findings?search=trust_remote", headers=admin_headers)).json()["items"]
+    searched = (
+        await client.get(f"/api/codereview/runs/{run_id}/findings?search=trust_remote", headers=admin_headers)
+    ).json()["items"]
     assert any(f["rule_id"] == "AISRF-MS-003" for f in searched)
 
     # status update recomputes the summary
     target = next(f for f in findings if f["rule_id"] == "AISRF-MS-003")
-    bad = await client.post(f"/api/codereview/findings/{target['id']}/status", headers=admin_headers, json={"status": "nope"})
+    bad = await client.post(
+        f"/api/codereview/findings/{target['id']}/status", headers=admin_headers, json={"status": "nope"}
+    )
     assert bad.status_code == 400
-    r = await client.post(f"/api/codereview/findings/{target['id']}/status", headers=admin_headers, json={"status": "false_positive", "note": "vendored model"})
-    assert r.status_code == 200 and r.json()["status"] == "false_positive" and r.json()["reviewer_note"] == "vendored model"
-    fp = (await client.get(f"/api/codereview/runs/{run_id}/findings?status=false_positive", headers=admin_headers)).json()
+    r = await client.post(
+        f"/api/codereview/findings/{target['id']}/status",
+        headers=admin_headers,
+        json={"status": "false_positive", "note": "vendored model"},
+    )
+    assert (
+        r.status_code == 200
+        and r.json()["status"] == "false_positive"
+        and r.json()["reviewer_note"] == "vendored model"
+    )
+    fp = (
+        await client.get(
+            f"/api/codereview/runs/{run_id}/findings?status=false_positive", headers=admin_headers
+        )
+    ).json()
     assert fp["total"] == 1 and fp["items"][0]["id"] == target["id"]
     refreshed = (await client.get(f"/api/codereview/runs/{run_id}", headers=admin_headers)).json()
-    assert refreshed["summary"]["by_status"]["false_positive"] == 1 and refreshed["summary"]["open"] == summary["open"] - 1
+    assert (
+        refreshed["summary"]["by_status"]["false_positive"] == 1
+        and refreshed["summary"]["open"] == summary["open"] - 1
+    )
 
     # file viewer
-    doc = (await client.get(f"/api/codereview/runs/{run_id}/file?path=ml/loader.py", headers=admin_headers)).json()
-    assert "torch.load" in doc["content"] and doc["language"] == "python" and any(f["rule_id"] == "AISRF-MS-001" for f in doc["findings"])
-    assert (await client.get(f"/api/codereview/runs/{run_id}/file?path=../../etc/passwd", headers=admin_headers)).status_code == 404
-    assert (await client.get(f"/api/codereview/runs/{run_id}/file?path=/etc/passwd", headers=admin_headers)).status_code == 404
+    doc = (
+        await client.get(f"/api/codereview/runs/{run_id}/file?path=ml/loader.py", headers=admin_headers)
+    ).json()
+    assert (
+        "torch.load" in doc["content"]
+        and doc["language"] == "python"
+        and any(f["rule_id"] == "AISRF-MS-001" for f in doc["findings"])
+    )
+    assert (
+        await client.get(f"/api/codereview/runs/{run_id}/file?path=../../etc/passwd", headers=admin_headers)
+    ).status_code == 404
+    assert (
+        await client.get(f"/api/codereview/runs/{run_id}/file?path=/etc/passwd", headers=admin_headers)
+    ).status_code == 404
 
     # SARIF
     sarif_resp = await client.get(f"/api/codereview/runs/{run_id}/sarif", headers=admin_headers)
-    assert sarif_resp.status_code == 200 and sarif_resp.headers["content-type"].startswith("application/sarif+json")
+    assert sarif_resp.status_code == 200 and sarif_resp.headers["content-type"].startswith(
+        "application/sarif+json"
+    )
     sarif = sarif_resp.json()
     assert sarif["version"] == "2.1.0" and sarif["$schema"].endswith("sarif-2.1.0.json")
     driver = sarif["runs"][0]["tool"]["driver"]
-    assert driver["rules"] and all(rule["id"] and rule["shortDescription"]["text"] for rule in driver["rules"])
+    assert driver["rules"] and all(
+        rule["id"] and rule["shortDescription"]["text"] for rule in driver["rules"]
+    )
     results = sarif["runs"][0]["results"]
     assert results and len(results) == refreshed["summary"]["open"]
     for res in results:
@@ -383,24 +510,38 @@ async def test_upload_run_end_to_end(client, admin_headers, fixture_zip: bytes, 
         assert loc["artifactLocation"]["uri"] and loc["region"]["startLine"] >= 1
         assert res["partialFingerprints"]["aisrf/v1"] and res["ruleIndex"] < len(driver["rules"])
         assert driver["rules"][res["ruleIndex"]]["id"] == res["ruleId"]
-    with_dismissed = (await client.get(f"/api/codereview/runs/{run_id}/sarif?include_dismissed=true", headers=admin_headers)).json()
+    with_dismissed = (
+        await client.get(f"/api/codereview/runs/{run_id}/sarif?include_dismissed=true", headers=admin_headers)
+    ).json()
     assert len(with_dismissed["runs"][0]["results"]) == len(results) + 1
 
     # reports in json, html and pdf plus sarif through the reports router
-    for fmt, prefix in (("json", "application/json"), ("html", "text/html"), ("pdf", "application/pdf"), ("sarif", "application/sarif+json"), ("md", "text/markdown")):
+    for fmt, prefix in (
+        ("json", "application/json"),
+        ("html", "text/html"),
+        ("pdf", "application/pdf"),
+        ("sarif", "application/sarif+json"),
+        ("md", "text/markdown"),
+    ):
         rep = await client.get(f"/api/reports/codereview/{run_id}?format={fmt}", headers=admin_headers)
         assert rep.status_code == 200, (fmt, rep.text[:200])
         assert rep.headers["content-type"].startswith(prefix), (fmt, rep.headers["content-type"])
         assert len(rep.content) > 200
     html = (await client.get(f"/api/reports/codereview/{run_id}?format=html", headers=admin_headers)).text
     assert "AISRF-MS-001" in html and "fixture run" in html
-    assert (await client.get(f"/api/reports/codereview/{run_id}?format=pdf", headers=admin_headers)).content.startswith(b"%PDF")
+    assert (
+        await client.get(f"/api/reports/codereview/{run_id}?format=pdf", headers=admin_headers)
+    ).content.startswith(b"%PDF")
 
     # dashboard pages
     page = await client.get("/codereview", headers=admin_headers)
     assert page.status_code == 200 and 'id="run-rows"' in page.text and "/static/codereview.js" in page.text
     page = await client.get(f"/codereview/{run_id}", headers=admin_headers)
-    assert page.status_code == 200 and f'data-run-id="{run_id}"' in page.text and "/static/codereview_run.js" in page.text
+    assert (
+        page.status_code == 200
+        and f'data-run-id="{run_id}"' in page.text
+        and "/static/codereview_run.js" in page.text
+    )
     anonymous = await client.get("/codereview", follow_redirects=False)
     assert anonymous.status_code == 303 and "/login" in anonymous.headers["location"]
 
@@ -409,8 +550,12 @@ async def test_upload_run_end_to_end(client, admin_headers, fixture_zip: bytes, 
     from aisrf.logging import broadcaster
 
     recent = [e for e in broadcaster.recent("codereview", 500) if e.get("run_id") == run_id]
-    assert [e["event"] for e in recent][:2] == ["run.status", "run.status"] and recent[-1]["event"] == "finding.status"
-    assert any(e["event"] == "run.progress" and e.get("stage") in ("semgrep", "rules", "bandit") for e in recent)
+    assert [e["event"] for e in recent][:2] == ["run.status", "run.status"] and recent[-1][
+        "event"
+    ] == "finding.status"
+    assert any(
+        e["event"] == "run.progress" and e.get("stage") in ("semgrep", "rules", "bandit") for e in recent
+    )
 
     class _Req:
         async def is_disconnected(self) -> bool:
@@ -427,14 +572,18 @@ async def test_upload_run_end_to_end(client, admin_headers, fixture_zip: bytes, 
     assert all(json.loads(e["data"])["run_id"] == run_id for e in streamed)
 
     # cancelling a finished run is a conflict, listing and deletion work
-    assert (await client.post(f"/api/codereview/runs/{run_id}/cancel", headers=admin_headers)).status_code == 409
+    assert (
+        await client.post(f"/api/codereview/runs/{run_id}/cancel", headers=admin_headers)
+    ).status_code == 409
     runs = (await client.get("/api/codereview/runs?status=COMPLETED", headers=admin_headers)).json()
     assert any(item["id"] == run_id for item in runs["items"])
     work_dir = Path(refreshed["config"].get("work_dir", "")) if refreshed["config"].get("work_dir") else None
     r = await client.delete(f"/api/codereview/runs/{run_id}", headers=admin_headers)
     assert r.status_code == 200 and r.json()["deleted"] == run_id
     assert (await client.get(f"/api/codereview/runs/{run_id}", headers=admin_headers)).status_code == 404
-    assert (await client.get(f"/api/codereview/runs/{run_id}/findings", headers=admin_headers)).status_code == 404
+    assert (
+        await client.get(f"/api/codereview/runs/{run_id}/findings", headers=admin_headers)
+    ).status_code == 404
     if work_dir:
         assert not work_dir.exists()
 
@@ -443,11 +592,26 @@ async def test_upload_rejects_zip_slip_and_bad_options(client, admin_headers) ->
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w") as zf:
         zf.writestr("../escape.py", "import os\n")
-    r = await client.post("/api/codereview/runs/upload", headers=admin_headers, files={"file": ("evil.zip", buf.getvalue(), "application/zip")}, data={"options": "{}"})
+    r = await client.post(
+        "/api/codereview/runs/upload",
+        headers=admin_headers,
+        files={"file": ("evil.zip", buf.getvalue(), "application/zip")},
+        data={"options": "{}"},
+    )
     assert r.status_code == 400 and "unsafe archive member" in r.text
-    r = await client.post("/api/codereview/runs/upload", headers=admin_headers, files={"file": ("x.zip", b"not a zip", "application/zip")}, data={"options": "{}"})
+    r = await client.post(
+        "/api/codereview/runs/upload",
+        headers=admin_headers,
+        files={"file": ("x.zip", b"not a zip", "application/zip")},
+        data={"options": "{}"},
+    )
     assert r.status_code == 400
-    r = await client.post("/api/codereview/runs/upload", headers=admin_headers, files={"file": ("x.zip", b"PK", "application/zip")}, data={"options": json.dumps({"packs": ["nope"]})})
+    r = await client.post(
+        "/api/codereview/runs/upload",
+        headers=admin_headers,
+        files={"file": ("x.zip", b"PK", "application/zip")},
+        data={"options": json.dumps({"packs": ["nope"]})},
+    )
     assert r.status_code == 400 and "unknown packs" in r.text
     assert (await client.get("/api/codereview/runs")).status_code == 401
 
@@ -455,69 +619,133 @@ async def test_upload_rejects_zip_slip_and_bad_options(client, admin_headers) ->
 async def test_path_intake_is_restricted_to_allowed_roots(client, admin_headers, fixture_root: Path) -> None:
     from aisrf.config import get_settings
 
-    r = await client.post("/api/codereview/runs", headers=admin_headers, json={"source": {"type": "path", "path": "/etc"}})
+    r = await client.post(
+        "/api/codereview/runs", headers=admin_headers, json={"source": {"type": "path", "path": "/etc"}}
+    )
     assert r.status_code == 403 and "outside" in r.text
-    r = await client.post("/api/codereview/runs", headers=admin_headers, json={"source": {"type": "path", "path": str(fixture_root)}})
+    r = await client.post(
+        "/api/codereview/runs",
+        headers=admin_headers,
+        json={"source": {"type": "path", "path": str(fixture_root)}},
+    )
     assert r.status_code == 403
     inside = get_settings().data_dir / "codereview-local-src"
     inside.mkdir(parents=True, exist_ok=True)
     write_tree(inside)
-    r = await client.post("/api/codereview/runs", headers=admin_headers, json={"name": "local", "source": {"type": "path", "path": str(inside)}, "options": {"engines": ["rules"], "packs": ["model_supply_chain", "general"]}})
+    r = await client.post(
+        "/api/codereview/runs",
+        headers=admin_headers,
+        json={
+            "name": "local",
+            "source": {"type": "path", "path": str(inside)},
+            "options": {"engines": ["rules"], "packs": ["model_supply_chain", "general"]},
+        },
+    )
     assert r.status_code == 201, r.text
     run = await wait_for_run(client, r.json()["id"])
     assert run["status"] == "COMPLETED" and run["source_type"] == "path"
-    findings = (await client.get(f"/api/codereview/runs/{run['id']}/findings?limit=500", headers=admin_headers)).json()["items"]
+    findings = (
+        await client.get(f"/api/codereview/runs/{run['id']}/findings?limit=500", headers=admin_headers)
+    ).json()["items"]
     packs = {f["pack"] for f in findings}
     assert "model_supply_chain" in packs and packs <= {"model_supply_chain", "general"}
     assert run["config"]["engines"] == ["rules"] and set(run["summary"]["engines"]) == {"rules"}
 
 
-async def test_git_intake_from_local_bare_repository(client, admin_headers, fixture_root: Path, tmp_path: Path) -> None:
+async def test_git_intake_from_local_bare_repository(
+    client, admin_headers, fixture_root: Path, tmp_path: Path
+) -> None:
     bare = tmp_path / "origin.git"
     work = tmp_path / "work"
     subprocess.run(["git", "init", "--bare", "--quiet", str(bare)], check=True)
     work.mkdir()
     write_tree(work)
-    env = {**os.environ, "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@example.com", "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@example.com"}
-    for args in (["init", "--quiet", "-b", "main"], ["add", "."], ["commit", "--quiet", "-m", "fixture"], ["remote", "add", "origin", str(bare)], ["push", "--quiet", "origin", "main"]):
+    env = {
+        **os.environ,
+        "GIT_AUTHOR_NAME": "t",
+        "GIT_AUTHOR_EMAIL": "t@example.com",
+        "GIT_COMMITTER_NAME": "t",
+        "GIT_COMMITTER_EMAIL": "t@example.com",
+    }
+    for args in (
+        ["init", "--quiet", "-b", "main"],
+        ["add", "."],
+        ["commit", "--quiet", "-m", "fixture"],
+        ["remote", "add", "origin", str(bare)],
+        ["push", "--quiet", "origin", "main"],
+    ):
         subprocess.run(["git", *args], cwd=work, check=True, env=env, capture_output=True)
     token = "ghp_ThisIsAVerySecretTokenValue1234567890abcd"
-    payload = {"name": "git run", "source": {"type": "git", "url": f"file://{bare}", "ref": "main", "token": token}, "options": {"engines": ["rules"], "packs": ["prompt_injection", "agent_tool_abuse"]}}
+    payload = {
+        "name": "git run",
+        "source": {"type": "git", "url": f"file://{bare}", "ref": "main", "token": token},
+        "options": {"engines": ["rules"], "packs": ["prompt_injection", "agent_tool_abuse"]},
+    }
     r = await client.post("/api/codereview/runs", headers=admin_headers, json=payload)
     assert r.status_code == 201, r.text
     created = r.json()
     assert token not in json.dumps(created) and created["config"]["source"].get("token") in (None, "[masked]")
     run = await wait_for_run(client, created["id"])
     assert run["status"] == "COMPLETED", run.get("error")
-    assert run["source_type"] == "git" and run["source_ref"] == f"file://{bare}" and token not in json.dumps(run)
+    assert (
+        run["source_type"] == "git" and run["source_ref"] == f"file://{bare}" and token not in json.dumps(run)
+    )
     intake_info = run["inventory"]["intake"]
-    assert intake_info["method"] == "git" and re.fullmatch(r"[0-9a-f]{40}", intake_info["commit"]) and intake_info["ref"] == "main"
-    findings = (await client.get(f"/api/codereview/runs/{run['id']}/findings?limit=500", headers=admin_headers)).json()["items"]
+    assert (
+        intake_info["method"] == "git"
+        and re.fullmatch(r"[0-9a-f]{40}", intake_info["commit"])
+        and intake_info["ref"] == "main"
+    )
+    findings = (
+        await client.get(f"/api/codereview/runs/{run['id']}/findings?limit=500", headers=admin_headers)
+    ).json()["items"]
     assert {f["rule_id"] for f in findings} >= {"AISRF-PI-001", "AISRF-AT-001"}
     sarif = (await client.get(f"/api/codereview/runs/{run['id']}/sarif", headers=admin_headers)).json()
     assert sarif["runs"][0]["versionControlProvenance"][0]["revisionId"] == intake_info["commit"]
     audit = (await client.get("/api/audit?limit=50", headers=admin_headers)).json()
     assert token not in json.dumps(audit)
-    missing = await client.post("/api/codereview/runs", headers=admin_headers, json={"source": {"type": "git", "url": f"file://{tmp_path}/nope.git"}, "options": {"engines": ["rules"]}})
+    missing = await client.post(
+        "/api/codereview/runs",
+        headers=admin_headers,
+        json={
+            "source": {"type": "git", "url": f"file://{tmp_path}/nope.git"},
+            "options": {"engines": ["rules"]},
+        },
+    )
     failed = await wait_for_run(client, missing.json()["id"])
     assert failed["status"] == "FAILED" and "intake failed" in failed["error"]
 
 
 async def test_snippet_run_cancel_and_credentials(client, admin_headers) -> None:
     code = "import torch\nimport pickle\nweights = torch.load(download_path)\nobj = pickle.load(open('m.pkl', 'rb'))\n"
-    r = await client.post("/api/codereview/runs", headers=admin_headers, json={"source": {"type": "snippet", "code": code, "language": "python"}, "options": {"engines": ["rules", "semgrep"]}})
+    r = await client.post(
+        "/api/codereview/runs",
+        headers=admin_headers,
+        json={
+            "source": {"type": "snippet", "code": code, "language": "python"},
+            "options": {"engines": ["rules", "semgrep"]},
+        },
+    )
     assert r.status_code == 201, r.text
     run = await wait_for_run(client, r.json()["id"])
     assert run["status"] == "COMPLETED" and run["source_type"] == "snippet"
-    findings = (await client.get(f"/api/codereview/runs/{run['id']}/findings", headers=admin_headers)).json()["items"]
+    findings = (await client.get(f"/api/codereview/runs/{run['id']}/findings", headers=admin_headers)).json()[
+        "items"
+    ]
     ids = {f["rule_id"] for f in findings}
     assert {"AISRF-MS-001", "AISRF-MS-002"} <= ids and all(f["file"] == "snippet.py" for f in findings)
     merged = next(f for f in findings if f["rule_id"] == "AISRF-MS-001")
     assert merged["line_start"] == 3
-    empty = await client.post("/api/codereview/runs", headers=admin_headers, json={"source": {"type": "snippet", "code": "   "}})
+    empty = await client.post(
+        "/api/codereview/runs", headers=admin_headers, json={"source": {"type": "snippet", "code": "   "}}
+    )
     assert empty.status_code == 400
 
-    r = await client.post("/api/codereview/runs", headers=admin_headers, json={"source": {"type": "snippet", "code": code}, "options": {"engines": ["rules"]}})
+    r = await client.post(
+        "/api/codereview/runs",
+        headers=admin_headers,
+        json={"source": {"type": "snippet", "code": code}, "options": {"engines": ["rules"]}},
+    )
     run_id = r.json()["id"]
     cancelled = await client.post(f"/api/codereview/runs/{run_id}/cancel", headers=admin_headers)
     assert cancelled.status_code in (200, 409)
@@ -525,18 +753,41 @@ async def test_snippet_run_cancel_and_credentials(client, admin_headers) -> None
     assert final["status"] in ("CANCELLED", "COMPLETED")
 
     assert (await client.get("/api/codereview/credentials", headers=admin_headers)).json() == []
-    r = await client.post("/api/codereview/credentials", headers=admin_headers, json={"label": "ci bot", "provider": "github", "token": "ghp_" + "b" * 36})
+    r = await client.post(
+        "/api/codereview/credentials",
+        headers=admin_headers,
+        json={"label": "ci bot", "provider": "github", "token": "ghp_" + "b" * 36},
+    )
     assert r.status_code == 201
     cred = r.json()
-    assert cred["has_token"] and "token" not in cred and "token_encrypted" not in cred and cred["provider"] == "github"
+    assert (
+        cred["has_token"]
+        and "token" not in cred
+        and "token_encrypted" not in cred
+        and cred["provider"] == "github"
+    )
     listed = (await client.get("/api/codereview/credentials", headers=admin_headers)).json()
     assert [c["id"] for c in listed] == [cred["id"]] and "b" * 36 not in json.dumps(listed)
     from aisrf.codereview import service
 
     assert service.resolve_credential(cred["id"])["token"] == "ghp_" + "b" * 36
-    assert (await client.delete(f"/api/codereview/credentials/{cred['id']}", headers=admin_headers)).status_code == 200
-    assert (await client.delete(f"/api/codereview/credentials/{cred['id']}", headers=admin_headers)).status_code == 404
-    unknown = await client.post("/api/codereview/runs", headers=admin_headers, json={"source": {"type": "git", "url": "https://github.com/org/repo.git", "credential_id": "cred_missing"}})
+    assert (
+        await client.delete(f"/api/codereview/credentials/{cred['id']}", headers=admin_headers)
+    ).status_code == 200
+    assert (
+        await client.delete(f"/api/codereview/credentials/{cred['id']}", headers=admin_headers)
+    ).status_code == 404
+    unknown = await client.post(
+        "/api/codereview/runs",
+        headers=admin_headers,
+        json={
+            "source": {
+                "type": "git",
+                "url": "https://github.com/org/repo.git",
+                "credential_id": "cred_missing",
+            }
+        },
+    )
     assert unknown.status_code == 404
 
 
@@ -547,24 +798,51 @@ async def test_mcp_codereview_tools(client, admin_headers) -> None:
         pytest.skip(f"mcp server import unavailable: {exc}")
     server = build_server("http://testserver", "test-admin-token", transport_client=client)
     names = {t.name for t in await server.list_tools()}
-    assert {"codereview_rules", "codereview_start", "codereview_runs", "codereview_run", "codereview_findings", "codereview_set_finding_status", "codereview_report"} <= names
+    assert {
+        "codereview_rules",
+        "codereview_start",
+        "codereview_runs",
+        "codereview_run",
+        "codereview_findings",
+        "codereview_set_finding_status",
+        "codereview_report",
+    } <= names
 
     def payload(result):
         if isinstance(result, tuple):  # mcp 1.x returns (content, structured_content)
             content, structured = result
             return structured if structured is not None else json.loads(content[0].text)
-        return result.structured_content if result.structured_content is not None else json.loads(result.content[0].text)
+        return (
+            result.structured_content
+            if result.structured_content is not None
+            else json.loads(result.content[0].text)
+        )
 
     rules = payload(await server.call_tool("codereview_rules", {"pack": "llm_output"}))
     assert [p["name"] for p in rules["packs"]] == ["llm_output"]
-    started = payload(await server.call_tool("codereview_start", {"source": {"type": "snippet", "code": "import torch\nm = torch.load(path)\n"}, "options": {"engines": ["rules"]}}))
+    started = payload(
+        await server.call_tool(
+            "codereview_start",
+            {
+                "source": {"type": "snippet", "code": "import torch\nm = torch.load(path)\n"},
+                "options": {"engines": ["rules"]},
+            },
+        )
+    )
     assert started["status"] in ("CREATED", "FETCHING", "ANALYZING", "COMPLETED"), started
     run = await wait_for_run(client, started["id"])
     fetched = payload(await server.call_tool("codereview_run", {"run_id": run["id"]}))
     assert fetched["status"] == "COMPLETED" and fetched["summary"]["risk_score"] > 0
     runs = payload(await server.call_tool("codereview_runs", {"limit": 5}))
     assert any(item["id"] == run["id"] for item in runs["items"])
-    findings = payload(await server.call_tool("codereview_findings", {"run_id": run["id"], "severity": "CRITICAL"}))
+    findings = payload(
+        await server.call_tool("codereview_findings", {"run_id": run["id"], "severity": "CRITICAL"})
+    )
     assert findings["items"] and findings["items"][0]["rule_id"] == "AISRF-MS-001"
-    updated = payload(await server.call_tool("codereview_set_finding_status", {"finding_id": findings["items"][0]["id"], "status": "accepted", "note": "lab only"}))
+    updated = payload(
+        await server.call_tool(
+            "codereview_set_finding_status",
+            {"finding_id": findings["items"][0]["id"], "status": "accepted", "note": "lab only"},
+        )
+    )
     assert updated["status"] == "accepted"

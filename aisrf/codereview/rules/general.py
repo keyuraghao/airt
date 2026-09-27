@@ -27,8 +27,18 @@ PACK = "general"
 PLACEHOLDER = r"(?i)(xxx|your[_-]?|example|placeholder|\.\.\.|<[^>]+>|replace|dummy|changeme|1234567890|fake|test-?key|sample|redacted|\*\*\*|\$\{|os\.environ|getenv|process\.env|secrets\.|vault)"
 PROVIDER_KEY = r"(sk-(proj-|ant-(api\d{2}-)?|or-v1-)?[A-Za-z0-9_\-]{20,}|AIza[0-9A-Za-z_\-]{30,}|hf_[A-Za-z0-9]{20,}|gsk_[A-Za-z0-9]{20,}|xai-[A-Za-z0-9]{20,}|r8_[A-Za-z0-9]{20,}|pcsk_[A-Za-z0-9_\-]{20,}|AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{40,}|glpat-[A-Za-z0-9_\-]{20,}|xox[baprs]-[A-Za-z0-9\-]{10,}|sk-[A-Za-z0-9]{32,})"
 PROVIDER_ASSIGN = r"(?i)\b(OPENAI|ANTHROPIC|CLAUDE|GOOGLE|GEMINI|GOOGLE_AI|COHERE|MISTRAL|GROQ|HUGGING_?FACE|HF|REPLICATE|TOGETHER|AZURE_OPENAI|XAI|DEEPSEEK|PERPLEXITY|VOYAGE|OPENROUTER|FIREWORKS|LANGCHAIN|LANGSMITH|LLM|MODEL)_?(API_?KEY|TOKEN|SECRET|KEY)\s*[=:]\s*['\"]?[A-Za-z0-9_\-]{16,}['\"]?"
-LLM_CREATE = re.compile(r"(^|\.)(chat\.completions\.create|completions\.create|messages\.create|responses\.create|generate_content|generate_content_async|images\.generate|embeddings\.create)$")
-TOKEN_KW = {"max_tokens", "max_completion_tokens", "max_output_tokens", "generation_config", "timeout", "max_new_tokens", "config"}
+LLM_CREATE = re.compile(
+    r"(^|\.)(chat\.completions\.create|completions\.create|messages\.create|responses\.create|generate_content|generate_content_async|images\.generate|embeddings\.create)$"
+)
+TOKEN_KW = {
+    "max_tokens",
+    "max_completion_tokens",
+    "max_output_tokens",
+    "generation_config",
+    "timeout",
+    "max_new_tokens",
+    "config",
+}
 
 
 def _call_without_limits(ctx: FileContext, tree: ast.Module) -> Iterator[Match]:
@@ -44,7 +54,21 @@ def _call_without_limits(ctx: FileContext, tree: ast.Module) -> Iterator[Match]:
         yield node_match(ctx, call, note="no max_tokens or timeout on the call")
     for call in pyast.iter_calls(tree):
         name = pyast.call_name(call)
-        if name in ("OpenAI", "AsyncOpenAI", "Anthropic", "AsyncAnthropic", "AzureOpenAI", "AsyncAzureOpenAI", "openai.OpenAI", "anthropic.Anthropic") and not pyast.has_keyword(call, "timeout") and not pyast.has_keyword(call, "max_retries"):
+        if (
+            name
+            in (
+                "OpenAI",
+                "AsyncOpenAI",
+                "Anthropic",
+                "AsyncAnthropic",
+                "AzureOpenAI",
+                "AsyncAzureOpenAI",
+                "openai.OpenAI",
+                "anthropic.Anthropic",
+            )
+            and not pyast.has_keyword(call, "timeout")
+            and not pyast.has_keyword(call, "max_retries")
+        ):
             yield node_match(ctx, call, boost=-0.15, note="client created without an explicit timeout")
 
 
@@ -68,7 +92,11 @@ RULES: list[Rule] = [
         matcher=any_of(
             lines(r"['\"`]?" + PROVIDER_KEY + r"['\"`]?", unless=PLACEHOLDER, skip_comments=False),
             lines(PROVIDER_ASSIGN, unless=PLACEHOLDER, skip_comments=False),
-            lines(r"(?i)\bapi_?key\s*[=:]\s*['\"][A-Za-z0-9_\-]{24,}['\"]", unless=PLACEHOLDER, skip_comments=False),
+            lines(
+                r"(?i)\bapi_?key\s*[=:]\s*['\"][A-Za-z0-9_\-]{24,}['\"]",
+                unless=PLACEHOLDER,
+                skip_comments=False,
+            ),
         ),
         tags=("secrets",),
         engines=("rules", "semgrep"),
@@ -89,7 +117,11 @@ RULES: list[Rule] = [
             "Reference secrets by name from a secret store at runtime.",
         ),
         languages=("dotenv", "prompt", "text", "markdown", "yaml", "json", "toml", "jinja", "config", "xml"),
-        matcher=lines(r"(?i)^\s*[\"']?[A-Z0-9_.\-]*(API_?KEY|SECRET|TOKEN|PASSWORD|PASSWD|PRIVATE_KEY|CLIENT_SECRET|ACCESS_KEY)[A-Z0-9_.\-]*[\"']?\s*[=:]\s*[\"']?[^\s\"'#,]{12,}", unless=PLACEHOLDER, skip_comments=False),
+        matcher=lines(
+            r"(?i)^\s*[\"']?[A-Z0-9_.\-]*(API_?KEY|SECRET|TOKEN|PASSWORD|PASSWD|PRIVATE_KEY|CLIENT_SECRET|ACCESS_KEY)[A-Z0-9_.\-]*[\"']?\s*[=:]\s*[\"']?[^\s\"'#,]{12,}",
+            unless=PLACEHOLDER,
+            skip_comments=False,
+        ),
         tags=("secrets", "config"),
     ),
     rule(
@@ -108,8 +140,13 @@ RULES: list[Rule] = [
         ),
         languages=CODE,
         matcher=any_of(
-            lines(r"(app\.run\s*\([^)]*debug\s*=\s*True|\bDEBUG\s*=\s*True\b|debug\s*:\s*true\b|FLASK_DEBUG\s*=\s*1|uvicorn\.run\s*\([^)]*reload\s*=\s*True|app\.debug\s*=\s*True)"),
-            lines(r"(@app\.(route|get|post)|@router\.(get|post)|app\.(get|post)\(|router\.(get|post)\()\s*\(?\s*['\"][^'\"]*/(debug|__debug__|internal|admin/prompt|system[_-]?prompt|prompts?/raw|config|env|dump)\b", flag=("ai", "route")),
+            lines(
+                r"(app\.run\s*\([^)]*debug\s*=\s*True|\bDEBUG\s*=\s*True\b|debug\s*:\s*true\b|FLASK_DEBUG\s*=\s*1|uvicorn\.run\s*\([^)]*reload\s*=\s*True|app\.debug\s*=\s*True)"
+            ),
+            lines(
+                r"(@app\.(route|get|post)|@router\.(get|post)|app\.(get|post)\(|router\.(get|post)\()\s*\(?\s*['\"][^'\"]*/(debug|__debug__|internal|admin/prompt|system[_-]?prompt|prompts?/raw|config|env|dump)\b",
+                flag=("ai", "route"),
+            ),
         ),
         tags=("exposure",),
     ),
@@ -129,7 +166,10 @@ RULES: list[Rule] = [
             "Rate limit and authenticate the model endpoints independently of CORS.",
         ),
         languages=CODE,
-        matcher=lines(r"(allow_origins\s*=\s*\[\s*['\"]\*['\"]|CORS\(\s*app\s*\)|origins\s*=\s*['\"]\*['\"]|Access-Control-Allow-Origin['\"]?\s*[:,]\s*['\"]\*|origin\s*:\s*['\"]\*['\"]|app\.use\(\s*cors\(\s*\)\s*\)|cors\(\{\s*origin\s*:\s*true|CORS_ORIGIN_ALLOW_ALL\s*=\s*True|allowedOrigins\s*:\s*\[\s*['\"]\*['\"])", boost_flag="ai"),
+        matcher=lines(
+            r"(allow_origins\s*=\s*\[\s*['\"]\*['\"]|CORS\(\s*app\s*\)|origins\s*=\s*['\"]\*['\"]|Access-Control-Allow-Origin['\"]?\s*[:,]\s*['\"]\*|origin\s*:\s*['\"]\*['\"]|app\.use\(\s*cors\(\s*\)\s*\)|cors\(\{\s*origin\s*:\s*true|CORS_ORIGIN_ALLOW_ALL\s*=\s*True|allowedOrigins\s*:\s*\[\s*['\"]\*['\"])",
+            boost_flag="ai",
+        ),
         tags=("cors",),
     ),
     rule(
@@ -148,7 +188,16 @@ RULES: list[Rule] = [
             "Require authentication so limits can be attributed.",
         ),
         languages=("python", "javascript", "typescript"),
-        matcher=absence([r"(@app\.(route|post|get|api_route)|@router\.(post|get|api_route)|app\.post\(|router\.post\(|export (async )?function POST)", LLM_CALL.pattern], [r"(?i)(limiter|ratelimit|rate_limit|RateLimit|throttl|slowapi|express-rate-limit|rateLimit|Bucket|quota|budget|max_requests|cost_guard|Semaphore|@limits|upstash)"], anchor=LLM_CALL.pattern),
+        matcher=absence(
+            [
+                r"(@app\.(route|post|get|api_route)|@router\.(post|get|api_route)|app\.post\(|router\.post\(|export (async )?function POST)",
+                LLM_CALL.pattern,
+            ],
+            [
+                r"(?i)(limiter|ratelimit|rate_limit|RateLimit|throttl|slowapi|express-rate-limit|rateLimit|Bucket|quota|budget|max_requests|cost_guard|Semaphore|@limits|upstash)"
+            ],
+            anchor=LLM_CALL.pattern,
+        ),
         tags=("limits",),
     ),
     rule(
@@ -168,7 +217,12 @@ RULES: list[Rule] = [
         languages=CODE,
         matcher=any_of(
             py(_call_without_limits),
-            near(r"(chat\.completions\.create|messages\.create|responses\.create|generateText|streamText|generateObject)\s*\(\s*\{", None, window=10, unless=r"(max_tokens|maxTokens|max_completion_tokens|maxOutputTokens|max_output_tokens|abortSignal|timeout)"),
+            near(
+                r"(chat\.completions\.create|messages\.create|responses\.create|generateText|streamText|generateObject)\s*\(\s*\{",
+                None,
+                window=10,
+                unless=r"(max_tokens|maxTokens|max_completion_tokens|maxOutputTokens|max_output_tokens|abortSignal|timeout)",
+            ),
             lines(r"new\s+(OpenAI|Anthropic|AzureOpenAI)\s*\(\s*(\)|\{(?![^}]*timeout)[^}]*\})", flag="ai"),
         ),
         tags=("limits",),
@@ -188,7 +242,16 @@ RULES: list[Rule] = [
             "Cap stream duration and total tokens; close idle streams.",
         ),
         languages=CODE,
-        matcher=absence([r"(stream\s*[=:]\s*[Tt]rue|streamText\s*\(|\.stream\s*\(|text/event-stream|StreamingResponse\s*\(|EventSourceResponse\s*\()"], [r"(?i)(abort|AbortController|signal|timeout|cancel|disconnect|is_disconnected|max_tokens|maxTokens|deadline|time_limit)"], flag="ai", anchor=r"(stream\s*[=:]\s*[Tt]rue|streamText\s*\(|\.stream\s*\(|text/event-stream|StreamingResponse\s*\(|EventSourceResponse\s*\()"),
+        matcher=absence(
+            [
+                r"(stream\s*[=:]\s*[Tt]rue|streamText\s*\(|\.stream\s*\(|text/event-stream|StreamingResponse\s*\(|EventSourceResponse\s*\()"
+            ],
+            [
+                r"(?i)(abort|AbortController|signal|timeout|cancel|disconnect|is_disconnected|max_tokens|maxTokens|deadline|time_limit)"
+            ],
+            flag="ai",
+            anchor=r"(stream\s*[=:]\s*[Tt]rue|streamText\s*\(|\.stream\s*\(|text/event-stream|StreamingResponse\s*\(|EventSourceResponse\s*\()",
+        ),
         tags=("limits", "streaming"),
     ),
     rule(
@@ -206,7 +269,10 @@ RULES: list[Rule] = [
             "Redact key-like values in logging formatters.",
         ),
         languages=CODE,
-        matcher=lines(r"(?i)((api_?key|token|secret)\s*=\s*request\.(args|GET|query_params|form|values)|req\.query\.(apiKey|api_key|token|key)\b|(print|console\.log|logger?\.(info|debug|warn(ing)?|error))\s*\([^)]*\b(api_?key|OPENAI_API_KEY|ANTHROPIC_API_KEY|secret_key|access_token|client_secret)\b|[?&]api_?key=(?!\$|\{|<|%))", unless=r"(?i)(redact|mask|\[:4\]|\*\*\*|len\()"),
+        matcher=lines(
+            r"(?i)((api_?key|token|secret)\s*=\s*request\.(args|GET|query_params|form|values)|req\.query\.(apiKey|api_key|token|key)\b|(print|console\.log|logger?\.(info|debug|warn(ing)?|error))\s*\([^)]*\b(api_?key|OPENAI_API_KEY|ANTHROPIC_API_KEY|secret_key|access_token|client_secret)\b|[?&]api_?key=(?!\$|\{|<|%))",
+            unless=r"(?i)(redact|mask|\[:4\]|\*\*\*|len\()",
+        ),
         tags=("secrets", "logging"),
     ),
     rule(
@@ -224,7 +290,10 @@ RULES: list[Rule] = [
             "Send traces to an access-controlled observability backend with redaction instead of stdout.",
         ),
         languages=CODE,
-        matcher=lines(r"(verbose\s*[=:]\s*[Tt]rue|set_debug\s*\(\s*True\s*\)|set_verbose\s*\(\s*True\s*\)|langchain\.debug\s*=\s*True|LANGCHAIN_VERBOSE\s*=\s*['\"]?true|debug\s*=\s*True[^\n]*(agent|chain|crew))", flag=("agent", "ai")),
+        matcher=lines(
+            r"(verbose\s*[=:]\s*[Tt]rue|set_debug\s*\(\s*True\s*\)|set_verbose\s*\(\s*True\s*\)|langchain\.debug\s*=\s*True|LANGCHAIN_VERBOSE\s*=\s*['\"]?true|debug\s*=\s*True[^\n]*(agent|chain|crew))",
+            flag=("agent", "ai"),
+        ),
         tags=("logging",),
     ),
     rule(
@@ -242,7 +311,10 @@ RULES: list[Rule] = [
             "Pin certificates for internal model gateways where practical.",
         ),
         languages=ALL,
-        matcher=lines(r"(verify\s*=\s*False|NODE_TLS_REJECT_UNAUTHORIZED\s*=\s*['\"]?0|rejectUnauthorized\s*:\s*false|ssl\._create_unverified_context|check_hostname\s*=\s*False|CERT_NONE|--insecure\b|curl\s+-k\s|InsecureRequestWarning|verify_ssl\s*=\s*False|ssl_verify\s*[=:]\s*[Ff]alse)", boost_flag="ai"),
+        matcher=lines(
+            r"(verify\s*=\s*False|NODE_TLS_REJECT_UNAUTHORIZED\s*=\s*['\"]?0|rejectUnauthorized\s*:\s*false|ssl\._create_unverified_context|check_hostname\s*=\s*False|CERT_NONE|--insecure\b|curl\s+-k\s|InsecureRequestWarning|verify_ssl\s*=\s*False|ssl_verify\s*[=:]\s*[Ff]alse)",
+            boost_flag="ai",
+        ),
         tags=("transport",),
         engines=("rules", "bandit"),
     ),
@@ -261,7 +333,11 @@ RULES: list[Rule] = [
             "Attach budgets to the allowed models and log which one served each request.",
         ),
         languages=CODE,
-        matcher=lines(r"(base_url\s*=\s*(request|req|params|body|payload|data)\b|baseURL\s*:\s*req\.|model\s*=\s*request\.(json|args|form|get_json)|model\s*[=:]\s*(req|request)\.body\.model|model\s*[=:]\s*(payload|body|data|params)\[['\"]model['\"]\]|model\s*=\s*(payload|body|data)\.model\b)", flag=("ai", "route"), unless=r"(?i)(allow|ALLOWED|in \(|choices|Literal\[|enum)"),
+        matcher=lines(
+            r"(base_url\s*=\s*(request|req|params|body|payload|data)\b|baseURL\s*:\s*req\.|model\s*=\s*request\.(json|args|form|get_json)|model\s*[=:]\s*(req|request)\.body\.model|model\s*[=:]\s*(payload|body|data|params)\[['\"]model['\"]\]|model\s*=\s*(payload|body|data)\.model\b)",
+            flag=("ai", "route"),
+            unless=r"(?i)(allow|ALLOWED|in \(|choices|Literal\[|enum)",
+        ),
         tags=("limits", "ssrf"),
     ),
 ]

@@ -70,7 +70,9 @@ async def submit(
             raise ValueError(f"agent {agent_id} not found or inactive")
         normalized = normalize(path, raw, provider_hint=agent.upstream_provider)
         canary = None
-        if agent.inject_canary or settings_store.get_value("integrations", "rebuff", {}).get("canary_default"):
+        if agent.inject_canary or settings_store.get_value("integrations", "rebuff", {}).get(
+            "canary_default"
+        ):
             canary = canary_mod.new_canary()
             injected = canary_mod.inject(raw, canary)
             if injected != raw:
@@ -100,7 +102,11 @@ async def submit(
         )
         await tickets.set_analysis(session, ticket, analysis.to_dict())
         decision = policy.evaluate(agent, normalized, path, ticket.risk_score, ticket.findings)
-        if source == "redteam" and decision.action == "review" and not get_settings().require_approval_for_redteam_probes:
+        if (
+            source == "redteam"
+            and decision.action == "review"
+            and not get_settings().require_approval_for_redteam_probes
+        ):
             decision = policy.PolicyDecision(
                 "approve",
                 ["red-team probes run unattended because require_approval_for_redteam_probes is false"],

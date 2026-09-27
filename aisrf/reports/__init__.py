@@ -4,6 +4,7 @@ Programmatic entry point (used by the CLI and the MCP server):
 
     payload, media_type, ext = await aisrf.reports.generate(session, "summary", "pdf")
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -43,7 +44,9 @@ async def build(session: AsyncSession, kind: str, **params: Any) -> Report:
     return await builder(session, **params)
 
 
-async def generate(session: AsyncSession, kind: str, fmt: str = "json", **params: Any) -> tuple[bytes, str, str]:
+async def generate(
+    session: AsyncSession, kind: str, fmt: str = "json", **params: Any
+) -> tuple[bytes, str, str]:
     """Build and render a report. Returns (payload, media_type, file_extension).
 
     Raises ValueError for an unknown kind or format and NotFound when the entity is missing.
@@ -51,7 +54,9 @@ async def generate(session: AsyncSession, kind: str, fmt: str = "json", **params
     if kind == "codereview" and negotiate(None, fmt) == "sarif" and params.get("run_id"):
         from ..codereview.report import build_codereview_sarif
 
-        payload = await build_codereview_sarif(session, str(params["run_id"]), include_dismissed=bool(params.get("include_dismissed")))
+        payload = await build_codereview_sarif(
+            session, str(params["run_id"]), include_dismissed=bool(params.get("include_dismissed"))
+        )
         return payload, FORMATS["sarif"]["media_type"], FORMATS["sarif"]["extension"]
     report = await build(session, kind, **params)
     return render(report, fmt)

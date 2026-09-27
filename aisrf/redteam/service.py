@@ -1,4 +1,5 @@
 """Query and serialisation helpers for campaigns and probe results."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -72,7 +73,11 @@ async def _agent_names(session: AsyncSession, campaigns: list[Campaign]) -> dict
 
 
 async def list_campaigns(
-    session: AsyncSession, *, status: str | None = None, agent_id: str | None = None, group_id: str | None = None
+    session: AsyncSession,
+    *,
+    status: str | None = None,
+    agent_id: str | None = None,
+    group_id: str | None = None,
 ) -> list[dict[str, Any]]:
     q = select(Campaign).order_by(Campaign.created_at.desc())
     if status:
@@ -134,7 +139,9 @@ async def recompute_summary(session: AsyncSession, campaign_id: str) -> dict[str
     campaign = await session.get(Campaign, campaign_id)
     if campaign is None:
         return None
-    rows = list((await session.execute(select(ProbeResult).where(ProbeResult.campaign_id == campaign_id))).scalars())
+    rows = list(
+        (await session.execute(select(ProbeResult).where(ProbeResult.campaign_id == campaign_id))).scalars()
+    )
     duration = None
     if campaign.started_at and campaign.finished_at:
         duration = round((campaign.finished_at - campaign.started_at).total_seconds(), 2)
@@ -146,7 +153,11 @@ async def recompute_summary(session: AsyncSession, campaign_id: str) -> dict[str
 
 # --- comparison groups ---------------------------------------------------------
 async def list_groups(session: AsyncSession) -> list[dict[str, Any]]:
-    q = select(Campaign).where(Campaign.config["group_id"].as_string().is_not(None)).order_by(Campaign.created_at.asc())
+    q = (
+        select(Campaign)
+        .where(Campaign.config["group_id"].as_string().is_not(None))
+        .order_by(Campaign.created_at.asc())
+    )
     groups: dict[str, dict[str, Any]] = {}
     for c in (await session.execute(q)).scalars():
         gid = (c.config or {}).get("group_id")
@@ -154,7 +165,13 @@ async def list_groups(session: AsyncSession) -> list[dict[str, Any]]:
             continue
         g = groups.get(gid)
         if g is None:
-            g = {"group_id": gid, "name": str((c.config or {}).get("group_name") or ""), "campaign_count": 0, "statuses": {}, "created_at": c.created_at.isoformat() if c.created_at else None}
+            g = {
+                "group_id": gid,
+                "name": str((c.config or {}).get("group_name") or ""),
+                "campaign_count": 0,
+                "statuses": {},
+                "created_at": c.created_at.isoformat() if c.created_at else None,
+            }
             groups[gid] = g
         g["campaign_count"] += 1
         g["statuses"][c.status] = g["statuses"].get(c.status, 0) + 1

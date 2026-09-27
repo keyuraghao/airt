@@ -28,12 +28,20 @@ from .base import (
 
 PACK = "llm_output"
 OUT = r"(response|completion|answer|output|reply|generated|generation|llm\w*|model_?\w*|assistant\w*|choices?|message\.content|content\[0\]|result|summary|suggestion|ai\w*|gpt\w*|claude\w*|bot\w*|stream\w*|delta|chunk)"
-OUTPUT_EXPR = re.compile(r"(choices\[\d\]\.message\.content|content\[\d\]\.text|\.output_text|\.text\b|\.content\b|response\.text|completion\.content|\.candidates\[|generated_text|result\.text|\.choices\b)")
+OUTPUT_EXPR = re.compile(
+    r"(choices\[\d\]\.message\.content|content\[\d\]\.text|\.output_text|\.text\b|\.content\b|response\.text|completion\.content|\.candidates\[|generated_text|result\.text|\.choices\b)"
+)
 CODE_OUTPUT = re.compile(r"(?i)(code|command|cmd|script|sql|query|expression|expr|program|snippet|generated)")
-EXEC_CALLS = re.compile(r"(^|\.)(eval|exec|compile|os\.system|os\.popen|subprocess\.(run|call|check_output|Popen|check_call)|PythonREPL\.run|python_repl\.run|run_code|execute_code|create_subprocess_shell)$")
-PATH_OR_NET = re.compile(r"(^|\.)(open|Path|os\.path\.join|read_text|write_text|os\.remove|send_file|requests\.(get|post)|httpx\.(get|post)|urlopen|webbrowser\.open|fetch)$")
+EXEC_CALLS = re.compile(
+    r"(^|\.)(eval|exec|compile|os\.system|os\.popen|subprocess\.(run|call|check_output|Popen|check_call)|PythonREPL\.run|python_repl\.run|run_code|execute_code|create_subprocess_shell)$"
+)
+PATH_OR_NET = re.compile(
+    r"(^|\.)(open|Path|os\.path\.join|read_text|write_text|os\.remove|send_file|requests\.(get|post)|httpx\.(get|post)|urlopen|webbrowser\.open|fetch)$"
+)
 REDIRECTS = re.compile(r"(^|\.)(redirect|RedirectResponse|HttpResponseRedirect)$")
-HTML_SINKS_PY = re.compile(r"(render_template_string|Markup|mark_safe|format_html|HTMLResponse|HttpResponse|Response)\s*\(")
+HTML_SINKS_PY = re.compile(
+    r"(render_template_string|Markup|mark_safe|format_html|HTMLResponse|HttpResponse|Response)\s*\("
+)
 
 
 def _tainted_names(func: ast.AST) -> set[str]:
@@ -49,7 +57,11 @@ def _tainted_names(func: ast.AST) -> set[str]:
             src = ast.unparse(value)
         except Exception:
             src = ""
-        if LLM_CALL.search(src + "(") or OUTPUT_EXPR.search(src) or any(n in tainted or n.split(".")[0] in tainted for n in pyast.names_in(value)):
+        if (
+            LLM_CALL.search(src + "(")
+            or OUTPUT_EXPR.search(src)
+            or any(n in tainted or n.split(".")[0] in tainted for n in pyast.names_in(value))
+        ):
             targets = node.targets if isinstance(node, ast.Assign) else [node.target]
             for t in targets:
                 for n in pyast.names_in(t):
@@ -57,7 +69,14 @@ def _tainted_names(func: ast.AST) -> set[str]:
     return tainted
 
 
-def _sink_of_output(ctx: FileContext, tree: ast.Module, sink: re.Pattern[str], note: str, *, fallback_names: re.Pattern[str] | None = None) -> Iterator[Match]:
+def _sink_of_output(
+    ctx: FileContext,
+    tree: ast.Module,
+    sink: re.Pattern[str],
+    note: str,
+    *,
+    fallback_names: re.Pattern[str] | None = None,
+) -> Iterator[Match]:
     if not ctx.has_flag("ai"):
         return
     for func in pyast.iter_functions(tree):
@@ -72,7 +91,12 @@ def _sink_of_output(ctx: FileContext, tree: ast.Module, sink: re.Pattern[str], n
             refs = pyast.names_in(arg)
             roots = {r.split(".")[0] for r in refs}
             if roots & tainted:
-                yield node_match(ctx, call, boost=0.2, note=f"{note}: {', '.join(sorted(roots & tainted)[:3])} holds model output")
+                yield node_match(
+                    ctx,
+                    call,
+                    boost=0.2,
+                    note=f"{note}: {', '.join(sorted(roots & tainted)[:3])} holds model output",
+                )
             elif fallback_names and any(fallback_names.search(r) and MODEL_OUTPUT.search(r) for r in refs):
                 yield node_match(ctx, call, boost=-0.15, note=f"{note}: argument name suggests model output")
 
@@ -84,14 +108,19 @@ def _html_render_py(ctx: FileContext, tree: ast.Module) -> Iterator[Match]:
         tainted = _tainted_names(func)
         for call in pyast.iter_calls(func):
             name = pyast.call_name(call)
-            if not re.search(r"(^|\.)(render_template_string|Markup|mark_safe|format_html|HTMLResponse|HttpResponse)$", name):
+            if not re.search(
+                r"(^|\.)(render_template_string|Markup|mark_safe|format_html|HTMLResponse|HttpResponse)$",
+                name,
+            ):
                 continue
             args = [*call.args, *[k.value for k in call.keywords if k.arg in ("content", None)]]
             for a in args:
                 if pyast.is_constant(a) and not pyast.is_dynamic_string(a):
                     continue
                 roots = {r.split(".")[0] for r in pyast.names_in(a)}
-                if roots & tainted or (pyast.is_dynamic_string(a) and any(MODEL_OUTPUT.search(r) for r in pyast.names_in(a))):
+                if roots & tainted or (
+                    pyast.is_dynamic_string(a) and any(MODEL_OUTPUT.search(r) for r in pyast.names_in(a))
+                ):
                     yield node_match(ctx, call, note="model text is placed into HTML without escaping")
                     break
 
@@ -109,16 +138,31 @@ def _output_in_next_prompt(ctx: FileContext, tree: ast.Module) -> Iterator[Match
             roots = {n.split(".")[0] for n in pyast.interpolated(node)}
             hit = roots & tainted
             if hit:
-                yield node_match(ctx, node, note=f"{', '.join(sorted(hit)[:3])} came from a previous model call")
+                yield node_match(
+                    ctx, node, note=f"{', '.join(sorted(hit)[:3])} came from a previous model call"
+                )
 
 
 def _json_without_schema(ctx: FileContext, tree: ast.Module) -> Iterator[Match]:
-    if not ctx.has_flag("ai") or ctx.search(r"(model_validate|parse_obj|parse_raw|jsonschema|TypeAdapter|BaseModel|pydantic|marshmallow|response_format|structured_output|with_structured_output|instructor|Draft\d+Validator|validate\()"):
+    if not ctx.has_flag("ai") or ctx.search(
+        r"(model_validate|parse_obj|parse_raw|jsonschema|TypeAdapter|BaseModel|pydantic|marshmallow|response_format|structured_output|with_structured_output|instructor|Draft\d+Validator|validate\()"
+    ):
         return
     for func in pyast.iter_functions(tree):
         tainted = _tainted_names(func)
         for call in pyast.iter_calls(func):
-            if pyast.call_name(call) not in ("json.loads", "loads", "orjson.loads", "ujson.loads", "yaml.safe_load", "ast.literal_eval") or not call.args:
+            if (
+                pyast.call_name(call)
+                not in (
+                    "json.loads",
+                    "loads",
+                    "orjson.loads",
+                    "ujson.loads",
+                    "yaml.safe_load",
+                    "ast.literal_eval",
+                )
+                or not call.args
+            ):
                 continue
             roots = {r.split(".")[0] for r in pyast.names_in(call.args[0])}
             if roots & tainted or any(MODEL_OUTPUT.search(r) for r in roots):
@@ -145,7 +189,10 @@ RULES: list[Rule] = [
         matcher=any_of(
             py(_html_render_py),
             lines(r"\{\{\s*" + OUT + r"[^}]*\|\s*safe\s*\}\}|\{\{\{\s*" + OUT, skip_comments=False),
-            lines(r"res\.(send|write|end)\s*\(\s*(`[^`]*\$\{\s*" + OUT + r"|[^)]*\+\s*" + OUT + r")", flag=("ai", "route")),
+            lines(
+                r"res\.(send|write|end)\s*\(\s*(`[^`]*\$\{\s*" + OUT + r"|[^)]*\+\s*" + OUT + r")",
+                flag=("ai", "route"),
+            ),
         ),
         tags=("sink:html", "xss"),
         engines=("rules", "semgrep"),
@@ -166,7 +213,11 @@ RULES: list[Rule] = [
             "Disable remote images and links to untrusted hosts in rendered answers.",
         ),
         languages=WEB,
-        matcher=lines(r"(\.innerHTML\s*[+]?=|\.outerHTML\s*=|insertAdjacentHTML\s*\(|document\.write(ln)?\s*\(|dangerouslySetInnerHTML\s*=\s*\{\{?\s*__html\s*:|v-html\s*=|\[innerHTML\]\s*=|\{@html\s)", unless=r"(DOMPurify|sanitize|purify|escapeHtml|xss\(|sanitizeHtml|=\s*['\"`][^$'\"`]*['\"`]\s*;?\s*$)", requires=r"(?i)(chat|llm|assistant|completion|openai|anthropic|\bai\b|gpt|claude|gemini|prompt|answer|bot)"),
+        matcher=lines(
+            r"(\.innerHTML\s*[+]?=|\.outerHTML\s*=|insertAdjacentHTML\s*\(|document\.write(ln)?\s*\(|dangerouslySetInnerHTML\s*=\s*\{\{?\s*__html\s*:|v-html\s*=|\[innerHTML\]\s*=|\{@html\s)",
+            unless=r"(DOMPurify|sanitize|purify|escapeHtml|xss\(|sanitizeHtml|=\s*['\"`][^$'\"`]*['\"`]\s*;?\s*$)",
+            requires=r"(?i)(chat|llm|assistant|completion|openai|anthropic|\bai\b|gpt|claude|gemini|prompt|answer|bot)",
+        ),
         tags=("sink:dom", "xss"),
         engines=("rules", "semgrep"),
     ),
@@ -187,9 +238,26 @@ RULES: list[Rule] = [
         ),
         languages=CODE,
         matcher=any_of(
-            absence([r"(\bmarked(\.parse)?\s*\(|markdownit\s*\(|md\.render\s*\(|\bshowdown\b|\bremarkable\b|micromark\s*\()"], [r"(DOMPurify|sanitize|rehype-sanitize|sanitizeHtml|xss\(|purify)"], anchor=r"(\bmarked(\.parse)?\s*\(|markdownit\s*\(|md\.render\s*\(|micromark\s*\()", flag=("ai", "frontend")),
-            lines(r"(rehypeRaw|rehype-raw|allowDangerousHtml\s*:\s*true|html\s*:\s*true\s*[,}]|skipHtml\s*=\s*\{?false|unsafe\s*:\s*true)", requires=r"(?i)(markdown|marked|remark|md)"),
-            absence([r"(markdown\.markdown\s*\(|markdown2\.markdown\s*\(|mistune\.(html|markdown|create_markdown)\s*\(|commonmark\.commonmark\s*\()"], [r"(bleach|nh3|escape\(|sanitiz|html\.escape|strip_tags)"], anchor=r"(markdown\.markdown\s*\(|markdown2\.markdown\s*\(|mistune\.(html|markdown|create_markdown)\s*\(|commonmark\.commonmark\s*\()", flag="ai"),
+            absence(
+                [
+                    r"(\bmarked(\.parse)?\s*\(|markdownit\s*\(|md\.render\s*\(|\bshowdown\b|\bremarkable\b|micromark\s*\()"
+                ],
+                [r"(DOMPurify|sanitize|rehype-sanitize|sanitizeHtml|xss\(|purify)"],
+                anchor=r"(\bmarked(\.parse)?\s*\(|markdownit\s*\(|md\.render\s*\(|micromark\s*\()",
+                flag=("ai", "frontend"),
+            ),
+            lines(
+                r"(rehypeRaw|rehype-raw|allowDangerousHtml\s*:\s*true|html\s*:\s*true\s*[,}]|skipHtml\s*=\s*\{?false|unsafe\s*:\s*true)",
+                requires=r"(?i)(markdown|marked|remark|md)",
+            ),
+            absence(
+                [
+                    r"(markdown\.markdown\s*\(|markdown2\.markdown\s*\(|mistune\.(html|markdown|create_markdown)\s*\(|commonmark\.commonmark\s*\()"
+                ],
+                [r"(bleach|nh3|escape\(|sanitiz|html\.escape|strip_tags)"],
+                anchor=r"(markdown\.markdown\s*\(|markdown2\.markdown\s*\(|mistune\.(html|markdown|create_markdown)\s*\(|commonmark\.commonmark\s*\()",
+                flag="ai",
+            ),
         ),
         tags=("sink:markdown", "xss"),
     ),
@@ -210,8 +278,16 @@ RULES: list[Rule] = [
         ),
         languages=CODE,
         matcher=any_of(
-            py(lambda ctx, tree: _sink_of_output(ctx, tree, EXEC_CALLS, "code execution", fallback_names=CODE_OUTPUT)),
-            lines(r"(\beval\s*\(|new\s+Function\s*\(|vm\.run\w*\s*\(|execSync\s*\(|exec\s*\(|spawn(Sync)?\s*\()\s*[^)]*\b" + OUT, flag="ai"),
+            py(
+                lambda ctx, tree: _sink_of_output(
+                    ctx, tree, EXEC_CALLS, "code execution", fallback_names=CODE_OUTPUT
+                )
+            ),
+            lines(
+                r"(\beval\s*\(|new\s+Function\s*\(|vm\.run\w*\s*\(|execSync\s*\(|exec\s*\(|spawn(Sync)?\s*\()\s*[^)]*\b"
+                + OUT,
+                flag="ai",
+            ),
         ),
         tags=("sink:eval", "sink:shell"),
         engines=("rules", "semgrep"),
@@ -233,8 +309,29 @@ RULES: list[Rule] = [
         ),
         languages=CODE,
         matcher=any_of(
-            py(lambda ctx, tree: _sink_of_output(ctx, tree, re.compile(r"(^|\.)(execute|executemany|executescript|exec_driver_sql|raw|query|run_query|run_sql|read_sql|read_sql_query|text)$"), "SQL execution", fallback_names=re.compile(r"(?i)(sql|query|statement|generated|response|completion|answer|output)"))),
-            lines(r"\.(query|execute|raw|\$queryRawUnsafe|\$executeRawUnsafe)\s*\(\s*(`[^`]*\$\{\s*" + OUT + r"|" + OUT + r"\w*\s*[,)]|[^)]*\+\s*" + OUT + r")", flag="ai"),
+            py(
+                lambda ctx, tree: _sink_of_output(
+                    ctx,
+                    tree,
+                    re.compile(
+                        r"(^|\.)(execute|executemany|executescript|exec_driver_sql|raw|query|run_query|run_sql|read_sql|read_sql_query|text)$"
+                    ),
+                    "SQL execution",
+                    fallback_names=re.compile(
+                        r"(?i)(sql|query|statement|generated|response|completion|answer|output)"
+                    ),
+                )
+            ),
+            lines(
+                r"\.(query|execute|raw|\$queryRawUnsafe|\$executeRawUnsafe)\s*\(\s*(`[^`]*\$\{\s*"
+                + OUT
+                + r"|"
+                + OUT
+                + r"\w*\s*[,)]|[^)]*\+\s*"
+                + OUT
+                + r")",
+                flag="ai",
+            ),
         ),
         tags=("sink:sql",),
         engines=("rules", "semgrep"),
@@ -255,8 +352,23 @@ RULES: list[Rule] = [
         ),
         languages=CODE,
         matcher=any_of(
-            py(lambda ctx, tree: _sink_of_output(ctx, tree, PATH_OR_NET, "file or network access", fallback_names=re.compile(r"(?i)(path|file|url|link|target|response|completion|answer|output)"))),
-            lines(r"(fs\.(readFile|writeFile|unlink|readdir)\w*\s*\(|fetch\s*\(|axios(\.get|\.post)?\s*\(|got\s*\(|path\.join\s*\([^)]*)\s*[^)]*\b" + OUT, flag="ai", unless=r"fetch\s*\(\s*['\"`](/|https?://)[^$]"),
+            py(
+                lambda ctx, tree: _sink_of_output(
+                    ctx,
+                    tree,
+                    PATH_OR_NET,
+                    "file or network access",
+                    fallback_names=re.compile(
+                        r"(?i)(path|file|url|link|target|response|completion|answer|output)"
+                    ),
+                )
+            ),
+            lines(
+                r"(fs\.(readFile|writeFile|unlink|readdir)\w*\s*\(|fetch\s*\(|axios(\.get|\.post)?\s*\(|got\s*\(|path\.join\s*\([^)]*)\s*[^)]*\b"
+                + OUT,
+                flag="ai",
+                unless=r"fetch\s*\(\s*['\"`](/|https?://)[^$]",
+            ),
         ),
         tags=("sink:filesystem", "sink:http"),
     ),
@@ -278,7 +390,14 @@ RULES: list[Rule] = [
         languages=CODE,
         matcher=any_of(
             py(_json_without_schema),
-            absence([r"JSON\.parse\s*\([^)]*\b" + OUT], [r"(zod|z\.object|safeParse|ajv|yup|joi|valibot|typebox|schema\.parse|validate\(|assertType|is[A-Z]\w+\()"], flag="ai", anchor=r"JSON\.parse\s*\("),
+            absence(
+                [r"JSON\.parse\s*\([^)]*\b" + OUT],
+                [
+                    r"(zod|z\.object|safeParse|ajv|yup|joi|valibot|typebox|schema\.parse|validate\(|assertType|is[A-Z]\w+\()"
+                ],
+                flag="ai",
+                anchor=r"JSON\.parse\s*\(",
+            ),
         ),
         tags=("validation",),
     ),
@@ -299,8 +418,22 @@ RULES: list[Rule] = [
         ),
         languages=CODE,
         matcher=any_of(
-            absence([r"(PythonREPL|python_repl|exec_python|run_python|execute_code|run_code|subprocess\.run\(\s*\[\s*[\"'](python3?|node|bash|sh)[\"'][^\]]*(code|script|generated|program)|\.write_text\(\s*(code|generated|script)|\.write\(\s*(code|generated|script))"], [r"(?i)(docker|sandbox|e2b|firejail|gvisor|nsjail|modal\.|pyodide|wasm|isolated|container|seccomp|bubblewrap|microvm|firecracker)"], flag="ai", anchor=r"(PythonREPL|python_repl|exec_python|run_python|execute_code|run_code|subprocess\.run\(|\.write_text\(|\.write\()"),
-            absence([r"(execSync|spawnSync|exec)\s*\([^)]*(code|generated|script)"], [r"(?i)(docker|sandbox|isolated-vm|vm2|worker_threads|gvisor|firecracker|deno)"], flag="ai", anchor=r"(execSync|spawnSync|exec)\s*\("),
+            absence(
+                [
+                    r"(PythonREPL|python_repl|exec_python|run_python|execute_code|run_code|subprocess\.run\(\s*\[\s*[\"'](python3?|node|bash|sh)[\"'][^\]]*(code|script|generated|program)|\.write_text\(\s*(code|generated|script)|\.write\(\s*(code|generated|script))"
+                ],
+                [
+                    r"(?i)(docker|sandbox|e2b|firejail|gvisor|nsjail|modal\.|pyodide|wasm|isolated|container|seccomp|bubblewrap|microvm|firecracker)"
+                ],
+                flag="ai",
+                anchor=r"(PythonREPL|python_repl|exec_python|run_python|execute_code|run_code|subprocess\.run\(|\.write_text\(|\.write\()",
+            ),
+            absence(
+                [r"(execSync|spawnSync|exec)\s*\([^)]*(code|generated|script)"],
+                [r"(?i)(docker|sandbox|isolated-vm|vm2|worker_threads|gvisor|firecracker|deno)"],
+                flag="ai",
+                anchor=r"(execSync|spawnSync|exec)\s*\(",
+            ),
         ),
         tags=("sandbox",),
     ),
@@ -322,7 +455,11 @@ RULES: list[Rule] = [
         languages=CODE,
         matcher=any_of(
             py(_output_in_next_prompt),
-            lines(r"\$\{\s*(response|completion|answer|output|summary|generated|previous|draft|plan|reply)\w*\s*\}", requires=r"(?i)(you are|answer|summari[sz]e|instruction|prompt|context:|question:)", flag="ai"),
+            lines(
+                r"\$\{\s*(response|completion|answer|output|summary|generated|previous|draft|plan|reply)\w*\s*\}",
+                requires=r"(?i)(you are|answer|summari[sz]e|instruction|prompt|context:|question:)",
+                flag="ai",
+            ),
         ),
         tags=("chaining",),
     ),
@@ -342,7 +479,16 @@ RULES: list[Rule] = [
             "Cap response length and log filter hits for monitoring.",
         ),
         languages=CODE,
-        matcher=absence([r"(return\s+[^\n]*(choices\[0\]\.message\.content|content\[0\]\.text|\.output_text|response\.text|completion\.content|\.generated_text)|res\.(json|send)\([^)]*(completion|response\.choices|answer|\.content\b|\.text\b))"], [r"(?i)(redact|filter|moderat|scrub|guardrail|sanitiz|validate_output|output_guard|allowlist|mask|pii|Guard\(|llm_guard|nemoguardrails|rebuff|check_output|scan_output|lakera|escape)"], flag=("route", "ai"), anchor=r"(return\s+[^\n]*(choices\[0\]\.message\.content|content\[0\]\.text|\.output_text|response\.text|completion\.content|\.generated_text)|res\.(json|send)\()"),
+        matcher=absence(
+            [
+                r"(return\s+[^\n]*(choices\[0\]\.message\.content|content\[0\]\.text|\.output_text|response\.text|completion\.content|\.generated_text)|res\.(json|send)\([^)]*(completion|response\.choices|answer|\.content\b|\.text\b))"
+            ],
+            [
+                r"(?i)(redact|filter|moderat|scrub|guardrail|sanitiz|validate_output|output_guard|allowlist|mask|pii|Guard\(|llm_guard|nemoguardrails|rebuff|check_output|scan_output|lakera|escape)"
+            ],
+            flag=("route", "ai"),
+            anchor=r"(return\s+[^\n]*(choices\[0\]\.message\.content|content\[0\]\.text|\.output_text|response\.text|completion\.content|\.generated_text)|res\.(json|send)\()",
+        ),
         tags=("hardening",),
     ),
     rule(
@@ -362,8 +508,30 @@ RULES: list[Rule] = [
         ),
         languages=(*CODE, "html", "jinja"),
         matcher=any_of(
-            py(lambda ctx, tree: _sink_of_output(ctx, tree, REDIRECTS, "redirect", fallback_names=re.compile(r"(?i)(url|link|target|response|completion|answer|output)"))),
-            lines(r"(href\s*=\s*\{?\s*" + OUT + r"|window\.location(\.href)?\s*=\s*" + OUT + r"|location\.(assign|replace)\s*\(\s*" + OUT + r"|<a[^>]*href\s*=\s*[\"']?\$\{|href=\"\{\{\s*" + OUT + r"|res\.redirect\s*\(\s*" + OUT + r")", flag=("ai", "frontend", "route"), skip_comments=False),
+            py(
+                lambda ctx, tree: _sink_of_output(
+                    ctx,
+                    tree,
+                    REDIRECTS,
+                    "redirect",
+                    fallback_names=re.compile(r"(?i)(url|link|target|response|completion|answer|output)"),
+                )
+            ),
+            lines(
+                r"(href\s*=\s*\{?\s*"
+                + OUT
+                + r"|window\.location(\.href)?\s*=\s*"
+                + OUT
+                + r"|location\.(assign|replace)\s*\(\s*"
+                + OUT
+                + r"|<a[^>]*href\s*=\s*[\"']?\$\{|href=\"\{\{\s*"
+                + OUT
+                + r"|res\.redirect\s*\(\s*"
+                + OUT
+                + r")",
+                flag=("ai", "frontend", "route"),
+                skip_comments=False,
+            ),
         ),
         tags=("sink:url", "phishing"),
     ),
@@ -373,7 +541,9 @@ _ = (JS, near, HTML_SINKS_PY)
 PACKAGE_INSTALL = r"((pip3?|uv pip|pipx|npm|yarn|pnpm|cargo|gem|go)\s+(install|add|i|get)\b[^\n]*(\$\{|\{[a-z_]|\s\+\s*[A-Za-z_]|%s|\+\s*[A-Za-z_])|\[\s*['\"](pip3?|npm|uv|pipx)['\"]\s*,\s*(['\"](pip|-m)['\"]\s*,\s*)*['\"](install|add|i)['\"]\s*,\s*(?!['\"\]])[A-Za-z_(]|importlib\.import_module\s*\(\s*(?!['\"])[A-Za-z_])"
 STRUCTURED_OUTPUT = r"(response_format|json_object|json_schema|with_structured_output|structured_output|response_model|instructor|output_schema|responseSchema|generateObject|tool_choice|function_call|response_mime_type|format\s*[=:]\s*['\"]json|outputParser|OutputParser|StructuredOutput|Output\()"
 JSON_ASK = r"(?i)['\"`][^'\"`\n]*\b(return|respond|reply|answer|output|format)\b[^'\"`\n]{0,80}\bJSON\b|\bJSON\b[^'\"`\n]{0,40}\b(only|format|object)\b[^'\"`\n]*['\"`]"
-EMAIL_SINK = re.compile(r"(^|\.)(send_mail|send_email|sendmail|send_message|EmailMessage|MIMEText|MIMEMultipart|EmailMultiAlternatives|SendGridAPIClient|Mail|chat_postMessage|publish|notify|send_sms|send_notification)$")
+EMAIL_SINK = re.compile(
+    r"(^|\.)(send_mail|send_email|sendmail|send_message|EmailMessage|MIMEText|MIMEMultipart|EmailMultiAlternatives|SendGridAPIClient|Mail|chat_postMessage|publish|notify|send_sms|send_notification)$"
+)
 
 
 RULES += [
@@ -431,9 +601,27 @@ RULES += [
         ),
         languages=CODE,
         matcher=any_of(
-            py(lambda ctx, tree: _sink_of_output(ctx, tree, EMAIL_SINK, "messaging", fallback_names=re.compile(r"(?i)(subject|body|recipient|to_addr|message|response|completion|answer|output|reply)"))),
-            lines(r"(sendMail|transporter\.send|sgMail\.send|resend\.emails\.send|messages\.create|chat\.postMessage|postMessage)\s*\(\s*\{[^}]*\b(subject|to|text|html)\s*:\s*[^,}]*\b" + OUT, flag="ai"),
-            lines(r"(?i)\b(subject|to|recipient|recipients|cc|bcc|reply_to|from_email|headers\[[^\]]+\])\s*[=:]\s*[^\n=]*\b(response|completion|answer|output|reply|generated|llm\w*|model_?output|assistant\w*)\b", flag="ai", requires=r"(smtplib|sendmail|send_mail|send_email|EmailMessage|MIMEText|nodemailer|sendgrid|SendGrid|resend|twilio|mailgun|ses\.|postmark)"),
+            py(
+                lambda ctx, tree: _sink_of_output(
+                    ctx,
+                    tree,
+                    EMAIL_SINK,
+                    "messaging",
+                    fallback_names=re.compile(
+                        r"(?i)(subject|body|recipient|to_addr|message|response|completion|answer|output|reply)"
+                    ),
+                )
+            ),
+            lines(
+                r"(sendMail|transporter\.send|sgMail\.send|resend\.emails\.send|messages\.create|chat\.postMessage|postMessage)\s*\(\s*\{[^}]*\b(subject|to|text|html)\s*:\s*[^,}]*\b"
+                + OUT,
+                flag="ai",
+            ),
+            lines(
+                r"(?i)\b(subject|to|recipient|recipients|cc|bcc|reply_to|from_email|headers\[[^\]]+\])\s*[=:]\s*[^\n=]*\b(response|completion|answer|output|reply|generated|llm\w*|model_?output|assistant\w*)\b",
+                flag="ai",
+                requires=r"(smtplib|sendmail|send_mail|send_email|EmailMessage|MIMEText|nodemailer|sendgrid|SendGrid|resend|twilio|mailgun|ses\.|postmark)",
+            ),
         ),
         tags=("sink:email",),
     ),

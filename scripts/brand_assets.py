@@ -5,6 +5,7 @@ Outputs (docs/images/brand/): logo-mark.png, icon-512.png, icon-192.png, favicon
 logo-horizontal.png, logo-horizontal-dark.png, social-preview.png, README-hero.png, and copies the
 dashboard files into aisrf/dashboard/static/.
 """
+
 from __future__ import annotations
 
 import shutil
@@ -51,7 +52,9 @@ def gradient(width: int, height: int) -> Image.Image:
     return img
 
 
-def fit_font(draw: ImageDraw.ImageDraw, text: str, path: str, size: int, max_width: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
+def fit_font(
+    draw: ImageDraw.ImageDraw, text: str, path: str, size: int, max_width: int
+) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
     """Largest font at or below `size` whose rendered text fits in max_width."""
     while size > 8:
         f = font(path, size)
@@ -61,7 +64,16 @@ def fit_font(draw: ImageDraw.ImageDraw, text: str, path: str, size: int, max_wid
     return font(path, size)
 
 
-def text_block(draw: ImageDraw.ImageDraw, x: int, y: int, scale: float, color_word: tuple, color_tag: tuple, tagline: str, max_width: int) -> int:
+def text_block(
+    draw: ImageDraw.ImageDraw,
+    x: int,
+    y: int,
+    scale: float,
+    color_word: tuple,
+    color_tag: tuple,
+    tagline: str,
+    max_width: int,
+) -> int:
     word = fit_font(draw, "AISRF", FONT_BOLD, int(150 * scale), max_width)
     tag = fit_font(draw, tagline, FONT_BOLD, int(34 * scale), max_width)
     draw.text((x, y), "AISRF", font=word, fill=color_word)

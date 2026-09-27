@@ -6,6 +6,7 @@ POST {endpoint} (default https://api.lakera.ai/v2/guard) with `Authorization: Be
 category follows the detector type and a flagged screening is always at least HIGH. Network or API
 failures are logged at most once per minute and yield no findings. Nothing runs when api_key is empty.
 """
+
 from __future__ import annotations
 
 import time
@@ -60,7 +61,9 @@ async def screen(messages: list[dict[str, str]], cfg: dict[str, Any] | None = No
     api_key = str(cfg.get("api_key") or "").strip()
     if not api_key or not messages:
         return None
-    payload: dict[str, Any] = {"messages": [{"role": m["role"], "content": m["content"][:MAX_CONTENT_CHARS]} for m in messages]}
+    payload: dict[str, Any] = {
+        "messages": [{"role": m["role"], "content": m["content"][:MAX_CONTENT_CHARS]} for m in messages]
+    }
     project_id = str(cfg.get("project_id") or "").strip()
     if project_id:
         payload["project_id"] = project_id
@@ -74,7 +77,13 @@ async def screen(messages: list[dict[str, str]], cfg: dict[str, Any] | None = No
             data = resp.json()
     except Exception as exc:
         set_error(NAME, f"{type(exc).__name__}: {str(exc)[:200]}")
-        log_throttled("lakera.api", "guardrails.lakera.request_failed", endpoint=endpoint, error=str(exc)[:300], interval=60.0)
+        log_throttled(
+            "lakera.api",
+            "guardrails.lakera.request_failed",
+            endpoint=endpoint,
+            error=str(exc)[:300],
+            interval=60.0,
+        )
         return None
     if not isinstance(data, dict):
         set_error(NAME, "unexpected response shape")
@@ -96,18 +105,39 @@ def _findings(data: dict[str, Any], analyzer: str, text: str, location: str, kin
         sev = at_least(base, Severity.HIGH) if flagged else base
         findings.append(
             make_finding(
-                analyzer, category, sev, f"Lakera Guard detected {dtype.replace('_', ' ')} in the {kind}",
-                f"Lakera Guard detector '{b.get('detector_id') or dtype}' ({dtype}) fired on the {kind}" + (" and the screening was flagged." if flagged else "."),
-                evidence, location, 0.9 if flagged else 0.7, tags=["lakera", dtype],
-                metadata={"detector_type": dtype, "detector_id": b.get("detector_id"), "policy_id": b.get("policy_id"), "project_id": b.get("project_id"), "flagged": flagged, "payload": payload[:10]},
+                analyzer,
+                category,
+                sev,
+                f"Lakera Guard detected {dtype.replace('_', ' ')} in the {kind}",
+                f"Lakera Guard detector '{b.get('detector_id') or dtype}' ({dtype}) fired on the {kind}"
+                + (" and the screening was flagged." if flagged else "."),
+                evidence,
+                location,
+                0.9 if flagged else 0.7,
+                tags=["lakera", dtype],
+                metadata={
+                    "detector_type": dtype,
+                    "detector_id": b.get("detector_id"),
+                    "policy_id": b.get("policy_id"),
+                    "project_id": b.get("project_id"),
+                    "flagged": flagged,
+                    "payload": payload[:10],
+                },
             )
         )
     if flagged and not findings:
         findings.append(
             make_finding(
-                analyzer, "guardrail", Severity.HIGH, f"Lakera Guard flagged the {kind}",
-                f"Lakera Guard flagged the {kind} without a detector breakdown.", evidence, location, 0.85,
-                tags=["lakera"], metadata={"flagged": True, "payload": payload[:10]},
+                analyzer,
+                "guardrail",
+                Severity.HIGH,
+                f"Lakera Guard flagged the {kind}",
+                f"Lakera Guard flagged the {kind} without a detector breakdown.",
+                evidence,
+                location,
+                0.85,
+                tags=["lakera"],
+                metadata={"flagged": True, "payload": payload[:10]},
             )
         )
     return findings
@@ -131,7 +161,9 @@ class LakeraRequestAnalyzer:
             return _findings(data, self.name, primary_text(normalized), "last_user_message", "request")
         except Exception as exc:
             set_error(NAME, str(exc))
-            log_throttled("lakera.request", "guardrails.lakera.failed", analyzer=self.name, error=str(exc)[:300])
+            log_throttled(
+                "lakera.request", "guardrails.lakera.failed", analyzer=self.name, error=str(exc)[:300]
+            )
             return []
 
 
@@ -155,7 +187,9 @@ class LakeraResponseAnalyzer:
             return _findings(data, self.name, text, "response", "response")
         except Exception as exc:
             set_error(NAME, str(exc))
-            log_throttled("lakera.response", "guardrails.lakera.failed", analyzer=self.name, error=str(exc)[:300])
+            log_throttled(
+                "lakera.response", "guardrails.lakera.failed", analyzer=self.name, error=str(exc)[:300]
+            )
             return []
 
 
@@ -187,4 +221,9 @@ async def health_check() -> dict[str, Any]:
     ms = round((time.perf_counter() - start) * 1000, 1)
     if data is None:
         return {"name": NAME, "ok": False, "detail": last_error(NAME) or "request failed", "duration_ms": ms}
-    return {"name": NAME, "ok": True, "detail": f"API reachable, benign probe flagged={bool(data.get('flagged'))}", "duration_ms": ms}
+    return {
+        "name": NAME,
+        "ok": True,
+        "detail": f"API reachable, benign probe flagged={bool(data.get('flagged'))}",
+        "duration_ms": ms,
+    }

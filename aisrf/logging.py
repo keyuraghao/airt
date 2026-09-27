@@ -139,7 +139,9 @@ class EventBroadcaster:
         payload = {"ts": time.time(), **payload}
         self._history[channel].append(payload)
         for q in list(self._subs[channel]):
-            with contextlib.suppress(asyncio.QueueFull):  # drop for slow consumers instead of blocking the gateway
+            with contextlib.suppress(
+                asyncio.QueueFull
+            ):  # drop for slow consumers instead of blocking the gateway
                 q.put_nowait(payload)
 
     def subscribe(self, channel: str, replay: int = 0) -> asyncio.Queue:

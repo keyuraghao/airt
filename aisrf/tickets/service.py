@@ -32,7 +32,9 @@ async def _next_number(session: AsyncSession) -> int:
     The UPDATE takes the write lock on the counter row for the rest of the transaction, so concurrent
     ticket creations are serialized by the database instead of racing on max(number) + 1.
     """
-    res = await session.execute(update(Counter).where(Counter.name == "ticket").values(value=Counter.value + 1))
+    res = await session.execute(
+        update(Counter).where(Counter.name == "ticket").values(value=Counter.value + 1)
+    )
     if not res.rowcount:
         current = (await session.execute(select(func.max(Ticket.number)))).scalar_one()
         session.add(Counter(name="ticket", value=int(current or 0) + 1))

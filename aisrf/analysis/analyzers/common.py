@@ -1,4 +1,5 @@
 """Shared helpers for the built-in analyzers: text normalisation, homoglyph folding, masking and message iteration."""
+
 from __future__ import annotations
 
 import contextlib
@@ -13,28 +14,100 @@ from ..base import Finding, Severity
 MAX_SCAN_CHARS = 200_000
 
 # Zero-width and invisible formatting characters frequently used to hide instructions.
-ZERO_WIDTH_CHARS: frozenset[str] = frozenset(
-    "​‌‍‎‏⁠⁡⁢⁣⁤﻿᠎­͏؜⁦⁧⁨⁩‪‫‬‭‮"
-)
+ZERO_WIDTH_CHARS: frozenset[str] = frozenset("​‌‍‎‏⁠⁡⁢⁣⁤﻿᠎­͏؜⁦⁧⁨⁩‪‫‬‭‮")
 _ZW_RE = re.compile("[" + "".join(re.escape(c) for c in sorted(ZERO_WIDTH_CHARS)) + "]")
 
 # Confusable characters (Cyrillic, Greek, fullwidth, mathematical) that render like Latin letters.
 HOMOGLYPHS: dict[str, str] = {
     # Cyrillic
-    "а": "a", "А": "A", "е": "e", "Е": "E", "о": "o", "О": "O", "р": "p", "Р": "P",
-    "с": "c", "С": "C", "у": "y", "У": "Y", "х": "x", "Х": "X", "і": "i", "І": "I",
-    "ј": "j", "Ј": "J", "һ": "h", "ҽ": "e", "ԁ": "d", "ԛ": "q", "ԝ": "w", "ѕ": "s",
-    "Ѕ": "S", "Ү": "Y", "Н": "H", "К": "K", "М": "M", "Т": "T", "В": "B", "г": "r",
-    "к": "k", "м": "m", "н": "h", "т": "t", "в": "b", "б": "6", "З": "3",
+    "а": "a",
+    "А": "A",
+    "е": "e",
+    "Е": "E",
+    "о": "o",
+    "О": "O",
+    "р": "p",
+    "Р": "P",
+    "с": "c",
+    "С": "C",
+    "у": "y",
+    "У": "Y",
+    "х": "x",
+    "Х": "X",
+    "і": "i",
+    "І": "I",
+    "ј": "j",
+    "Ј": "J",
+    "һ": "h",
+    "ҽ": "e",
+    "ԁ": "d",
+    "ԛ": "q",
+    "ԝ": "w",
+    "ѕ": "s",
+    "Ѕ": "S",
+    "Ү": "Y",
+    "Н": "H",
+    "К": "K",
+    "М": "M",
+    "Т": "T",
+    "В": "B",
+    "г": "r",
+    "к": "k",
+    "м": "m",
+    "н": "h",
+    "т": "t",
+    "в": "b",
+    "б": "6",
+    "З": "3",
     # Greek
-    "α": "a", "Α": "A", "β": "b", "Β": "B", "ε": "e", "Ε": "E", "ι": "i", "Ι": "I",
-    "κ": "k", "Κ": "K", "ν": "v", "Ν": "N", "ο": "o", "Ο": "O", "ρ": "p", "Ρ": "P",
-    "τ": "t", "Τ": "T", "υ": "u", "Υ": "Y", "χ": "x", "Χ": "X", "Ζ": "Z", "Η": "H",
-    "Μ": "M", "μ": "u", "ω": "w",
+    "α": "a",
+    "Α": "A",
+    "β": "b",
+    "Β": "B",
+    "ε": "e",
+    "Ε": "E",
+    "ι": "i",
+    "Ι": "I",
+    "κ": "k",
+    "Κ": "K",
+    "ν": "v",
+    "Ν": "N",
+    "ο": "o",
+    "Ο": "O",
+    "ρ": "p",
+    "Ρ": "P",
+    "τ": "t",
+    "Τ": "T",
+    "υ": "u",
+    "Υ": "Y",
+    "χ": "x",
+    "Χ": "X",
+    "Ζ": "Z",
+    "Η": "H",
+    "Μ": "M",
+    "μ": "u",
+    "ω": "w",
     # Latin extended / other lookalikes
-    "ı": "i", "ł": "l", "Ɖ": "D", "ǀ": "l", "ɡ": "g", "ɪ": "i", "ʀ": "r", "ʏ": "y",
-    "ᴀ": "a", "ᴄ": "c", "ᴅ": "d", "ᴇ": "e", "ᴏ": "o", "ᴘ": "p", "ᴛ": "t", "ᴜ": "u",
-    "ⅼ": "l", "ⅰ": "i", "ⅴ": "v", "ⅹ": "x",
+    "ı": "i",
+    "ł": "l",
+    "Ɖ": "D",
+    "ǀ": "l",
+    "ɡ": "g",
+    "ɪ": "i",
+    "ʀ": "r",
+    "ʏ": "y",
+    "ᴀ": "a",
+    "ᴄ": "c",
+    "ᴅ": "d",
+    "ᴇ": "e",
+    "ᴏ": "o",
+    "ᴘ": "p",
+    "ᴛ": "t",
+    "ᴜ": "u",
+    "ⅼ": "l",
+    "ⅰ": "i",
+    "ⅴ": "v",
+    "ⅹ": "x",
 }
 _HOMOGLYPH_CHARS = frozenset(HOMOGLYPHS)
 _HAS_LATIN_RE = re.compile(r"[A-Za-z]")
@@ -42,10 +115,24 @@ _TOKEN_RE = re.compile(r"\S+")
 _WS_RE = re.compile(r"[ \t\r\f\v]+")
 
 # Leetspeak folding used by obfuscation-aware matchers.
-LEET_MAP: dict[str, str] = {"0": "o", "1": "i", "3": "e", "4": "a", "5": "s", "7": "t", "@": "a", "$": "s", "!": "i", "|": "l", "+": "t"}
+LEET_MAP: dict[str, str] = {
+    "0": "o",
+    "1": "i",
+    "3": "e",
+    "4": "a",
+    "5": "s",
+    "7": "t",
+    "@": "a",
+    "$": "s",
+    "!": "i",
+    "|": "l",
+    "+": "t",
+}
 
 TOOL_ROLES: frozenset[str] = frozenset({"tool", "function", "tool_result", "function_result"})
-_TOOL_MARKER_RE = re.compile(r"\[tool_(?:result|call|use)\b|<tool_result|<function_results?>|tool_result", re.IGNORECASE)
+_TOOL_MARKER_RE = re.compile(
+    r"\[tool_(?:result|call|use)\b|<tool_result|<function_results?>|tool_result", re.IGNORECASE
+)
 
 
 def safe_text(value: Any, limit: int = MAX_SCAN_CHARS) -> str:
@@ -146,7 +233,7 @@ def mask_value(value: str, keep_start: int = 4, keep_end: int = 2, mask_char: st
     if n < keep_start + keep_end + 3:
         keep_start, keep_end = 2, 1
     hidden = n - keep_start - keep_end
-    return v[:keep_start] + mask_char * min(hidden, 24) + v[n - keep_end:]
+    return v[:keep_start] + mask_char * min(hidden, 24) + v[n - keep_end :]
 
 
 def snippet(text: str, start: int, end: int, radius: int = 60, mask: str | None = None) -> str:
@@ -280,7 +367,9 @@ class Signature:
 
     __slots__ = ("label", "regex", "tag", "weight")
 
-    def __init__(self, pattern: str, weight: float, label: str, tag: str = "", flags: int = re.IGNORECASE) -> None:
+    def __init__(
+        self, pattern: str, weight: float, label: str, tag: str = "", flags: int = re.IGNORECASE
+    ) -> None:
         self.regex = re.compile(pattern, flags)
         self.weight = weight
         self.label = label

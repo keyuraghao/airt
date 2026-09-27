@@ -117,8 +117,16 @@ async def run_typesafe_triage(
     """Triage ``findings`` in place. Returns ([], status) because the engine never adds findings."""
     ts_cfg = ts.config()
     status: dict[str, Any] = {
-        "engine": ENGINE, "available": False, "findings": 0, "evaluated": 0, "skipped": 0, "errors": 0,
-        "true_positive": 0, "likely_false_positive": 0, "uncertain": 0, "mode": str(ts_cfg.get("model") or ts.DEFAULT_MODEL),
+        "engine": ENGINE,
+        "available": False,
+        "findings": 0,
+        "evaluated": 0,
+        "skipped": 0,
+        "errors": 0,
+        "true_positive": 0,
+        "likely_false_positive": 0,
+        "uncertain": 0,
+        "mode": str(ts_cfg.get("model") or ts.DEFAULT_MODEL),
     }
     if not ts.is_configured(ts_cfg):
         status["error"] = "TypeSafe integration is disabled or has no API key"
@@ -127,12 +135,17 @@ async def run_typesafe_triage(
     min_sev = str(ts_cfg.get("triage_min_severity") or "LOW").upper()
     min_rank = SEVERITY_RANK.get(min_sev, SEVERITY_RANK["LOW"])
     max_findings = int(ts._num(ts_cfg, "max_findings", 200)) or 200
-    candidates = sorted((f for f in findings if SEVERITY_RANK.get(f.severity, 9) <= min_rank), key=lambda f: (SEVERITY_RANK.get(f.severity, 9), -f.confidence, f.file, f.line_start))
+    candidates = sorted(
+        (f for f in findings if SEVERITY_RANK.get(f.severity, 9) <= min_rank),
+        key=lambda f: (SEVERITY_RANK.get(f.severity, 9), -f.confidence, f.file, f.line_start),
+    )
     status["skipped"] = len(findings) - len(candidates[:max_findings])
     candidates = candidates[:max_findings]
     by_path = {sf.path: sf for sf in files}
     texts: dict[str, str] = {}
-    max_chars = int(ts._num(ts_cfg, "max_state_chars", ts.DEFAULT_MAX_STATE_CHARS)) or ts.DEFAULT_MAX_STATE_CHARS
+    max_chars = (
+        int(ts._num(ts_cfg, "max_state_chars", ts.DEFAULT_MAX_STATE_CHARS)) or ts.DEFAULT_MAX_STATE_CHARS
+    )
     sem = asyncio.Semaphore(max(1, int(ts._num(ts_cfg, "triage_concurrency", 8)) or 8))
 
     def text_for(path: str) -> str:
@@ -145,7 +158,9 @@ async def run_typesafe_triage(
         if should_stop and should_stop():
             return
         async with sem:
-            res = await ts.evaluate(build_state(f, text_for(f.file), max_chars), q.CODE_TRIAGE, purpose="codereview")
+            res = await ts.evaluate(
+                build_state(f, text_for(f.file), max_chars), q.CODE_TRIAGE, purpose="codereview"
+            )
         if not res:
             status["errors"] += 1
             return
@@ -154,11 +169,18 @@ async def run_typesafe_triage(
         status[verdict] = status.get(verdict, 0) + 1
 
     await asyncio.gather(*(one(f) for f in candidates))
-    log.info("codereview.typesafe.triaged", evaluated=status["evaluated"], likely_false_positive=status["likely_false_positive"], errors=status["errors"])
+    log.info(
+        "codereview.typesafe.triaged",
+        evaluated=status["evaluated"],
+        likely_false_positive=status["likely_false_positive"],
+        errors=status["errors"],
+    )
     return [], status
 
 
-def escalation_subset(findings: list[Finding], typesafe_status: dict[str, Any] | None) -> tuple[list[Finding], str | None]:
+def escalation_subset(
+    findings: list[Finding], typesafe_status: dict[str, Any] | None
+) -> tuple[list[Finding], str | None]:
     """Which findings the LLM engine should still look at. (subset, reason to skip the LLM engine or None)."""
     if not typesafe_status or not typesafe_status.get("available") or not typesafe_status.get("evaluated"):
         return findings, None

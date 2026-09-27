@@ -330,10 +330,14 @@ class CodeReviewFinding(Base):
     owasp: Mapped[list] = mapped_column(JSON, default=list)
     cwe: Mapped[str] = mapped_column(String(20), default="")
     fingerprint: Mapped[str] = mapped_column(String(64), index=True)
-    status: Mapped[str] = mapped_column(String(20), default="open", index=True)  # open | false_positive | likely_false_positive | accepted
+    status: Mapped[str] = mapped_column(
+        String(20), default="open", index=True
+    )  # open | false_positive | likely_false_positive | accepted
     reviewer_note: Mapped[str] = mapped_column(Text, default="")
     reviewed_by: Mapped[str] = mapped_column(String(80), default="")
-    meta: Mapped[dict] = mapped_column(JSON, default=dict)  # engine metadata, e.g. the TypeSafe triage answers
+    meta: Mapped[dict] = mapped_column(
+        JSON, default=dict
+    )  # engine metadata, e.g. the TypeSafe triage answers
     ts: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 

@@ -329,7 +329,9 @@ async def test_scan_tokens_authenticate_until_revoked(client, admin_headers, age
 
 async def test_concurrent_tickets_get_unique_numbers(client, admin_headers, agent):
     h = {"Authorization": f"Bearer {agent['api_key']}", "X-AISRF-Async": "1"}
-    responses = await asyncio.gather(*(client.post("/v1/chat/completions", json=CHAT, headers=h) for _ in range(25)))
+    responses = await asyncio.gather(
+        *(client.post("/v1/chat/completions", json=CHAT, headers=h) for _ in range(25))
+    )
     assert all(r.status_code == 202 for r in responses), [r.status_code for r in responses]
     ids = [r.json()["ticket_id"] for r in responses]
     numbers = []

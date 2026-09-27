@@ -12,24 +12,42 @@ from . import pyast
 from .base import ALL, CODE, PY, FileContext, Match, Rule, absence, any_of, lines, node_match, py, rule
 
 PACK = "model_supply_chain"
-UNTRUSTED_PATH = re.compile(r"(?i)(url|download|request|upload|remote|hub|tmp|temp|cache|user|input|path|file|arg|param|fetch|s3|bucket|blob)")
-HUB_LOADERS = re.compile(r"(^|\.)(from_pretrained|hf_hub_download|snapshot_download|load_dataset|SentenceTransformer|pipeline|CrossEncoder|AutoModel\w*|AutoTokenizer|load_model_from_hub|hub\.load)$")
+UNTRUSTED_PATH = re.compile(
+    r"(?i)(url|download|request|upload|remote|hub|tmp|temp|cache|user|input|path|file|arg|param|fetch|s3|bucket|blob)"
+)
+HUB_LOADERS = re.compile(
+    r"(^|\.)(from_pretrained|hf_hub_download|snapshot_download|load_dataset|SentenceTransformer|pipeline|CrossEncoder|AutoModel\w*|AutoTokenizer|load_model_from_hub|hub\.load)$"
+)
 SHA = re.compile(r"^[0-9a-f]{7,40}$")
-PLACEHOLDER = re.compile(r"(?i)(xxx|your[_-]|example|placeholder|\.\.\.|<[^>]+>|replace|dummy|changeme|1234567890|fake|test-?key|sample)")
+PLACEHOLDER = re.compile(
+    r"(?i)(xxx|your[_-]|example|placeholder|\.\.\.|<[^>]+>|replace|dummy|changeme|1234567890|fake|test-?key|sample)"
+)
 
 
 def _torch_load(ctx: FileContext, tree: ast.Module) -> Iterator[Match]:
     for call in pyast.iter_calls(tree):
         name = pyast.call_name(call)
-        if name not in ("torch.load", "load") or (name == "load" and not ctx.search(r"from torch import load")):
+        if name not in ("torch.load", "load") or (
+            name == "load" and not ctx.search(r"from torch import load")
+        ):
             continue
         wo = pyast.keyword(call, "weights_only")
         if pyast.is_true(wo):
             continue
         src = " ".join(pyast.names_in(call.args[0])) if call.args else ""
         untrusted = bool(UNTRUSTED_PATH.search(src)) or (call.args and pyast.is_dynamic_string(call.args[0]))
-        note = "weights_only=False disables the pickle restrictions" if pyast.is_false(wo) else "weights_only is not set"
-        yield node_match(ctx, call, boost=0.15 if untrusted else 0.0, note=note + (" and the path is derived from a download, upload or user input" if untrusted else ""))
+        note = (
+            "weights_only=False disables the pickle restrictions"
+            if pyast.is_false(wo)
+            else "weights_only is not set"
+        )
+        yield node_match(
+            ctx,
+            call,
+            boost=0.15 if untrusted else 0.0,
+            note=note
+            + (" and the path is derived from a download, upload or user input" if untrusted else ""),
+        )
 
 
 def _unpinned_hub(ctx: FileContext, tree: ast.Module) -> Iterator[Match]:
@@ -37,7 +55,13 @@ def _unpinned_hub(ctx: FileContext, tree: ast.Module) -> Iterator[Match]:
         name = pyast.call_name(call)
         if not HUB_LOADERS.search(name):
             continue
-        target = pyast.keyword(call, "pretrained_model_name_or_path") or pyast.keyword(call, "repo_id") or pyast.keyword(call, "path") or pyast.keyword(call, "model") or (call.args[0] if call.args else None)
+        target = (
+            pyast.keyword(call, "pretrained_model_name_or_path")
+            or pyast.keyword(call, "repo_id")
+            or pyast.keyword(call, "path")
+            or pyast.keyword(call, "model")
+            or (call.args[0] if call.args else None)
+        )
         if target is None or not isinstance(target, ast.Constant) or not isinstance(target.value, str):
             continue
         ident = target.value
@@ -45,9 +69,16 @@ def _unpinned_hub(ctx: FileContext, tree: ast.Module) -> Iterator[Match]:
             continue
         rev = pyast.keyword(call, "revision")
         if rev is None:
-            yield node_match(ctx, call, note=f"{ident!r} is resolved to whatever the default branch points at")
+            yield node_match(
+                ctx, call, note=f"{ident!r} is resolved to whatever the default branch points at"
+            )
         elif isinstance(rev, ast.Constant) and isinstance(rev.value, str) and not SHA.match(rev.value):
-            yield node_match(ctx, call, boost=-0.15, note=f"revision {rev.value!r} is a moving branch or tag, not a commit hash")
+            yield node_match(
+                ctx,
+                call,
+                boost=-0.15,
+                note=f"revision {rev.value!r} is a moving branch or tag, not a commit hash",
+            )
 
 
 def _manifest_unpinned(ctx: FileContext) -> Iterator[Match]:
@@ -68,7 +99,13 @@ def _manifest_unpinned(ctx: FileContext) -> Iterator[Match]:
 def _pickle_artifacts(inventory: dict, files: list) -> Iterator[Match]:
     for art in inventory.get("model_artifacts", [])[:25]:
         if art.get("pickle_based"):
-            yield Match(1, 1, file=art["path"], snippet=f"{art['path']} ({art.get('format')}, {art.get('bytes', 0)} bytes)", note="pickle-based artifact committed to the repository")
+            yield Match(
+                1,
+                1,
+                file=art["path"],
+                snippet=f"{art['path']} ({art.get('format')}, {art.get('bytes', 0)} bytes)",
+                note="pickle-based artifact committed to the repository",
+            )
 
 
 def _missing_provenance(inventory: dict, files: list) -> Iterator[Match]:
@@ -81,8 +118,16 @@ def _missing_provenance(inventory: dict, files: list) -> Iterator[Match]:
     if has_card and has_sbom:
         return
     first = artifacts[0]["path"]
-    missing = [m for m, ok in (("model card", has_card), ("SBOM or provenance attestation", has_sbom)) if not ok]
-    yield Match(1, 1, file=first, snippet=f"{len(artifacts)} model artifact(s), no {' or '.join(missing)}", note="no " + " and no ".join(missing))
+    missing = [
+        m for m, ok in (("model card", has_card), ("SBOM or provenance attestation", has_sbom)) if not ok
+    ]
+    yield Match(
+        1,
+        1,
+        file=first,
+        snippet=f"{len(artifacts)} model artifact(s), no {' or '.join(missing)}",
+        note="no " + " and no ".join(missing),
+    )
 
 
 RULES: list[Rule] = [
@@ -122,7 +167,9 @@ RULES: list[Rule] = [
             "Never load serialized objects received from users or fetched from untrusted locations.",
         ),
         languages=ALL,
-        matcher=lines(r"(\b(pickle|cPickle|_pickle|dill|cloudpickle)\.(load|loads)\s*\(|joblib\.load\s*\(|shelve\.open\s*\(|marshal\.loads?\s*\(|(numpy|np)\.load\s*\([^)]*allow_pickle\s*=\s*True|allow_dangerous_deserialization\s*=\s*True|torch\.jit\.load\s*\(|load_model\s*\([^)]*safe_mode\s*=\s*False|yaml\.(load|unsafe_load)\s*\([^)]*(Loader\s*=\s*(yaml\.)?(Unsafe)?Loader|unsafe_load)|yaml\.unsafe_load\s*\(|jsonpickle\.decode\s*\(|node-serialize|unserialize\s*\()"),
+        matcher=lines(
+            r"(\b(pickle|cPickle|_pickle|dill|cloudpickle)\.(load|loads)\s*\(|joblib\.load\s*\(|shelve\.open\s*\(|marshal\.loads?\s*\(|(numpy|np)\.load\s*\([^)]*allow_pickle\s*=\s*True|allow_dangerous_deserialization\s*=\s*True|torch\.jit\.load\s*\(|load_model\s*\([^)]*safe_mode\s*=\s*False|yaml\.(load|unsafe_load)\s*\([^)]*(Loader\s*=\s*(yaml\.)?(Unsafe)?Loader|unsafe_load)|yaml\.unsafe_load\s*\(|jsonpickle\.decode\s*\(|node-serialize|unserialize\s*\()"
+        ),
         tags=("sink:deserialize", "pickle"),
         engines=("rules", "semgrep", "bandit"),
     ),
@@ -164,7 +211,10 @@ RULES: list[Rule] = [
         languages=CODE,
         matcher=any_of(
             py(_unpinned_hub),
-            lines(r"pipeline\s*\(\s*['\"][^'\"]+['\"]\s*,\s*['\"][A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+['\"]", unless=r"revision"),
+            lines(
+                r"pipeline\s*\(\s*['\"][^'\"]+['\"]\s*,\s*['\"][A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+['\"]",
+                unless=r"revision",
+            ),
         ),
         tags=("pinning",),
     ),
@@ -183,7 +233,9 @@ RULES: list[Rule] = [
             "Pin the expected checksum and verify it after download.",
         ),
         languages=ALL,
-        matcher=lines(r"http://[^\s'\"`)]+\.(pt|pth|bin|pkl|pickle|ckpt|safetensors|gguf|onnx|h5|tar\.gz|tgz|zip|whl)\b|(load_state_dict_from_url|urlretrieve|torch\.hub\.load|download_url|wget|curl)\b[^\n]*http://"),
+        matcher=lines(
+            r"http://[^\s'\"`)]+\.(pt|pth|bin|pkl|pickle|ckpt|safetensors|gguf|onnx|h5|tar\.gz|tgz|zip|whl)\b|(load_state_dict_from_url|urlretrieve|torch\.hub\.load|download_url|wget|curl)\b[^\n]*http://"
+        ),
         tags=("transport",),
     ),
     rule(
@@ -202,7 +254,15 @@ RULES: list[Rule] = [
             "Fail closed when verification is unavailable.",
         ),
         languages=(*CODE, "shell", "dockerfile", "yaml"),
-        matcher=absence([r"(load_state_dict_from_url|urlretrieve|torch\.hub\.load|hf_hub_download|snapshot_download|download_file|urlopen|requests\.get|wget |curl )\s*\(?[^\n]*(?i:model|weights|checkpoint|ckpt|\.pt\b|\.pth\b|\.bin\b|\.safetensors|\.gguf|\.onnx|\.pkl)"], [r"(?i)(sha256|sha1|hashlib|checksum|check_hash\s*=\s*True|verify_|signature|cosign|integrity|md5|etag|blake2)"], anchor=r"(load_state_dict_from_url|urlretrieve|torch\.hub\.load|hf_hub_download|snapshot_download|download_file|urlopen|requests\.get|wget |curl )"),
+        matcher=absence(
+            [
+                r"(load_state_dict_from_url|urlretrieve|torch\.hub\.load|hf_hub_download|snapshot_download|download_file|urlopen|requests\.get|wget |curl )\s*\(?[^\n]*(?i:model|weights|checkpoint|ckpt|\.pt\b|\.pth\b|\.bin\b|\.safetensors|\.gguf|\.onnx|\.pkl)"
+            ],
+            [
+                r"(?i)(sha256|sha1|hashlib|checksum|check_hash\s*=\s*True|verify_|signature|cosign|integrity|md5|etag|blake2)"
+            ],
+            anchor=r"(load_state_dict_from_url|urlretrieve|torch\.hub\.load|hf_hub_download|snapshot_download|download_file|urlopen|requests\.get|wget |curl )",
+        ),
         tags=("integrity",),
     ),
     rule(
@@ -220,10 +280,23 @@ RULES: list[Rule] = [
             "Pull from a private mirror that blocks external packages named like internal ones.",
             "Audit dependencies regularly (pip-audit, npm audit, OSV) and pin VCS dependencies to a commit.",
         ),
-        languages=("text", "toml", "json", "config", "ruby", "xml", "dockerfile", "shell", "yaml", "notebook"),
+        languages=(
+            "text",
+            "toml",
+            "json",
+            "config",
+            "ruby",
+            "xml",
+            "dockerfile",
+            "shell",
+            "yaml",
+            "notebook",
+        ),
         matcher=any_of(
             _manifest_unpinned,
-            lines(r"(?i)(RUN\s+|^\s*!?\s*)pip3?\s+install\b(?![^\n]*(==|--require-hashes|-r\s|--constraint|-c\s))[^\n]*\b(torch|transformers|langchain|openai|anthropic|llama-index|llama_index|vllm|diffusers|sentence-transformers|chromadb|pinecone|qdrant-client|crewai|autogen|litellm|huggingface_hub)\b"),
+            lines(
+                r"(?i)(RUN\s+|^\s*!?\s*)pip3?\s+install\b(?![^\n]*(==|--require-hashes|-r\s|--constraint|-c\s))[^\n]*\b(torch|transformers|langchain|openai|anthropic|llama-index|llama_index|vllm|diffusers|sentence-transformers|chromadb|pinecone|qdrant-client|crewai|autogen|litellm|huggingface_hub)\b"
+            ),
         ),
         tags=("pinning", "dependencies"),
     ),
@@ -244,7 +317,15 @@ RULES: list[Rule] = [
         ),
         languages=("python", "javascript", "typescript"),
         matcher=any_of(
-            absence([r"(@app\.(route|post|get|api_route)|@router\.(post|get|api_route)|app\.post\(|router\.post\()\s*\(?\s*['\"][^'\"]*(predict|infer|inference|generate|complet|chat|embed|classif|score|rerank|v1/)"], [r"(?i)(Depends\(|auth|api_?key|token|login_required|jwt|Authorization|Security\(|HTTPBearer|OAuth|verify_|@requires|permission|current_user|principal|passport|bearer|session\[)"], anchor=r"(@app\.(route|post|get|api_route)|@router\.(post|get|api_route)|app\.post\(|router\.post\()"),
+            absence(
+                [
+                    r"(@app\.(route|post|get|api_route)|@router\.(post|get|api_route)|app\.post\(|router\.post\()\s*\(?\s*['\"][^'\"]*(predict|infer|inference|generate|complet|chat|embed|classif|score|rerank|v1/)"
+                ],
+                [
+                    r"(?i)(Depends\(|auth|api_?key|token|login_required|jwt|Authorization|Security\(|HTTPBearer|OAuth|verify_|@requires|permission|current_user|principal|passport|bearer|session\[)"
+                ],
+                anchor=r"(@app\.(route|post|get|api_route)|@router\.(post|get|api_route)|app\.post\(|router\.post\()",
+            ),
         ),
         tags=("auth",),
     ),
@@ -264,7 +345,10 @@ RULES: list[Rule] = [
             "Audit bucket policies as part of the ML release pipeline.",
         ),
         languages=ALL,
-        matcher=lines(r"(?i)(ACL\s*[=:]\s*['\"]public-read(-write)?['\"]|--acl\s+public-read|public-read-write|['\"]allUsers['\"]|['\"]Principal['\"]\s*:\s*['\"]\*['\"]|BlockPublicAcls\s*[:=]\s*false|RestrictPublicBuckets\s*[:=]\s*false|make_public\(|predefined_acl\s*=\s*['\"]public|public_access\s*[:=]\s*(true|['\"]?blob)|allow_public_access)", boost_flag="ai"),
+        matcher=lines(
+            r"(?i)(ACL\s*[=:]\s*['\"]public-read(-write)?['\"]|--acl\s+public-read|public-read-write|['\"]allUsers['\"]|['\"]Principal['\"]\s*:\s*['\"]\*['\"]|BlockPublicAcls\s*[:=]\s*false|RestrictPublicBuckets\s*[:=]\s*false|make_public\(|predefined_acl\s*=\s*['\"]public|public_access\s*[:=]\s*(true|['\"]?blob)|allow_public_access)",
+            boost_flag="ai",
+        ),
         tags=("storage",),
     ),
     rule(
@@ -284,9 +368,16 @@ RULES: list[Rule] = [
         ),
         languages=("dockerfile", "yaml", "shell", "text"),
         matcher=any_of(
-            lines(r"(?i)^\s*FROM\s+(?!scratch)[^\s@]+(:latest)?\s*(AS\s+\w+)?\s*$", unless=r":[0-9][\w.\-]*(\s|$)|@sha256:"),
+            lines(
+                r"(?i)^\s*FROM\s+(?!scratch)[^\s@]+(:latest)?\s*(AS\s+\w+)?\s*$",
+                unless=r":[0-9][\w.\-]*(\s|$)|@sha256:",
+            ),
             lines(r"(?i)\b(curl|wget)\b[^\n|]*\|\s*(sudo\s+)?(ba|z)?sh\b"),
-            absence([r"(?i)\b(curl|wget)\b[^\n]*\.(pt|pth|bin|ckpt|safetensors|gguf|onnx|pkl)\b"], [r"(?i)(sha256sum|--checksum|sha256|verify|cosign|gpg)"], anchor=r"(?i)\b(curl|wget)\b[^\n]*\.(pt|pth|bin|ckpt|safetensors|gguf|onnx|pkl)\b"),
+            absence(
+                [r"(?i)\b(curl|wget)\b[^\n]*\.(pt|pth|bin|ckpt|safetensors|gguf|onnx|pkl)\b"],
+                [r"(?i)(sha256sum|--checksum|sha256|verify|cosign|gpg)"],
+                anchor=r"(?i)\b(curl|wget)\b[^\n]*\.(pt|pth|bin|ckpt|safetensors|gguf|onnx|pkl)\b",
+            ),
         ),
         tags=("build", "ci"),
     ),
@@ -306,7 +397,15 @@ RULES: list[Rule] = [
             "Review user-contributed samples before they enter a fine-tuning set.",
         ),
         languages=PY,
-        matcher=absence([r"(load_dataset\s*\(\s*['\"][^'\"]+['\"](?![^)]*revision)|pd\.read_(csv|json|parquet)\s*\(\s*['\"]https?://|read_csv\s*\(\s*(url|request|upload|user)|Dataset\.from_(pandas|dict|list)\s*\([^)]*(request|upload|user|form)|files\.create\s*\([^)]*purpose\s*=\s*['\"]fine-?tune|fine_tuning\.jobs\.create\s*\()"], [r"(?i)(validate|schema|dedup|filter_|clean_|provenance|content_hash|sha256|verify|great_expectations|review|approved|quarantine)"], anchor=r"(load_dataset\s*\(|pd\.read_(csv|json|parquet)\s*\(|read_csv\s*\(|Dataset\.from_|files\.create\s*\(|fine_tuning\.jobs\.create\s*\()"),
+        matcher=absence(
+            [
+                r"(load_dataset\s*\(\s*['\"][^'\"]+['\"](?![^)]*revision)|pd\.read_(csv|json|parquet)\s*\(\s*['\"]https?://|read_csv\s*\(\s*(url|request|upload|user)|Dataset\.from_(pandas|dict|list)\s*\([^)]*(request|upload|user|form)|files\.create\s*\([^)]*purpose\s*=\s*['\"]fine-?tune|fine_tuning\.jobs\.create\s*\()"
+            ],
+            [
+                r"(?i)(validate|schema|dedup|filter_|clean_|provenance|content_hash|sha256|verify|great_expectations|review|approved|quarantine)"
+            ],
+            anchor=r"(load_dataset\s*\(|pd\.read_(csv|json|parquet)\s*\(|read_csv\s*\(|Dataset\.from_|files\.create\s*\(|fine_tuning\.jobs\.create\s*\()",
+        ),
         tags=("training-data",),
     ),
     rule(
@@ -375,7 +474,12 @@ RULES += [
             "Mirror approved models in safetensors format in an internal registry.",
         ),
         languages=PY,
-        matcher=near(r"(\w*Model\w*|\w*ForCausalLM|\w*ForSequenceClassification|\w*ForSeq2SeqLM|pipeline)\s*(\.from_pretrained)?\s*\(\s*['\"][A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+['\"]", None, window=6, unless=r"use_safetensors\s*=\s*True"),
+        matcher=near(
+            r"(\w*Model\w*|\w*ForCausalLM|\w*ForSequenceClassification|\w*ForSeq2SeqLM|pipeline)\s*(\.from_pretrained)?\s*\(\s*['\"][A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+['\"]",
+            None,
+            window=6,
+            unless=r"use_safetensors\s*=\s*True",
+        ),
         tags=("pickle", "hardening"),
         engines=("rules", "semgrep"),
     ),
@@ -414,7 +518,15 @@ RULES += [
             "Store uploads outside the web root with restrictive permissions.",
         ),
         languages=("python", "javascript", "typescript"),
-        matcher=absence([ROUTE.pattern, UPLOAD_SOURCE, r"(?i)(model|weights|checkpoint|\.pt\b|\.pth\b|\.pkl\b|\.bin\b|\.h5\b|\.ckpt\b|artifact)"], [UPLOAD_GUARD], anchor=UPLOAD_SOURCE),
+        matcher=absence(
+            [
+                ROUTE.pattern,
+                UPLOAD_SOURCE,
+                r"(?i)(model|weights|checkpoint|\.pt\b|\.pth\b|\.pkl\b|\.bin\b|\.h5\b|\.ckpt\b|artifact)",
+            ],
+            [UPLOAD_GUARD],
+            anchor=UPLOAD_SOURCE,
+        ),
         tags=("registry", "upload"),
     ),
     rule(
@@ -450,7 +562,11 @@ RULES += [
             "Open notebooks from other people as untrusted and keep the notebook server on a separate identity.",
         ),
         languages=("notebook",),
-        matcher=near(r"\"(text/html|application/javascript)\"\s*:", r"(<script|javascript:|onerror\s*=|onload\s*=|fetch\(|XMLHttpRequest|document\.cookie|\beval\(|<iframe)", window=15),
+        matcher=near(
+            r"\"(text/html|application/javascript)\"\s*:",
+            r"(<script|javascript:|onerror\s*=|onload\s*=|fetch\(|XMLHttpRequest|document\.cookie|\beval\(|<iframe)",
+            window=15,
+        ),
         tags=("notebook",),
     ),
     rule(

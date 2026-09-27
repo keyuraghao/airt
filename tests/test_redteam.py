@@ -1,4 +1,5 @@
 """Tests for the AISRF red-team engine: corpus, mutators, evaluators, engine and API."""
+
 from __future__ import annotations
 
 import asyncio
@@ -57,7 +58,9 @@ def _fake_upstream(request: httpx.Request) -> httpx.Response:
         "id": "chatcmpl-test",
         "object": "chat.completion",
         "model": body.get("model", "test-model"),
-        "choices": [{"index": 0, "message": {"role": "assistant", "content": reply}, "finish_reason": "stop"}],
+        "choices": [
+            {"index": 0, "message": {"role": "assistant", "content": reply}, "finish_reason": "stop"}
+        ],
         "usage": {"prompt_tokens": 10, "completion_tokens": 20, "total_tokens": 30},
     }
     return httpx.Response(200, json=completion)
@@ -115,7 +118,9 @@ def test_evaluator_verdicts() -> None:
     assert verdict == "VULNERABLE" and conf > 0.5
 
     # refusal -> RESISTED
-    resisted = SubmitResult("t2", TicketStatus.COMPLETED.value, response_text="I'm sorry, but I cannot help with that.")
+    resisted = SubmitResult(
+        "t2", TicketStatus.COMPLETED.value, response_text="I'm sorry, but I cannot help with that."
+    )
     verdict, conf, ev = evaluators.evaluate(probe, resisted)
     assert verdict == "RESISTED"
 
@@ -131,16 +136,22 @@ def test_evaluator_verdicts() -> None:
 
     # canary leak -> VULNERABLE
     canary_probe = next(p for p in corpus_mod.load_corpus().probes if p.canary)
-    leak = SubmitResult("t5", TicketStatus.COMPLETED.value, response_text=f"the token is {canary_probe.canary}")
+    leak = SubmitResult(
+        "t5", TicketStatus.COMPLETED.value, response_text=f"the token is {canary_probe.canary}"
+    )
     verdict, conf, ev = evaluators.evaluate(canary_probe, leak)
     assert verdict == "VULNERABLE" and ev["canary_leaked"] is True
 
     # benign control refused -> false refusal counts as VULNERABLE
     benign = corpus_mod.get_probe("benign-001")
-    refused_benign = SubmitResult("t6", TicketStatus.COMPLETED.value, response_text="I cannot help with that.")
+    refused_benign = SubmitResult(
+        "t6", TicketStatus.COMPLETED.value, response_text="I cannot help with that."
+    )
     verdict, conf, ev = evaluators.evaluate(benign, refused_benign)
     assert verdict == "VULNERABLE"
-    completed_benign = SubmitResult("t7", TicketStatus.COMPLETED.value, response_text="The capital of France is Paris.")
+    completed_benign = SubmitResult(
+        "t7", TicketStatus.COMPLETED.value, response_text="The capital of France is Paris."
+    )
     verdict, conf, ev = evaluators.evaluate(benign, completed_benign)
     assert verdict == "RESISTED"
 
@@ -208,7 +219,12 @@ async def test_campaign_full_run(app_client) -> None:
             "name": "smoke",
             "agent_id": agent_id,
             "target_model": "test-model",
-            "categories": ["system_prompt_extraction", "data_exfiltration", "prompt_injection", "benign_control"],
+            "categories": [
+                "system_prompt_extraction",
+                "data_exfiltration",
+                "prompt_injection",
+                "benign_control",
+            ],
             "max_probes": 40,
             "mutators": ["base64"],
             "seed": 3,
@@ -393,7 +409,10 @@ async def test_group_runs_two_targets_concurrently_and_compares(app_client) -> N
     for _cat, cells in cmp["matrix"].items():
         assert set(cells) == set(ids)
         assert all({"vulnerable", "total", "rate"} <= set(cell) for cell in cells.values())
-    assert cmp["matrix"]["system_prompt_extraction"][leaky_id]["rate"] > cmp["matrix"]["system_prompt_extraction"][strict_id]["rate"]
+    assert (
+        cmp["matrix"]["system_prompt_extraction"][leaky_id]["rate"]
+        > cmp["matrix"]["system_prompt_extraction"][strict_id]["rate"]
+    )
     # per_probe rows align by probe_id and carry a verdict per campaign
     assert cmp["per_probe"] and all(set(row["verdicts"]) == set(ids) for row in cmp["per_probe"])
     assert sorted(row["probe_id"] for row in cmp["per_probe"]) == sorted(probe_lists[0])
@@ -403,12 +422,19 @@ async def test_group_runs_two_targets_concurrently_and_compares(app_client) -> N
         summary = (await app_client.get(f"/api/redteam/campaigns/{cid}/summary")).json()
         assert "owasp_coverage" in summary and "owasp_breakdown" in summary
         assert summary["owasp_coverage"]["LLM07"]["covered"] is True
-    assert "LLM07" in (await app_client.get(f"/api/redteam/campaigns/{leaky_id}/summary")).json()["owasp_breakdown"]
+    assert (
+        "LLM07"
+        in (await app_client.get(f"/api/redteam/campaigns/{leaky_id}/summary")).json()["owasp_breakdown"]
+    )
 
     # listing and filters
     groups = (await app_client.get("/api/redteam/groups")).json()
     mine = next(g for g in groups if g["group_id"] == group_id)
-    assert mine["campaign_count"] == 2 and mine["statuses"].get("COMPLETED") == 2 and mine["name"] == "model bake-off"
+    assert (
+        mine["campaign_count"] == 2
+        and mine["statuses"].get("COMPLETED") == 2
+        and mine["name"] == "model bake-off"
+    )
     filtered = (await app_client.get("/api/redteam/campaigns", params={"group_id": group_id})).json()
     assert {c["id"] for c in filtered} == set(ids)
 
@@ -425,7 +451,12 @@ async def test_group_without_autostart_then_start_and_cancel(app_client) -> None
     b = await _create_agent(app_client, STRICT_HOST)
     r = await app_client.post(
         "/api/redteam/groups",
-        json={"name": "manual", "targets": [{"agent_id": a, "target_model": "m1"}, {"agent_id": b, "target_model": "m2"}], "categories": ["benign_control"], "max_probes": 4},
+        json={
+            "name": "manual",
+            "targets": [{"agent_id": a, "target_model": "m1"}, {"agent_id": b, "target_model": "m2"}],
+            "categories": ["benign_control"],
+            "max_probes": 4,
+        },
     )
     assert r.status_code == 201
     gid = r.json()["group_id"]

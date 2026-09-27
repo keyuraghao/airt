@@ -59,7 +59,21 @@ LANGUAGES: dict[str, str] = {
     ".ini": "config",
     ".properties": "config",
 }
-CODE_LANGUAGES: set[str] = {"python", "javascript", "typescript", "vue", "svelte", "java", "go", "csharp", "ruby", "php", "rust", "kotlin", "swift"}
+CODE_LANGUAGES: set[str] = {
+    "python",
+    "javascript",
+    "typescript",
+    "vue",
+    "svelte",
+    "java",
+    "go",
+    "csharp",
+    "ruby",
+    "php",
+    "rust",
+    "kotlin",
+    "swift",
+}
 MODEL_ARTIFACT_EXT: dict[str, str] = {
     ".pt": "pytorch-pickle",
     ".pth": "pytorch-pickle",
@@ -81,11 +95,60 @@ MODEL_ARTIFACT_EXT: dict[str, str] = {
     ".npz": "numpy",
     ".mlmodel": "coreml",
 }
-PICKLE_FORMATS: set[str] = {"pytorch-pickle", "pickle", "joblib-pickle", "checkpoint-pickle", "binary-weights", "numpy"}
+PICKLE_FORMATS: set[str] = {
+    "pytorch-pickle",
+    "pickle",
+    "joblib-pickle",
+    "checkpoint-pickle",
+    "binary-weights",
+    "numpy",
+}
 BINARY_EXT: set[str] = {
-    ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".bmp", ".svg", ".pdf", ".zip", ".gz", ".tgz", ".tar", ".bz2", ".xz", ".7z",
-    ".rar", ".jar", ".war", ".class", ".so", ".dll", ".dylib", ".exe", ".pyc", ".pyo", ".o", ".a", ".woff", ".woff2", ".ttf", ".otf",
-    ".eot", ".mp3", ".mp4", ".wav", ".mov", ".avi", ".db", ".sqlite", ".sqlite3", ".parquet", ".arrow", ".feather", ".lock",
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".webp",
+    ".ico",
+    ".bmp",
+    ".svg",
+    ".pdf",
+    ".zip",
+    ".gz",
+    ".tgz",
+    ".tar",
+    ".bz2",
+    ".xz",
+    ".7z",
+    ".rar",
+    ".jar",
+    ".war",
+    ".class",
+    ".so",
+    ".dll",
+    ".dylib",
+    ".exe",
+    ".pyc",
+    ".pyo",
+    ".o",
+    ".a",
+    ".woff",
+    ".woff2",
+    ".ttf",
+    ".otf",
+    ".eot",
+    ".mp3",
+    ".mp4",
+    ".wav",
+    ".mov",
+    ".avi",
+    ".db",
+    ".sqlite",
+    ".sqlite3",
+    ".parquet",
+    ".arrow",
+    ".feather",
+    ".lock",
     *MODEL_ARTIFACT_EXT,
 }
 MANIFEST_NAMES: dict[str, str] = {
@@ -108,54 +171,234 @@ MANIFEST_NAMES: dict[str, str] = {
     "composer.json": "composer",
 }
 AI_PACKAGES: set[str] = {
-    "openai", "anthropic", "google-generativeai", "google-genai", "google-cloud-aiplatform", "vertexai", "cohere", "mistralai", "groq",
-    "together", "replicate", "huggingface-hub", "huggingface_hub", "transformers", "diffusers", "accelerate", "peft", "trl", "datasets",
-    "torch", "tensorflow", "keras", "jax", "vllm", "ollama", "litellm", "langchain", "langchain-core", "langchain-community",
-    "langchain-openai", "langchain-anthropic", "langgraph", "llama-index", "llama_index", "llama-index-core", "haystack-ai",
-    "farm-haystack", "crewai", "autogen", "pyautogen", "ag2", "semantic-kernel", "dspy", "dspy-ai", "instructor", "guidance",
-    "outlines", "pinecone", "pinecone-client", "chromadb", "weaviate-client", "qdrant-client", "pgvector", "faiss-cpu", "faiss-gpu",
-    "pymilvus", "lancedb", "sentence-transformers", "mcp", "fastmcp", "guardrails-ai", "llm-guard", "nemoguardrails",
-    "@anthropic-ai/sdk", "@google/generative-ai", "@google/genai", "@langchain/core", "@langchain/openai", "@langchain/anthropic",
-    "@langchain/langgraph", "llamaindex", "ai", "@ai-sdk/openai", "@ai-sdk/anthropic", "@modelcontextprotocol/sdk", "@pinecone-database/pinecone",
-    "weaviate-ts-client", "@qdrant/js-client-rest", "@xenova/transformers", "@huggingface/inference", "onnxruntime-node",
-    "cohere-ai", "@mistralai/mistralai", "groq-sdk", "together-ai",
+    "openai",
+    "anthropic",
+    "google-generativeai",
+    "google-genai",
+    "google-cloud-aiplatform",
+    "vertexai",
+    "cohere",
+    "mistralai",
+    "groq",
+    "together",
+    "replicate",
+    "huggingface-hub",
+    "huggingface_hub",
+    "transformers",
+    "diffusers",
+    "accelerate",
+    "peft",
+    "trl",
+    "datasets",
+    "torch",
+    "tensorflow",
+    "keras",
+    "jax",
+    "vllm",
+    "ollama",
+    "litellm",
+    "langchain",
+    "langchain-core",
+    "langchain-community",
+    "langchain-openai",
+    "langchain-anthropic",
+    "langgraph",
+    "llama-index",
+    "llama_index",
+    "llama-index-core",
+    "haystack-ai",
+    "farm-haystack",
+    "crewai",
+    "autogen",
+    "pyautogen",
+    "ag2",
+    "semantic-kernel",
+    "dspy",
+    "dspy-ai",
+    "instructor",
+    "guidance",
+    "outlines",
+    "pinecone",
+    "pinecone-client",
+    "chromadb",
+    "weaviate-client",
+    "qdrant-client",
+    "pgvector",
+    "faiss-cpu",
+    "faiss-gpu",
+    "pymilvus",
+    "lancedb",
+    "sentence-transformers",
+    "mcp",
+    "fastmcp",
+    "guardrails-ai",
+    "llm-guard",
+    "nemoguardrails",
+    "@anthropic-ai/sdk",
+    "@google/generative-ai",
+    "@google/genai",
+    "@langchain/core",
+    "@langchain/openai",
+    "@langchain/anthropic",
+    "@langchain/langgraph",
+    "llamaindex",
+    "ai",
+    "@ai-sdk/openai",
+    "@ai-sdk/anthropic",
+    "@modelcontextprotocol/sdk",
+    "@pinecone-database/pinecone",
+    "weaviate-ts-client",
+    "@qdrant/js-client-rest",
+    "@xenova/transformers",
+    "@huggingface/inference",
+    "onnxruntime-node",
+    "cohere-ai",
+    "@mistralai/mistralai",
+    "groq-sdk",
+    "together-ai",
 }
 # Framework signatures: python import roots, npm package names and generic code markers.
 FRAMEWORKS: dict[str, dict[str, Any]] = {
-    "openai": {"kind": "llm_sdk", "python": ["openai"], "npm": ["openai"], "markers": [r"\bOpenAI\(", r"chat\.completions\.create\("]},
-    "anthropic": {"kind": "llm_sdk", "python": ["anthropic"], "npm": ["@anthropic-ai/sdk"], "markers": [r"\bAnthropic\(", r"\.messages\.create\("]},
-    "google-generativeai": {"kind": "llm_sdk", "python": ["google.generativeai", "google.genai", "vertexai"], "npm": ["@google/generative-ai", "@google/genai"], "markers": [r"GenerativeModel\("]},
+    "openai": {
+        "kind": "llm_sdk",
+        "python": ["openai"],
+        "npm": ["openai"],
+        "markers": [r"\bOpenAI\(", r"chat\.completions\.create\("],
+    },
+    "anthropic": {
+        "kind": "llm_sdk",
+        "python": ["anthropic"],
+        "npm": ["@anthropic-ai/sdk"],
+        "markers": [r"\bAnthropic\(", r"\.messages\.create\("],
+    },
+    "google-generativeai": {
+        "kind": "llm_sdk",
+        "python": ["google.generativeai", "google.genai", "vertexai"],
+        "npm": ["@google/generative-ai", "@google/genai"],
+        "markers": [r"GenerativeModel\("],
+    },
     "cohere": {"kind": "llm_sdk", "python": ["cohere"], "npm": ["cohere-ai"], "markers": []},
     "mistral": {"kind": "llm_sdk", "python": ["mistralai"], "npm": ["@mistralai/mistralai"], "markers": []},
     "groq": {"kind": "llm_sdk", "python": ["groq"], "npm": ["groq-sdk"], "markers": []},
     "litellm": {"kind": "llm_sdk", "python": ["litellm"], "npm": [], "markers": []},
     "ollama": {"kind": "llm_sdk", "python": ["ollama"], "npm": ["ollama"], "markers": [r"localhost:11434"]},
     "vllm": {"kind": "serving", "python": ["vllm"], "npm": [], "markers": []},
-    "vercel-ai-sdk": {"kind": "framework", "python": [], "npm": ["ai", "@ai-sdk/openai", "@ai-sdk/anthropic"], "markers": [r"\bgenerateText\(", r"\bstreamText\("]},
-    "langchain": {"kind": "framework", "python": ["langchain", "langchain_core", "langchain_community", "langchain_openai", "langchain_anthropic"], "npm": ["langchain", "@langchain/core", "@langchain/openai", "@langchain/anthropic"], "markers": []},
-    "langgraph": {"kind": "framework", "python": ["langgraph"], "npm": ["@langchain/langgraph"], "markers": [r"StateGraph\("]},
-    "llama-index": {"kind": "framework", "python": ["llama_index"], "npm": ["llamaindex"], "markers": [r"VectorStoreIndex"]},
+    "vercel-ai-sdk": {
+        "kind": "framework",
+        "python": [],
+        "npm": ["ai", "@ai-sdk/openai", "@ai-sdk/anthropic"],
+        "markers": [r"\bgenerateText\(", r"\bstreamText\("],
+    },
+    "langchain": {
+        "kind": "framework",
+        "python": [
+            "langchain",
+            "langchain_core",
+            "langchain_community",
+            "langchain_openai",
+            "langchain_anthropic",
+        ],
+        "npm": ["langchain", "@langchain/core", "@langchain/openai", "@langchain/anthropic"],
+        "markers": [],
+    },
+    "langgraph": {
+        "kind": "framework",
+        "python": ["langgraph"],
+        "npm": ["@langchain/langgraph"],
+        "markers": [r"StateGraph\("],
+    },
+    "llama-index": {
+        "kind": "framework",
+        "python": ["llama_index"],
+        "npm": ["llamaindex"],
+        "markers": [r"VectorStoreIndex"],
+    },
     "haystack": {"kind": "framework", "python": ["haystack"], "npm": [], "markers": []},
     "crewai": {"kind": "agent_framework", "python": ["crewai"], "npm": [], "markers": [r"\bCrew\("]},
-    "autogen": {"kind": "agent_framework", "python": ["autogen", "autogen_agentchat", "ag2"], "npm": [], "markers": [r"AssistantAgent\("]},
+    "autogen": {
+        "kind": "agent_framework",
+        "python": ["autogen", "autogen_agentchat", "ag2"],
+        "npm": [],
+        "markers": [r"AssistantAgent\("],
+    },
     "semantic-kernel": {"kind": "agent_framework", "python": ["semantic_kernel"], "npm": [], "markers": []},
     "dspy": {"kind": "framework", "python": ["dspy"], "npm": [], "markers": []},
     "instructor": {"kind": "framework", "python": ["instructor"], "npm": [], "markers": []},
-    "transformers": {"kind": "ml", "python": ["transformers"], "npm": ["@xenova/transformers", "@huggingface/transformers"], "markers": [r"from_pretrained\("]},
-    "huggingface-hub": {"kind": "ml", "python": ["huggingface_hub"], "npm": ["@huggingface/inference"], "markers": [r"hf_hub_download\(", r"snapshot_download\("]},
+    "transformers": {
+        "kind": "ml",
+        "python": ["transformers"],
+        "npm": ["@xenova/transformers", "@huggingface/transformers"],
+        "markers": [r"from_pretrained\("],
+    },
+    "huggingface-hub": {
+        "kind": "ml",
+        "python": ["huggingface_hub"],
+        "npm": ["@huggingface/inference"],
+        "markers": [r"hf_hub_download\(", r"snapshot_download\("],
+    },
     "torch": {"kind": "ml", "python": ["torch", "torchvision"], "npm": [], "markers": [r"torch\.load\("]},
-    "tensorflow": {"kind": "ml", "python": ["tensorflow", "keras"], "npm": ["@tensorflow/tfjs"], "markers": []},
+    "tensorflow": {
+        "kind": "ml",
+        "python": ["tensorflow", "keras"],
+        "npm": ["@tensorflow/tfjs"],
+        "markers": [],
+    },
     "sentence-transformers": {"kind": "ml", "python": ["sentence_transformers"], "npm": [], "markers": []},
-    "pinecone": {"kind": "vector_store", "python": ["pinecone"], "npm": ["@pinecone-database/pinecone"], "markers": [r"\bPinecone\("]},
-    "chromadb": {"kind": "vector_store", "python": ["chromadb"], "npm": ["chromadb"], "markers": [r"chromadb\.(Http|Persistent)?Client\("]},
-    "weaviate": {"kind": "vector_store", "python": ["weaviate"], "npm": ["weaviate-ts-client", "weaviate-client"], "markers": []},
-    "qdrant": {"kind": "vector_store", "python": ["qdrant_client"], "npm": ["@qdrant/js-client-rest"], "markers": [r"QdrantClient\("]},
-    "pgvector": {"kind": "vector_store", "python": ["pgvector"], "npm": ["pgvector"], "markers": [r"\bvector\(\d+\)", r"<=>"]},
+    "pinecone": {
+        "kind": "vector_store",
+        "python": ["pinecone"],
+        "npm": ["@pinecone-database/pinecone"],
+        "markers": [r"\bPinecone\("],
+    },
+    "chromadb": {
+        "kind": "vector_store",
+        "python": ["chromadb"],
+        "npm": ["chromadb"],
+        "markers": [r"chromadb\.(Http|Persistent)?Client\("],
+    },
+    "weaviate": {
+        "kind": "vector_store",
+        "python": ["weaviate"],
+        "npm": ["weaviate-ts-client", "weaviate-client"],
+        "markers": [],
+    },
+    "qdrant": {
+        "kind": "vector_store",
+        "python": ["qdrant_client"],
+        "npm": ["@qdrant/js-client-rest"],
+        "markers": [r"QdrantClient\("],
+    },
+    "pgvector": {
+        "kind": "vector_store",
+        "python": ["pgvector"],
+        "npm": ["pgvector"],
+        "markers": [r"\bvector\(\d+\)", r"<=>"],
+    },
     "faiss": {"kind": "vector_store", "python": ["faiss"], "npm": [], "markers": []},
-    "milvus": {"kind": "vector_store", "python": ["pymilvus"], "npm": ["@zilliz/milvus2-sdk-node"], "markers": []},
-    "lancedb": {"kind": "vector_store", "python": ["lancedb"], "npm": ["@lancedb/lancedb", "vectordb"], "markers": []},
-    "mcp": {"kind": "mcp", "python": ["mcp", "fastmcp"], "npm": ["@modelcontextprotocol/sdk"], "markers": [r"FastMCP\(", r"@mcp\.tool", r"\.tool\(\s*\)", r"McpServer\("]},
-    "guardrails": {"kind": "guardrails", "python": ["guardrails", "llm_guard", "nemoguardrails", "rebuff"], "npm": [], "markers": []},
+    "milvus": {
+        "kind": "vector_store",
+        "python": ["pymilvus"],
+        "npm": ["@zilliz/milvus2-sdk-node"],
+        "markers": [],
+    },
+    "lancedb": {
+        "kind": "vector_store",
+        "python": ["lancedb"],
+        "npm": ["@lancedb/lancedb", "vectordb"],
+        "markers": [],
+    },
+    "mcp": {
+        "kind": "mcp",
+        "python": ["mcp", "fastmcp"],
+        "npm": ["@modelcontextprotocol/sdk"],
+        "markers": [r"FastMCP\(", r"@mcp\.tool", r"\.tool\(\s*\)", r"McpServer\("],
+    },
+    "guardrails": {
+        "kind": "guardrails",
+        "python": ["guardrails", "llm_guard", "nemoguardrails", "rebuff"],
+        "npm": [],
+        "markers": [],
+    },
 }
 TOOL_CALLING_MARKERS: list[re.Pattern[str]] = [
     re.compile(r"\btools\s*[=:]\s*\["),
@@ -176,10 +419,18 @@ MCP_MARKERS: list[re.Pattern[str]] = [
     re.compile(r"@modelcontextprotocol/sdk"),
     re.compile(r"\bFastMCP\(|\bMcpServer\(|\bmcp\.tool\b|@server\.tool"),
 ]
-PROMPT_FILE_HINTS = re.compile(r"(?im)^\s*(system prompt|you are an? |### ?system|<\|system\|>|role:\s*[\"']?system|\[system\]|system:\s*\S)")
-SECRET_FILE_NAMES = re.compile(r"(?i)^(\.env(\..+)?|secrets?\.(json|ya?ml|toml|txt)|credentials?\.(json|ya?ml)|.*\.pem|id_(rsa|ed25519|ecdsa)|.*\.p12|.*\.pfx|service[-_]account.*\.json)$")
-CI_PATHS = re.compile(r"(?i)(^|/)(\.github/workflows/[^/]+\.ya?ml|\.gitlab-ci\.ya?ml|Jenkinsfile|\.circleci/config\.ya?ml|azure-pipelines\.ya?ml|bitbucket-pipelines\.ya?ml|\.travis\.ya?ml|cloudbuild\.ya?ml|\.drone\.ya?ml)$")
-DOCKER_PATHS = re.compile(r"(?i)(^|/)(Dockerfile[^/]*|[^/]+\.dockerfile|docker-compose[^/]*\.ya?ml|compose\.ya?ml)$")
+PROMPT_FILE_HINTS = re.compile(
+    r"(?im)^\s*(system prompt|you are an? |### ?system|<\|system\|>|role:\s*[\"']?system|\[system\]|system:\s*\S)"
+)
+SECRET_FILE_NAMES = re.compile(
+    r"(?i)^(\.env(\..+)?|secrets?\.(json|ya?ml|toml|txt)|credentials?\.(json|ya?ml)|.*\.pem|id_(rsa|ed25519|ecdsa)|.*\.p12|.*\.pfx|service[-_]account.*\.json)$"
+)
+CI_PATHS = re.compile(
+    r"(?i)(^|/)(\.github/workflows/[^/]+\.ya?ml|\.gitlab-ci\.ya?ml|Jenkinsfile|\.circleci/config\.ya?ml|azure-pipelines\.ya?ml|bitbucket-pipelines\.ya?ml|\.travis\.ya?ml|cloudbuild\.ya?ml|\.drone\.ya?ml)$"
+)
+DOCKER_PATHS = re.compile(
+    r"(?i)(^|/)(Dockerfile[^/]*|[^/]+\.dockerfile|docker-compose[^/]*\.ya?ml|compose\.ya?ml)$"
+)
 IMPORT_PY = re.compile(r"^\s*(?:from\s+([\w.]+)\s+import|import\s+([\w.]+))", re.M)
 IMPORT_JS = re.compile(r"""(?:from\s+|require\(\s*|import\s*\(\s*)['"]([^'"]+)['"]""")
 
@@ -235,7 +486,11 @@ def _is_binary(path: Path) -> bool:
 
 def _globs_match(rel: str, patterns: list[str]) -> bool:
     for pat in patterns:
-        if fnmatch.fnmatch(rel, pat) or fnmatch.fnmatch(os.path.basename(rel), pat) or rel.startswith(pat.rstrip("/*") + "/"):
+        if (
+            fnmatch.fnmatch(rel, pat)
+            or fnmatch.fnmatch(os.path.basename(rel), pat)
+            or rel.startswith(pat.rstrip("/*") + "/")
+        ):
             return True
     return False
 
@@ -260,7 +515,9 @@ def walk_files(
     exclude = [p for p in (exclude or []) if p]
     root = root.resolve()
     for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
-        dirnames[:] = sorted(d for d in dirnames if d not in exclude_dirs and not os.path.islink(os.path.join(dirpath, d)))
+        dirnames[:] = sorted(
+            d for d in dirnames if d not in exclude_dirs and not os.path.islink(os.path.join(dirpath, d))
+        )
         for name in sorted(filenames):
             full = Path(dirpath) / name
             if full.is_symlink() or not full.is_file():
@@ -345,7 +602,13 @@ def _pyproject(text: str) -> list[dict[str, Any]]:
         if name.lower() == "python":
             continue
         version = spec.get("version", "") if isinstance(spec, dict) else str(spec)
-        deps.append({"name": name.lower(), "spec": version, "pinned": bool(re.match(r"^=?\d", version)) and not version.startswith(("^", "~", ">", "*"))})
+        deps.append(
+            {
+                "name": name.lower(),
+                "spec": version,
+                "pinned": bool(re.match(r"^=?\d", version)) and not version.startswith(("^", "~", ">", "*")),
+            }
+        )
     return deps
 
 
@@ -379,7 +642,13 @@ def _pom(text: str) -> list[dict[str, Any]]:
         ver = re.search(r"<version>([^<]+)</version>", block)
         if art:
             spec = ver.group(1).strip() if ver else ""
-            deps.append({"name": art.group(1).strip(), "spec": spec, "pinned": bool(spec) and not any(c in spec for c in "[(,$")})
+            deps.append(
+                {
+                    "name": art.group(1).strip(),
+                    "spec": spec,
+                    "pinned": bool(spec) and not any(c in spec for c in "[(,$"),
+                }
+            )
     return deps
 
 
@@ -387,7 +656,9 @@ def _gemfile(text: str) -> list[dict[str, Any]]:
     deps: list[dict[str, Any]] = []
     for m in re.finditer(r"""^\s*gem\s+['"]([^'"]+)['"](?:\s*,\s*['"]([^'"]+)['"])?""", text, re.M):
         spec = m.group(2) or ""
-        deps.append({"name": m.group(1), "spec": spec, "pinned": spec.startswith("=") or bool(re.match(r"^\d", spec))})
+        deps.append(
+            {"name": m.group(1), "spec": spec, "pinned": spec.startswith("=") or bool(re.match(r"^\d", spec))}
+        )
     return deps
 
 
@@ -457,7 +728,10 @@ class Inventory:
             "secret_files": self.secret_files[:200],
             "ci_configs": self.ci_configs[:100],
             "dockerfiles": self.dockerfiles[:100],
-            "tool_calling": {"detected": bool(self.tool_calling_files), "files": self.tool_calling_files[:100]},
+            "tool_calling": {
+                "detected": bool(self.tool_calling_files),
+                "files": self.tool_calling_files[:100],
+            },
             "mcp_servers": self.mcp_files[:100],
             "notebooks": self.notebooks[:100],
             "skipped": self.skipped,
@@ -472,7 +746,11 @@ def _framework_hits(text: str, language: str) -> set[str]:
         for m in IMPORT_PY.finditer(text):
             imports.add((m.group(1) or m.group(2) or "").split(".")[0])
         for name, info in FRAMEWORKS.items():
-            if any(root in imports or any(i.startswith(root.split(".")[0]) for i in imports if root.startswith(i)) for root in info["python"]):
+            if any(
+                root in imports
+                or any(i.startswith(root.split(".")[0]) for i in imports if root.startswith(i))
+                for root in info["python"]
+            ):
                 hits.add(name)
     elif language in ("javascript", "typescript", "vue", "svelte"):
         for m in IMPORT_JS.finditer(text):
@@ -491,7 +769,9 @@ def build_inventory(root: Path, files: list[SourceFile]) -> Inventory:
     for f in files:
         if not f.is_text:
             fmt = MODEL_ARTIFACT_EXT.get(f.abs_path.suffix.lower(), "unknown")
-            inv.model_artifacts.append({"path": f.path, "format": fmt, "bytes": f.size, "pickle_based": fmt in PICKLE_FORMATS})
+            inv.model_artifacts.append(
+                {"path": f.path, "format": fmt, "bytes": f.size, "pickle_based": fmt in PICKLE_FORMATS}
+            )
             continue
         text = f.read_text()
         lines = text.count("\n") + (1 if text and not text.endswith("\n") else 0)
@@ -524,11 +804,15 @@ def build_inventory(root: Path, files: list[SourceFile]) -> Inventory:
             inv.dockerfiles.append(f.path)
         if lang == "notebook":
             inv.notebooks.append(f.path)
-        if lang in ("prompt", "jinja") or (lang in ("text", "markdown", "yaml") and PROMPT_FILE_HINTS.search(text[:20000])):
+        if lang in ("prompt", "jinja") or (
+            lang in ("text", "markdown", "yaml") and PROMPT_FILE_HINTS.search(text[:20000])
+        ):
             inv.prompt_files.append(f.path)
         if lang in CODE_LANGUAGES or lang == "notebook":
             for hit in _framework_hits(text, lang):
-                inv.frameworks.setdefault(hit, {"kind": FRAMEWORKS[hit]["kind"], "files": []})["files"].append(f.path)
+                inv.frameworks.setdefault(hit, {"kind": FRAMEWORKS[hit]["kind"], "files": []})[
+                    "files"
+                ].append(f.path)
             if any(p.search(text) for p in TOOL_CALLING_MARKERS):
                 inv.tool_calling_files.append(f.path)
             if any(p.search(text) for p in MCP_MARKERS):

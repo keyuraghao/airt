@@ -56,7 +56,9 @@ def _source_ref(source: dict[str, Any]) -> str:
 def normalize_options(options: dict[str, Any] | None, cfg: dict[str, Any]) -> dict[str, Any]:
     options = options or {}
     packs = [p for p in (options.get("packs") or []) if p in PACKS] or list(PACKS)
-    engines = [e for e in (options.get("engines") or []) if e in ENGINES] or list(cfg.get("default_engines") or ["rules", "semgrep", "bandit"])
+    engines = [e for e in (options.get("engines") or []) if e in ENGINES] or list(
+        cfg.get("default_engines") or ["rules", "semgrep", "bandit"]
+    )
     max_files = int(options.get("max_files") or 0) or int(cfg.get("max_files") or 20000)
     return {
         "packs": packs,
@@ -71,10 +73,35 @@ class CodeReviewRunner:
     def __init__(self) -> None:
         self._runs: dict[str, _RunState] = {}
 
-    async def create_run(self, session: AsyncSession, *, name: str, source: dict[str, Any], options: dict[str, Any] | None, created_by: str) -> CodeReviewRun:
+    async def create_run(
+        self,
+        session: AsyncSession,
+        *,
+        name: str,
+        source: dict[str, Any],
+        options: dict[str, Any] | None,
+        created_by: str,
+    ) -> CodeReviewRun:
         cfg = get_config()
         opts = normalize_options(options, cfg)
-        stored_source = redact_mapping({k: v for k, v in source.items() if k in ("type", "url", "ref", "provider", "path", "filename", "language", "credential_id", "username")})
+        stored_source = redact_mapping(
+            {
+                k: v
+                for k, v in source.items()
+                if k
+                in (
+                    "type",
+                    "url",
+                    "ref",
+                    "provider",
+                    "path",
+                    "filename",
+                    "language",
+                    "credential_id",
+                    "username",
+                )
+            }
+        )
         run = CodeReviewRun(
             name=(name or "").strip()[:160] or f"review {utcnow().strftime('%Y-%m-%d %H:%M')}",
             source_type=str(source.get("type") or "zip"),
@@ -105,7 +132,11 @@ class CodeReviewRunner:
                 state.task.cancel()
         async with session_scope() as session:
             run = await session.get(CodeReviewRun, run_id)
-            if run and run.status in (CodeReviewStatus.CREATED.value, CodeReviewStatus.FETCHING.value, CodeReviewStatus.ANALYZING.value):
+            if run and run.status in (
+                CodeReviewStatus.CREATED.value,
+                CodeReviewStatus.FETCHING.value,
+                CodeReviewStatus.ANALYZING.value,
+            ):
                 run.status = CodeReviewStatus.CANCELLED.value
                 run.finished_at = utcnow()
                 run.stage = "cancelled"
@@ -163,20 +194,74 @@ class CodeReviewRunner:
             result = await asyncio.to_thread(intake.acquire, run_id, source, opts, cfg)
             src_dir = result.src_dir
             work_dir = src_dir.parent
-            await self._set(run_id, work_dir=str(work_dir), source_ref=result.source_ref[:800], stage="inventory")
+            await self._set(
+                run_id, work_dir=str(work_dir), source_ref=result.source_ref[:800], stage="inventory"
+            )
             self._check_cancel(state)
-            _publish(run_id, "run.progress", status=CodeReviewStatus.FETCHING.value, stage="inventory", done=0, total=0)
+            _publish(
+                run_id,
+                "run.progress",
+                status=CodeReviewStatus.FETCHING.value,
+                stage="inventory",
+                done=0,
+                total=0,
+            )
 
             stats = WalkStats()
             walk_cfg = {**cfg, "max_files": opts.get("max_files") or cfg.get("max_files")}
-            files = await asyncio.to_thread(lambda: list(walk_files(src_dir, walk_cfg, include=opts.get("include"), exclude=opts.get("exclude"), max_files=opts.get("max_files"), stats=stats)))
+            files = await asyncio.to_thread(
+                lambda: list(
+                    walk_files(
+                        src_dir,
+                        walk_cfg,
+                        include=opts.get("include"),
+                        exclude=opts.get("exclude"),
+                        max_files=opts.get("max_files"),
+                        stats=stats,
+                    )
+                )
+            )
             inventory = await asyncio.to_thread(build_inventory, src_dir, files)
             inv = inventory.to_dict()
-            inv["skipped"] = {"too_large": stats.skipped_large, "binary": stats.skipped_binary, "excluded": stats.skipped_excluded}
+            inv["skipped"] = {
+                "too_large": stats.skipped_large,
+                "binary": stats.skipped_binary,
+                "excluded": stats.skipped_excluded,
+            }
             inv["truncated"] = stats.truncated
-            inv["intake"] = {k: v for k, v in result.detail.items() if k in ("commit", "branch", "ref", "method", "kind", "files", "written", "copied", "truncated", "language")}
-            await self._set(run_id, inventory=inv, file_count=inventory.files, loc=inventory.loc, status=CodeReviewStatus.ANALYZING.value, stage="rules")
-            _publish(run_id, "run.status", status=CodeReviewStatus.ANALYZING.value, stage="rules", files=inventory.files, loc=inventory.loc)
+            inv["intake"] = {
+                k: v
+                for k, v in result.detail.items()
+                if k
+                in (
+                    "commit",
+                    "branch",
+                    "ref",
+                    "method",
+                    "kind",
+                    "files",
+                    "written",
+                    "copied",
+                    "truncated",
+                    "language",
+                )
+            }
+            await self._set(
+                run_id,
+                inventory=inv,
+                file_count=inventory.files,
+                loc=inventory.loc,
+                status=CodeReviewStatus.ANALYZING.value,
+                stage="rules",
+            )
+            _publish(
+                run_id,
+                "run.status",
+                status=CodeReviewStatus.ANALYZING.value,
+                stage="rules",
+                files=inventory.files,
+                loc=inventory.loc,
+            )
             self._check_cancel(state)
 
             engines = list(opts.get("engines") or ["rules"])
@@ -186,11 +271,33 @@ class CodeReviewRunner:
                 t0 = time.perf_counter()
 
                 def progress(done: int, total: int) -> None:
-                    loop.call_soon_threadsafe(functools.partial(_publish, run_id, "run.progress", status=CodeReviewStatus.ANALYZING.value, stage="rules", done=done, total=total))
+                    loop.call_soon_threadsafe(
+                        functools.partial(
+                            _publish,
+                            run_id,
+                            "run.progress",
+                            status=CodeReviewStatus.ANALYZING.value,
+                            stage="rules",
+                            done=done,
+                            total=total,
+                        )
+                    )
 
-                found = await asyncio.to_thread(rules_engine.run_rules, files, inv, packs, should_stop=lambda: state.cancelled, progress=progress)
+                found = await asyncio.to_thread(
+                    rules_engine.run_rules,
+                    files,
+                    inv,
+                    packs,
+                    should_stop=lambda: state.cancelled,
+                    progress=progress,
+                )
                 all_findings.extend(found)
-                engine_status["rules"] = {"engine": "rules", "available": True, "findings": len(found), "seconds": round(time.perf_counter() - t0, 2)}
+                engine_status["rules"] = {
+                    "engine": "rules",
+                    "available": True,
+                    "findings": len(found),
+                    "seconds": round(time.perf_counter() - t0, 2),
+                }
                 self._check_cancel(state)
             if "semgrep" in engines:
                 await self._stage(run_id, "semgrep", len(all_findings))
@@ -210,19 +317,34 @@ class CodeReviewRunner:
                 # triages the findings collected so far in place (true positive, exploitability, likely false positives)
                 await self._stage(run_id, "typesafe", len(all_findings))
                 t0 = time.perf_counter()
-                found, status = await self._safe(typesafe_engine.run_typesafe_triage(files, all_findings, cfg, should_stop=lambda: state.cancelled), "typesafe")
+                found, status = await self._safe(
+                    typesafe_engine.run_typesafe_triage(
+                        files, all_findings, cfg, should_stop=lambda: state.cancelled
+                    ),
+                    "typesafe",
+                )
                 all_findings.extend(found)
                 engine_status["typesafe"] = {**status, "seconds": round(time.perf_counter() - t0, 2)}
                 self._check_cancel(state)
             if "llm" in engines:
                 # with TypeSafe triage in place the LLM pass only sees the uncertain findings, and only when escalation is on
-                llm_input, skip_reason = typesafe_engine.escalation_subset(all_findings, engine_status.get("typesafe"))
+                llm_input, skip_reason = typesafe_engine.escalation_subset(
+                    all_findings, engine_status.get("typesafe")
+                )
                 if skip_reason:
-                    engine_status["llm"] = {"engine": "llm", "available": False, "findings": 0, "error": skip_reason}
+                    engine_status["llm"] = {
+                        "engine": "llm",
+                        "available": False,
+                        "findings": 0,
+                        "error": skip_reason,
+                    }
                 else:
                     await self._stage(run_id, "llm", len(all_findings))
                     t0 = time.perf_counter()
-                    found, status = await self._safe(llm_engine.run_llm_review(files, llm_input, cfg, should_stop=lambda: state.cancelled), "llm")
+                    found, status = await self._safe(
+                        llm_engine.run_llm_review(files, llm_input, cfg, should_stop=lambda: state.cancelled),
+                        "llm",
+                    )
                     all_findings.extend(found)
                     engine_status["llm"] = {**status, "seconds": round(time.perf_counter() - t0, 2)}
                     self._check_cancel(state)
@@ -243,11 +365,32 @@ class CodeReviewRunner:
                 run.status = CodeReviewStatus.COMPLETED.value
                 run.stage = "completed"
                 run.finished_at = utcnow()
-                await audit.record(session, created_by or "system", "codereview.run.completed", "codereview_run", run_id, {"findings": len(rows), "files": run.file_count, "risk_score": run.summary.get("risk_score")})
-            _publish(run_id, "run.status", status=CodeReviewStatus.COMPLETED.value, stage="completed", findings=len(unique), risk_score=run.summary.get("risk_score"), summary=run.summary)
+                await audit.record(
+                    session,
+                    created_by or "system",
+                    "codereview.run.completed",
+                    "codereview_run",
+                    run_id,
+                    {
+                        "findings": len(rows),
+                        "files": run.file_count,
+                        "risk_score": run.summary.get("risk_score"),
+                    },
+                )
+            _publish(
+                run_id,
+                "run.status",
+                status=CodeReviewStatus.COMPLETED.value,
+                stage="completed",
+                findings=len(unique),
+                risk_score=run.summary.get("risk_score"),
+                summary=run.summary,
+            )
             log.info("codereview.run.completed", run_id=run_id, findings=len(unique), duration_s=duration)
         except asyncio.CancelledError:
-            await self._set(run_id, status=CodeReviewStatus.CANCELLED.value, stage="cancelled", finished_at=utcnow())
+            await self._set(
+                run_id, status=CodeReviewStatus.CANCELLED.value, stage="cancelled", finished_at=utcnow()
+            )
             _publish(run_id, "run.status", status=CodeReviewStatus.CANCELLED.value, stage="cancelled")
             raise
         except intake.IntakeError as exc:
@@ -258,7 +401,9 @@ class CodeReviewRunner:
 
     async def _stage(self, run_id: str, stage: str, found: int) -> None:
         await self._set(run_id, stage=stage)
-        _publish(run_id, "run.progress", status=CodeReviewStatus.ANALYZING.value, stage=stage, done=found, total=0)
+        _publish(
+            run_id, "run.progress", status=CodeReviewStatus.ANALYZING.value, stage=stage, done=found, total=0
+        )
 
     @staticmethod
     async def _safe(coro: Any, name: str) -> tuple[list[Finding], dict[str, Any]]:
@@ -268,7 +413,12 @@ class CodeReviewRunner:
             raise
         except Exception as exc:
             log.warning("codereview.engine.error", engine=name, error=f"{type(exc).__name__}: {exc}")
-            return [], {"engine": name, "available": False, "findings": 0, "error": f"{type(exc).__name__}: {str(exc)[:300]}"}
+            return [], {
+                "engine": name,
+                "available": False,
+                "findings": 0,
+                "error": f"{type(exc).__name__}: {str(exc)[:300]}",
+            }
 
     @staticmethod
     def _check_cancel(state: _RunState) -> None:
@@ -285,7 +435,14 @@ class CodeReviewRunner:
             run.stage = "failed"
             run.error = message
             run.finished_at = utcnow()
-            await audit.record(session, run.created_by or "system", "codereview.run.failed", "codereview_run", run_id, {"error": message[:300]})
+            await audit.record(
+                session,
+                run.created_by or "system",
+                "codereview.run.failed",
+                "codereview_run",
+                run_id,
+                {"error": message[:300]},
+            )
         _publish(run_id, "run.status", status=CodeReviewStatus.FAILED.value, stage="failed", error=message)
 
 

@@ -4,13 +4,29 @@ Each mutator takes a string and returns a wrapped or transformed string that ins
 model to decode and act on the original text. A mutated probe keeps the original probe's
 expectations and success indicators; only its id and prompt change (id becomes "<id>+<name>").
 """
+
 from __future__ import annotations
 
 import base64
 import codecs
 from collections.abc import Callable
 
-_LEET_MAP = str.maketrans({"a": "4", "e": "3", "i": "1", "o": "0", "s": "5", "t": "7", "A": "4", "E": "3", "I": "1", "O": "0", "S": "5", "T": "7"})
+_LEET_MAP = str.maketrans(
+    {
+        "a": "4",
+        "e": "3",
+        "i": "1",
+        "o": "0",
+        "s": "5",
+        "t": "7",
+        "A": "4",
+        "E": "3",
+        "I": "1",
+        "O": "0",
+        "S": "5",
+        "T": "7",
+    }
+)
 
 
 def base64_wrap(text: str) -> str:

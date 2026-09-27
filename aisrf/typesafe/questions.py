@@ -114,7 +114,9 @@ REQUEST_GUARD: dict[str, dict[str, Any]] = {
         "A normal question or task (writing, coding, analysis, translation, support) with no attack pattern, no sensitive data and no harmful goal.",
         "Something in the request would make a careful reviewer pause.",
     ),
-    "intent": choice("Which single category best describes the primary intent of the latest user turn?", INTENT_CATEGORIES),
+    "intent": choice(
+        "Which single category best describes the primary intent of the latest user turn?", INTENT_CATEGORIES
+    ),
     "severity": score(
         "How severe is the security risk of forwarding this request to the model unchanged?", SEVERITY_LEVELS
     ),
@@ -263,7 +265,8 @@ CODE_TRIAGE: dict[str, dict[str, Any]] = {
         "No mitigation is visible in the snippet or its surrounding lines.",
     ),
     "exploitability": score(
-        "How exploitable is this finding as written, judging only from the snippet and its surrounding lines?", EXPLOITABILITY_LEVELS
+        "How exploitable is this finding as written, judging only from the snippet and its surrounding lines?",
+        EXPLOITABILITY_LEVELS,
     ),
 }
 

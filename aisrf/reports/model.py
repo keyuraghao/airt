@@ -4,6 +4,7 @@ A Report is a titled list of Sections. Builders (aisrf/reports/builders.py) prod
 Reports from the database; renderers (aisrf/reports/renderers.py) turn a Report into
 bytes in any supported format. Nothing here knows about formats or the database.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -59,7 +60,11 @@ class TableSection(Section):
     kind: str = field(default="table", init=False)
 
     def to_dict(self) -> dict[str, Any]:
-        d = {**super().to_dict(), "columns": list(self.columns), "rows": [[_fmt(c) for c in r] for r in self.rows]}
+        d = {
+            **super().to_dict(),
+            "columns": list(self.columns),
+            "rows": [[_fmt(c) for c in r] for r in self.rows],
+        }
         if self.notes:
             d["notes"] = self.notes
         if self.role:
@@ -83,7 +88,18 @@ class TextSection(Section):
         return ["Text"], [[line] for line in self.text.splitlines() if line.strip()]
 
 
-FINDING_COLUMNS: list[str] = ["severity", "category", "title", "description", "evidence", "location", "ticket_id", "probe_id", "verdict", "confidence"]
+FINDING_COLUMNS: list[str] = [
+    "severity",
+    "category",
+    "title",
+    "description",
+    "evidence",
+    "location",
+    "ticket_id",
+    "probe_id",
+    "verdict",
+    "confidence",
+]
 
 
 @dataclass
@@ -124,10 +140,17 @@ class ChartSection(Section):
             raise ValueError(f"unsupported chart kind: {self.chart}")
 
     def to_dict(self) -> dict[str, Any]:
-        return {**super().to_dict(), "chart": self.chart, "labels": list(self.labels), "values": [float(v) for v in self.values]}
+        return {
+            **super().to_dict(),
+            "chart": self.chart,
+            "labels": list(self.labels),
+            "values": [float(v) for v in self.values],
+        }
 
     def as_table(self) -> tuple[list[str], list[list[Any]]]:
-        return ["Label", "Value"], [[label, value] for label, value in zip(self.labels, self.values, strict=False)]
+        return ["Label", "Value"], [
+            [label, value] for label, value in zip(self.labels, self.values, strict=False)
+        ]
 
     @property
     def total(self) -> float:
@@ -175,11 +198,22 @@ def section_from_dict(d: dict[str, Any]) -> Section:
     if kind == "keyvalue":
         return KeyValueSection(title, rows=[(str(k), v) for k, v in d.get("rows", [])])
     if kind == "table":
-        return TableSection(title, columns=list(d.get("columns", [])), rows=[list(r) for r in d.get("rows", [])], notes=d.get("notes", ""), role=d.get("role", ""))
+        return TableSection(
+            title,
+            columns=list(d.get("columns", [])),
+            rows=[list(r) for r in d.get("rows", [])],
+            notes=d.get("notes", ""),
+            role=d.get("role", ""),
+        )
     if kind == "findings":
         return FindingsSection(title, findings=[dict(f) for f in d.get("findings", [])])
     if kind == "chart":
-        return ChartSection(title, chart=d.get("chart", "bar"), labels=list(d.get("labels", [])), values=[float(v) for v in d.get("values", [])])
+        return ChartSection(
+            title,
+            chart=d.get("chart", "bar"),
+            labels=list(d.get("labels", [])),
+            values=[float(v) for v in d.get("values", [])],
+        )
     return TextSection(title, text=str(d.get("text", "")), markdown=bool(d.get("markdown", True)))
 
 

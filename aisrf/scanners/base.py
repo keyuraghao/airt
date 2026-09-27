@@ -7,6 +7,7 @@ events on the "campaigns" broadcaster channel. External processes reach the gate
 short-lived scan token minted for the campaign and revoked when the run ends, so their traffic is
 intercepted, analysed and approved like any other request.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -175,7 +176,9 @@ class ScanRunner:
         self._runs[campaign_id] = state
         state.task = asyncio.create_task(self._supervise(engine, campaign_id, http, state))
 
-    async def _supervise(self, engine: ScanEngine, campaign_id: str, http: httpx.AsyncClient, state: RunState) -> None:
+    async def _supervise(
+        self, engine: ScanEngine, campaign_id: str, http: httpx.AsyncClient, state: RunState
+    ) -> None:
         started = time.perf_counter()
         await set_status(campaign_id, CampaignStatus.RUNNING.value, started=True)
         try:
@@ -208,14 +211,29 @@ class ScanRunner:
                     proc.kill()
         async with session_scope() as session:
             campaign = await session.get(Campaign, campaign_id)
-            if campaign and campaign.status in (CampaignStatus.CREATED.value, CampaignStatus.RUNNING.value, CampaignStatus.PAUSED.value):
+            if campaign and campaign.status in (
+                CampaignStatus.CREATED.value,
+                CampaignStatus.RUNNING.value,
+                CampaignStatus.PAUSED.value,
+            ):
                 campaign.status = CampaignStatus.CANCELLED.value
                 campaign.finished_at = utcnow()
-        broadcaster.publish("campaigns", {"event": "campaign.status", "campaign_id": campaign_id, "status": CampaignStatus.CANCELLED.value})
+        broadcaster.publish(
+            "campaigns",
+            {
+                "event": "campaign.status",
+                "campaign_id": campaign_id,
+                "status": CampaignStatus.CANCELLED.value,
+            },
+        )
 
     def status(self, campaign_id: str) -> dict[str, Any]:
         state = self._runs.get(campaign_id)
-        return {"campaign_id": campaign_id, "running": self.is_running(campaign_id), "cancelled": bool(state and state.cancelled)}
+        return {
+            "campaign_id": campaign_id,
+            "running": self.is_running(campaign_id),
+            "cancelled": bool(state and state.cancelled),
+        }
 
     async def shutdown(self) -> None:
         tasks = [s.task for s in self._runs.values() if s.task and not s.task.done()]
@@ -243,12 +261,17 @@ async def load_campaign(campaign_id: str) -> Campaign:
         return campaign
 
 
-async def set_status(campaign_id: str, status: str, *, started: bool = False, finished: bool = False, error: str | None = None) -> None:
+async def set_status(
+    campaign_id: str, status: str, *, started: bool = False, finished: bool = False, error: str | None = None
+) -> None:
     async with session_scope() as session:
         campaign = await session.get(Campaign, campaign_id)
         if campaign is None:
             return
-        if status == CampaignStatus.CANCELLED.value and campaign.status in (CampaignStatus.COMPLETED.value, CampaignStatus.FAILED.value):
+        if status == CampaignStatus.CANCELLED.value and campaign.status in (
+            CampaignStatus.COMPLETED.value,
+            CampaignStatus.FAILED.value,
+        ):
             return
         campaign.status = status
         if started:
@@ -257,7 +280,9 @@ async def set_status(campaign_id: str, status: str, *, started: bool = False, fi
             campaign.finished_at = utcnow()
         if error is not None:
             campaign.error = error
-    broadcaster.publish("campaigns", {"event": "campaign.status", "campaign_id": campaign_id, "status": status})
+    broadcaster.publish(
+        "campaigns", {"event": "campaign.status", "campaign_id": campaign_id, "status": status}
+    )
 
 
 async def set_progress(campaign_id: str, completed: int, total: int | None = None) -> None:
@@ -269,10 +294,20 @@ async def set_progress(campaign_id: str, completed: int, total: int | None = Non
         if total is not None:
             campaign.total_probes = int(total)
         total_value = campaign.total_probes
-    broadcaster.publish("campaigns", {"event": "campaign.progress", "campaign_id": campaign_id, "completed": int(completed), "total": total_value})
+    broadcaster.publish(
+        "campaigns",
+        {
+            "event": "campaign.progress",
+            "campaign_id": campaign_id,
+            "completed": int(completed),
+            "total": total_value,
+        },
+    )
 
 
-async def record_results(campaign_id: str, agent_id: str, rows: list[dict[str, Any]], *, total: int | None = None) -> int:
+async def record_results(
+    campaign_id: str, agent_id: str, rows: list[dict[str, Any]], *, total: int | None = None
+) -> int:
     """Persist ProbeResult rows in one transaction and publish a probe.result event per row."""
     settings = get_settings()
     if not rows:
@@ -310,26 +345,50 @@ async def record_results(campaign_id: str, agent_id: str, rows: list[dict[str, A
     for i, row in enumerate(rows, start=1):
         broadcaster.publish(
             "campaigns",
-            {"event": "probe.result", "campaign_id": campaign_id, "probe_id": row.get("probe_id"), "verdict": row.get("verdict"), "completed": completed - len(rows) + i, "total": total_value},
+            {
+                "event": "probe.result",
+                "campaign_id": campaign_id,
+                "probe_id": row.get("probe_id"),
+                "verdict": row.get("verdict"),
+                "completed": completed - len(rows) + i,
+                "total": total_value,
+            },
         )
     with contextlib.suppress(Exception):
-        await log_agent_event(agent_id, "scanner.results", campaign_id=campaign_id, count=len(rows), completed=completed, total=total_value)
+        await log_agent_event(
+            agent_id,
+            "scanner.results",
+            campaign_id=campaign_id,
+            count=len(rows),
+            completed=completed,
+            total=total_value,
+        )
     return len(rows)
 
 
-async def record_result(campaign_id: str, agent_id: str, row: dict[str, Any], *, total: int | None = None) -> None:
+async def record_result(
+    campaign_id: str, agent_id: str, row: dict[str, Any], *, total: int | None = None
+) -> None:
     await record_results(campaign_id, agent_id, [row], total=total)
 
 
-async def finish(campaign_id: str, *, duration_s: float | None = None, extra: dict[str, Any] | None = None) -> dict[str, Any]:
+async def finish(
+    campaign_id: str, *, duration_s: float | None = None, extra: dict[str, Any] | None = None
+) -> dict[str, Any]:
     """Compute the summary from the stored ProbeResult rows and mark the campaign COMPLETED."""
     async with session_scope() as session:
         campaign = await session.get(Campaign, campaign_id)
         if campaign is None:
             return {}
-        rows = list((await session.execute(select(ProbeResult).where(ProbeResult.campaign_id == campaign_id))).scalars())
+        rows = list(
+            (
+                await session.execute(select(ProbeResult).where(ProbeResult.campaign_id == campaign_id))
+            ).scalars()
+        )
         if duration_s is None and campaign.started_at:
-            duration_s = round((utcnow() - campaign.started_at.replace(tzinfo=utcnow().tzinfo)).total_seconds(), 2)
+            duration_s = round(
+                (utcnow() - campaign.started_at.replace(tzinfo=utcnow().tzinfo)).total_seconds(), 2
+            )
         summary = build_summary(rows, duration_s)
         summary["engine"] = str((campaign.config or {}).get("engine") or "")
         if extra:
@@ -339,7 +398,10 @@ async def finish(campaign_id: str, *, duration_s: float | None = None, extra: di
         campaign.finished_at = utcnow()
         campaign.completed_probes = len(rows)
         campaign.total_probes = len(rows)
-    broadcaster.publish("campaigns", {"event": "campaign.status", "campaign_id": campaign_id, "status": CampaignStatus.COMPLETED.value})
+    broadcaster.publish(
+        "campaigns",
+        {"event": "campaign.status", "campaign_id": campaign_id, "status": CampaignStatus.COMPLETED.value},
+    )
     return summary
 
 
@@ -389,10 +451,34 @@ def _build_summary(rows: list[ProbeResult], duration_s: float | None) -> dict[st
         "by_verdict": by_verdict,
         "vulnerable": by_verdict.get(VULNERABLE, 0),
         "vulnerability_rate": _rate(conclusive_vuln, conclusive),
-        "per_category": {c: {"tested": s["tested"], "vulnerable": s["vulnerable"], "rate": _rate(s["vulnerable"], s["tested"])} for c, s in sorted(cat_stats.items())},
-        "per_technique": {t: {"tested": s["tested"], "vulnerable": s["vulnerable"], "rate": _rate(s["vulnerable"], s["tested"])} for t, s in sorted(tech_stats.items())},
+        "per_category": {
+            c: {
+                "tested": s["tested"],
+                "vulnerable": s["vulnerable"],
+                "rate": _rate(s["vulnerable"], s["tested"]),
+            }
+            for c, s in sorted(cat_stats.items())
+        },
+        "per_technique": {
+            t: {
+                "tested": s["tested"],
+                "vulnerable": s["vulnerable"],
+                "rate": _rate(s["vulnerable"], s["tested"]),
+            }
+            for t, s in sorted(tech_stats.items())
+        },
         "top_vulnerable": sorted(
-            ({"probe_id": r.probe_id, "category": r.category, "technique": r.technique, "severity": r.severity, "confidence": round(float(r.confidence or 0), 3)} for r in rows if r.verdict == VULNERABLE),
+            (
+                {
+                    "probe_id": r.probe_id,
+                    "category": r.category,
+                    "technique": r.technique,
+                    "severity": r.severity,
+                    "confidence": round(float(r.confidence or 0), 3),
+                }
+                for r in rows
+                if r.verdict == VULNERABLE
+            ),
             key=lambda d: (SEVERITY_WEIGHT.get(d["severity"], 0), d["confidence"]),
             reverse=True,
         )[:10],
@@ -410,7 +496,14 @@ async def issue_token(campaign: Campaign, engine_name: str, ttl_seconds: int | N
     options = (campaign.config or {}).get("options") or {}
     ttl = int(ttl_seconds or options.get("token_ttl_seconds") or DEFAULT_TOKEN_TTL)
     async with session_scope() as session:
-        _, raw = await mint_scan_token(session, campaign.agent_id, ttl_seconds=ttl, purpose=engine_name, campaign_id=campaign.id, created_by=campaign.created_by or "system")
+        _, raw = await mint_scan_token(
+            session,
+            campaign.agent_id,
+            ttl_seconds=ttl,
+            purpose=engine_name,
+            campaign_id=campaign.id,
+            created_by=campaign.created_by or "system",
+        )
     return raw
 
 
@@ -434,10 +527,18 @@ async def run_subprocess(
     """Run a scanner binary, streaming its output into the agent event log and a file in the run dir."""
     log_path = cwd / log_name
     full_env = {**os.environ, **env}
-    proc = await asyncio.create_subprocess_exec(*cmd, cwd=str(cwd), env=full_env, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT)
+    proc = await asyncio.create_subprocess_exec(
+        *cmd, cwd=str(cwd), env=full_env, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT
+    )
     state.process = proc
     streamed = 0
-    await log_agent_event(agent_id, "scanner.start", campaign_id=campaign_id, command=" ".join(cmd[:6]) + (" ..." if len(cmd) > 6 else ""), pid=proc.pid)
+    await log_agent_event(
+        agent_id,
+        "scanner.start",
+        campaign_id=campaign_id,
+        command=" ".join(cmd[:6]) + (" ..." if len(cmd) > 6 else ""),
+        pid=proc.pid,
+    )
 
     async def _pump() -> None:
         nonlocal streamed
@@ -455,7 +556,9 @@ async def run_subprocess(
                 if streamed < MAX_STREAMED_LOG_LINES:
                     streamed += 1
                     with contextlib.suppress(Exception):
-                        await log_agent_event(agent_id, "scanner.log", campaign_id=campaign_id, line=line[:2000])
+                        await log_agent_event(
+                            agent_id, "scanner.log", campaign_id=campaign_id, line=line[:2000]
+                        )
 
     pump = asyncio.create_task(_pump())
     try:
@@ -471,7 +574,9 @@ async def run_subprocess(
             pump.cancel()
         state.process = None
     code = int(proc.returncode or 0)
-    await log_agent_event(agent_id, "scanner.exit", campaign_id=campaign_id, returncode=code, log_file=str(log_path))
+    await log_agent_event(
+        agent_id, "scanner.exit", campaign_id=campaign_id, returncode=code, log_file=str(log_path)
+    )
     if state.cancelled:
         raise ScanCancelled()
     return code
@@ -525,12 +630,34 @@ class TicketMatcher:
 
 async def campaign_tickets(campaign_id: str) -> list[dict[str, Any]]:
     async with session_scope() as session:
-        rows = list((await session.execute(select(Ticket).where(Ticket.campaign_id == campaign_id).order_by(Ticket.created_at.asc(), Ticket.number.asc()))).scalars())
+        rows = list(
+            (
+                await session.execute(
+                    select(Ticket)
+                    .where(Ticket.campaign_id == campaign_id)
+                    .order_by(Ticket.created_at.asc(), Ticket.number.asc())
+                )
+            ).scalars()
+        )
         out: list[dict[str, Any]] = []
         for t in rows:
             messages = (t.normalized or {}).get("messages") or []
-            last_user = next((m.get("content") for m in reversed(messages) if m.get("role") == "user"), "") or ""
-            out.append({"id": t.id, "status": t.status, "prompt": normalize_text(str(last_user)), "response_preview": t.response_preview or "", "latency_ms": t.latency_ms, "risk_score": t.risk_score, "response_findings": list(t.response_findings or []), "decided_by": t.decided_by, "error": t.error or ""})
+            last_user = (
+                next((m.get("content") for m in reversed(messages) if m.get("role") == "user"), "") or ""
+            )
+            out.append(
+                {
+                    "id": t.id,
+                    "status": t.status,
+                    "prompt": normalize_text(str(last_user)),
+                    "response_preview": t.response_preview or "",
+                    "latency_ms": t.latency_ms,
+                    "risk_score": t.risk_score,
+                    "response_findings": list(t.response_findings or []),
+                    "decided_by": t.decided_by,
+                    "error": t.error or "",
+                }
+            )
         return out
 
 

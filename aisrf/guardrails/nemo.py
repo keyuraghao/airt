@@ -7,6 +7,7 @@ directory and rebuilt when config.yml changes. Only the requested rail type runs
 message becomes a HIGH finding whose category comes from the flow that fired (jailbreak, injection,
 otherwise guardrail). Every check is time-limited (integrations.nemo_guardrails.timeout_seconds, 10s default).
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -84,13 +85,21 @@ def get_rails(path: Path) -> Any:
         start = time.perf_counter()
         rails = _build_rails(path)
         _cache[key] = (mtime, rails)
-        log.info("guardrails.nemo.loaded", path=key, duration_ms=round((time.perf_counter() - start) * 1000, 1))
+        log.info(
+            "guardrails.nemo.loaded", path=key, duration_ms=round((time.perf_counter() - start) * 1000, 1)
+        )
         return rails
 
 
 def _interpret(result: Any) -> dict[str, Any]:
     """Reduce a GenerationResponse (or plain response) to {blocked, flows, exception_type, message}."""
-    out: dict[str, Any] = {"blocked": False, "flows": [], "exception_type": "", "message": "", "bot_message": ""}
+    out: dict[str, Any] = {
+        "blocked": False,
+        "flows": [],
+        "exception_type": "",
+        "message": "",
+        "bot_message": "",
+    }
     response = getattr(result, "response", result)
     if isinstance(response, list):
         for m in response:
@@ -106,11 +115,13 @@ def _interpret(result: Any) -> dict[str, Any]:
     elif isinstance(response, str):
         out["bot_message"] = response
     log_obj = getattr(result, "log", None)
-    for rail in (getattr(log_obj, "activated_rails", None) or []):
+    for rail in getattr(log_obj, "activated_rails", None) or []:
         name = str(getattr(rail, "name", "") or "")
         stopped = bool(getattr(rail, "stop", False))
         if name:
-            out["flows"].append({"name": name, "stop": stopped, "decisions": list(getattr(rail, "decisions", None) or [])})
+            out["flows"].append(
+                {"name": name, "stop": stopped, "decisions": list(getattr(rail, "decisions", None) or [])}
+            )
         if stopped:
             out["blocked"] = True
     return out
@@ -130,7 +141,9 @@ def _category(info: dict[str, Any]) -> tuple[str, list[str]]:
     return "guardrail", names
 
 
-async def run_rails(kind: str, messages: list[dict[str, str]], cfg: dict[str, Any] | None = None) -> dict[str, Any]:
+async def run_rails(
+    kind: str, messages: list[dict[str, str]], cfg: dict[str, Any] | None = None
+) -> dict[str, Any]:
     """Run only the input or output rails of the configured NeMo config on `messages` (time-limited)."""
     cfg = cfg if cfg is not None else integration_config(NAME)
     try:
@@ -153,11 +166,23 @@ def _finding(analyzer: str, info: dict[str, Any], text: str, location: str, kind
     flow_label = ", ".join(f for f in flows if f) or "input rail"
     detail = info.get("message") or ""
     return make_finding(
-        analyzer, category, Severity.HIGH, f"NeMo Guardrails blocked the {kind} ({flow_label})",
-        f"The NeMo Guardrails {kind} rail '{flow_label}' stopped the conversation" + (f": {detail}" if detail else ".") + f" Config: {info.get('config_path', '')}.",
-        snippet(text, 0, min(len(text), 120)) if text else "", location, 0.85,
+        analyzer,
+        category,
+        Severity.HIGH,
+        f"NeMo Guardrails blocked the {kind} ({flow_label})",
+        f"The NeMo Guardrails {kind} rail '{flow_label}' stopped the conversation"
+        + (f": {detail}" if detail else ".")
+        + f" Config: {info.get('config_path', '')}.",
+        snippet(text, 0, min(len(text), 120)) if text else "",
+        location,
+        0.85,
         tags=["nemo_guardrails", kind + "_rail"] + [f.replace(" ", "_") for f in flows if f],
-        metadata={"flows": info.get("flows", []), "exception_type": info.get("exception_type", ""), "message": detail, "config_path": info.get("config_path", "")},
+        metadata={
+            "flows": info.get("flows", []),
+            "exception_type": info.get("exception_type", ""),
+            "message": detail,
+            "config_path": info.get("config_path", ""),
+        },
     )
 
 
@@ -174,7 +199,9 @@ class NemoInputAnalyzer:
                 set_error(NAME, "nemoguardrails is not installed")
                 log_throttled("nemo.missing", "guardrails.nemo.not_installed")
                 return []
-            messages = conversation_messages(normalized, include_system=bool(cfg.get("include_system", False)))
+            messages = conversation_messages(
+                normalized, include_system=bool(cfg.get("include_system", False))
+            )
             if not messages or messages[-1]["role"] != "user":
                 text = primary_text(normalized)
                 if not text.strip():
@@ -205,7 +232,9 @@ class NemoOutputAnalyzer:
             text = response_text(context)
             if not text.strip():
                 return []
-            messages = conversation_messages(normalized, include_system=bool(cfg.get("include_system", False)))
+            messages = conversation_messages(
+                normalized, include_system=bool(cfg.get("include_system", False))
+            )
             if not messages or messages[-1]["role"] != "user":
                 messages.append({"role": "user", "content": primary_text(normalized) or "(no user message)"})
             messages.append({"role": "assistant", "content": text})
@@ -250,5 +279,15 @@ async def health_check() -> dict[str, Any]:
     try:
         info = await run_rails("input", [{"role": "user", "content": "hello, what is the weather today?"}])
     except Exception as exc:
-        return {"name": NAME, "ok": False, "detail": str(exc)[:300], "duration_ms": round((time.perf_counter() - start) * 1000, 1)}
-    return {"name": NAME, "ok": not info["blocked"], "detail": f"input rails ran ({len(info['flows'])} flow(s)), benign probe {'blocked' if info['blocked'] else 'passed'}", "duration_ms": round((time.perf_counter() - start) * 1000, 1)}
+        return {
+            "name": NAME,
+            "ok": False,
+            "detail": str(exc)[:300],
+            "duration_ms": round((time.perf_counter() - start) * 1000, 1),
+        }
+    return {
+        "name": NAME,
+        "ok": not info["blocked"],
+        "detail": f"input rails ran ({len(info['flows'])} flow(s)), benign probe {'blocked' if info['blocked'] else 'passed'}",
+        "duration_ms": round((time.perf_counter() - start) * 1000, 1),
+    }

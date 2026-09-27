@@ -213,15 +213,31 @@ async def test_canary_not_flagged_when_model_keeps_secret(client, admin_headers,
     assert not any(f["category"] == "canary_leak" for f in t["response_findings"])
 
 
-async def test_redteam_probes_skip_review_when_setting_disabled(client, admin_headers, agent, app, monkeypatch):
+async def test_redteam_probes_skip_review_when_setting_disabled(
+    client, admin_headers, agent, app, monkeypatch
+):
     from aisrf.config import get_settings
     from aisrf.gateway.pipeline import submit
 
     monkeypatch.setattr(get_settings(), "require_approval_for_redteam_probes", False)
-    result = await submit(app.state.http, agent["id"], path="v1/chat/completions", body={"model": "m", "messages": [{"role": "user", "content": "probe"}]}, source="redteam", wait_timeout=2)
+    result = await submit(
+        app.state.http,
+        agent["id"],
+        path="v1/chat/completions",
+        body={"model": "m", "messages": [{"role": "user", "content": "probe"}]},
+        source="redteam",
+        wait_timeout=2,
+    )
     assert result.status == "COMPLETED", result
     t = (await client.get(f"/api/tickets/{result.ticket_id}", headers=admin_headers)).json()
     assert t["policy_decision"]["matched_rules"] == ["settings.require_approval_for_redteam_probes"]
     monkeypatch.setattr(get_settings(), "require_approval_for_redteam_probes", True)
-    result = await submit(app.state.http, agent["id"], path="v1/chat/completions", body={"model": "m", "messages": [{"role": "user", "content": "probe"}]}, source="redteam", wait_timeout=1)
+    result = await submit(
+        app.state.http,
+        agent["id"],
+        path="v1/chat/completions",
+        body={"model": "m", "messages": [{"role": "user", "content": "probe"}]},
+        source="redteam",
+        wait_timeout=1,
+    )
     assert result.status == "EXPIRED"

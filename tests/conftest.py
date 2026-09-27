@@ -40,7 +40,9 @@ def _stand_in(name: str, **attrs):
 def _install_stand_ins() -> None:
     from fastapi import APIRouter
 
-    _stand_in("aisrf.redteam.engine", campaign_runner=types.SimpleNamespace(shutdown=lambda: asyncio.sleep(0)))
+    _stand_in(
+        "aisrf.redteam.engine", campaign_runner=types.SimpleNamespace(shutdown=lambda: asyncio.sleep(0))
+    )
     _stand_in("aisrf.redteam.router", router=APIRouter())
     _stand_in("aisrf.reports.router", router=APIRouter())
     _stand_in("aisrf.dashboard.router", mount_dashboard=lambda app: None)

@@ -1,4 +1,5 @@
 """Reviewer REST API for the external scan engines, plus the PyRIT-Ship compatible surface."""
+
 from __future__ import annotations
 
 import contextlib
@@ -64,7 +65,12 @@ async def list_engines(_: Principal = Depends(current_principal)) -> dict[str, A
             installed = engine.installed()
         except Exception:
             installed = False
-        entry: dict[str, Any] = {"name": name, "description": engine.description, "installed": installed, "enabled": base.engine_enabled(name)}
+        entry: dict[str, Any] = {
+            "name": name,
+            "description": engine.description,
+            "installed": installed,
+            "enabled": base.engine_enabled(name),
+        }
         if installed:
             try:
                 entry["capabilities"] = engine.capabilities()
@@ -96,13 +102,30 @@ async def create_campaign(
         raise HTTPException(409, f"{engine} is not installed")
     if (await agents.get_agent(session, payload.agent_id)) is None:
         raise HTTPException(404, f"agent {payload.agent_id} not found")
-    campaign = await service.create_scan_campaign(session, engine=engine, name=payload.name, agent_id=payload.agent_id, target_model=payload.target_model, options=payload.options, created_by=p.username)
-    await audit.record(session, p.username, "scanners.campaign.create", "campaign", campaign.id, {"engine": engine, "agent_id": payload.agent_id, "target_model": payload.target_model})
+    campaign = await service.create_scan_campaign(
+        session,
+        engine=engine,
+        name=payload.name,
+        agent_id=payload.agent_id,
+        target_model=payload.target_model,
+        options=payload.options,
+        created_by=p.username,
+    )
+    await audit.record(
+        session,
+        p.username,
+        "scanners.campaign.create",
+        "campaign",
+        campaign.id,
+        {"engine": engine, "agent_id": payload.agent_id, "target_model": payload.target_model},
+    )
     await session.commit()
     campaign_id = campaign.id
     if payload.auto_start:
         await service.start_campaign(campaign_id, request.app.state.http)
-        await audit.record(session, p.username, "scanners.campaign.start", "campaign", campaign_id, {"engine": engine})
+        await audit.record(
+            session, p.username, "scanners.campaign.start", "campaign", campaign_id, {"engine": engine}
+        )
         await session.commit()
     result = await service.get_campaign_dict(session, campaign_id)
     if result is None:
@@ -124,21 +147,39 @@ async def create_matrix(
     for target in payload.targets:
         if (await agents.get_agent(session, target.agent_id)) is None:
             raise HTTPException(404, f"agent {target.agent_id} not found")
-    group_id, campaigns = await service.run_matrix(session, engine=engine, name=payload.name, targets=[t.model_dump() for t in payload.targets], options=payload.options, created_by=p.username)
-    await audit.record(session, p.username, "scanners.matrix.create", "campaign_group", group_id, {"engine": engine, "targets": len(campaigns)})
+    group_id, campaigns = await service.run_matrix(
+        session,
+        engine=engine,
+        name=payload.name,
+        targets=[t.model_dump() for t in payload.targets],
+        options=payload.options,
+        created_by=p.username,
+    )
+    await audit.record(
+        session,
+        p.username,
+        "scanners.matrix.create",
+        "campaign_group",
+        group_id,
+        {"engine": engine, "targets": len(campaigns)},
+    )
     await session.commit()
     ids = [c.id for c in campaigns]
     if payload.auto_start:
         for campaign_id in ids:
             await service.start_campaign(campaign_id, request.app.state.http)
-        await audit.record(session, p.username, "scanners.matrix.start", "campaign_group", group_id, {"engine": engine})
+        await audit.record(
+            session, p.username, "scanners.matrix.start", "campaign_group", group_id, {"engine": engine}
+        )
         await session.commit()
     out = [await service.get_campaign_dict(session, cid) for cid in ids]
     return {"group_id": group_id, "engine": engine, "campaigns": out}
 
 
 @router.get("/groups/{group_id}")
-async def group_comparison(group_id: str, _: Principal = Depends(current_principal), session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
+async def group_comparison(
+    group_id: str, _: Principal = Depends(current_principal), session: AsyncSession = Depends(get_session)
+) -> dict[str, Any]:
     comparison = await service.compare(session, group_id)
     if not comparison["targets"]:
         raise HTTPException(404, "campaign group not found")
@@ -146,14 +187,26 @@ async def group_comparison(group_id: str, _: Principal = Depends(current_princip
 
 
 @router.post("/campaigns/{campaign_id}/start")
-async def start_campaign(campaign_id: str, request: Request, p: Principal = Depends(require_role("reviewer")), session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
+async def start_campaign(
+    campaign_id: str,
+    request: Request,
+    p: Principal = Depends(require_role("reviewer")),
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, Any]:
     campaign = await session.get(Campaign, campaign_id)
     if campaign is None or not (campaign.config or {}).get("engine"):
         raise HTTPException(404, "scan campaign not found")
     if campaign.status in (CampaignStatus.RUNNING.value, CampaignStatus.COMPLETED.value):
         raise HTTPException(409, f"campaign is {campaign.status}")
     await service.start_campaign(campaign_id, request.app.state.http)
-    await audit.record(session, p.username, "scanners.campaign.start", "campaign", campaign_id, {"engine": (campaign.config or {}).get("engine")})
+    await audit.record(
+        session,
+        p.username,
+        "scanners.campaign.start",
+        "campaign",
+        campaign_id,
+        {"engine": (campaign.config or {}).get("engine")},
+    )
     await session.commit()
     result = await service.get_campaign_dict(session, campaign_id)
     if result is None:
@@ -162,12 +215,23 @@ async def start_campaign(campaign_id: str, request: Request, p: Principal = Depe
 
 
 @router.post("/campaigns/{campaign_id}/cancel")
-async def cancel_campaign(campaign_id: str, p: Principal = Depends(require_role("reviewer")), session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
+async def cancel_campaign(
+    campaign_id: str,
+    p: Principal = Depends(require_role("reviewer")),
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, Any]:
     campaign = await session.get(Campaign, campaign_id)
     if campaign is None or not (campaign.config or {}).get("engine"):
         raise HTTPException(404, "scan campaign not found")
     await service.cancel_campaign(campaign_id)
-    await audit.record(session, p.username, "scanners.campaign.cancel", "campaign", campaign_id, {"engine": (campaign.config or {}).get("engine")})
+    await audit.record(
+        session,
+        p.username,
+        "scanners.campaign.cancel",
+        "campaign",
+        campaign_id,
+        {"engine": (campaign.config or {}).get("engine")},
+    )
     await session.commit()
     session.expire_all()  # cancel committed the new status in a separate session
     result = await service.get_campaign_dict(session, campaign_id)
@@ -212,7 +276,9 @@ async def ship_list_converters() -> list[str]:
 
 
 @ship_router.post("/prompt/convert/{converter_name}")
-async def ship_convert(converter_name: str, payload: ConvertIn, request: Request, session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
+async def ship_convert(
+    converter_name: str, payload: ConvertIn, request: Request, session: AsyncSession = Depends(get_session)
+) -> dict[str, Any]:
     try:
         converted = await pyrit_ship.convert_text(converter_name, payload.text)
     except ValueError as exc:
@@ -223,23 +289,30 @@ async def ship_convert(converter_name: str, payload: ConvertIn, request: Request
     agent_id, campaign_id = await _ship_agent(request, session)
     if agent_id:
         with contextlib.suppress(Exception):
-            result["ticket_id"] = await pyrit_ship.submit_converted_prompt(request.app.state.http, agent_id, converted, campaign_id=campaign_id)
+            result["ticket_id"] = await pyrit_ship.submit_converted_prompt(
+                request.app.state.http, agent_id, converted, campaign_id=campaign_id
+            )
     return result
 
 
 @ship_router.post("/prompt/generate")
-async def ship_generate(payload: GenerateIn, request: Request, session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
+async def ship_generate(
+    payload: GenerateIn, request: Request, session: AsyncSession = Depends(get_session)
+) -> dict[str, Any]:
     agent_id, campaign_id = await _ship_agent(request, session)
-    prompt = await pyrit_ship.generate_prompt(payload.prompt_goal, request.app.state.http if agent_id else None, agent_id, campaign_id=campaign_id)
+    prompt = await pyrit_ship.generate_prompt(
+        payload.prompt_goal, request.app.state.http if agent_id else None, agent_id, campaign_id=campaign_id
+    )
     return {"prompt": prompt}
 
 
 @ship_router.post("/prompt/score/SelfAskTrueFalseScorer")
 async def ship_score(payload: ScoreIn) -> list[dict[str, Any]]:
-    return await pyrit_ship.score_true_false(payload.scoring_true, payload.scoring_false, payload.prompt_response)
+    return await pyrit_ship.score_true_false(
+        payload.scoring_true, payload.scoring_false, payload.prompt_response
+    )
 
 
 @ship_router.get("/external/health")
 async def ship_external_health(_: Principal = Depends(current_principal)) -> dict[str, Any]:
     return await pyrit_ship.ShipClient().health()
-

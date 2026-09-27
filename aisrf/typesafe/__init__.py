@@ -22,4 +22,14 @@ register(analyzers.response_analyzer, response=True)
 
 ANALYZER_NAMES: list[str] = [analyzers.NAME_REQUEST, analyzers.NAME_RESPONSE]
 
-__all__ = ["ANALYZER_NAMES", "analyzers", "client", "evaluate", "evaluate_sync", "health_check", "questions", "savings", "status"]
+__all__ = [
+    "ANALYZER_NAMES",
+    "analyzers",
+    "client",
+    "evaluate",
+    "evaluate_sync",
+    "health_check",
+    "questions",
+    "savings",
+    "status",
+]

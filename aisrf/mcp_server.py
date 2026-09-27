@@ -15,6 +15,7 @@ Two deployment modes share the same tool set:
 * ``run_stdio(base_url, token)`` runs a stdio MCP server that talks to a remote
   gateway over HTTP, for local assistants configured with ``aisrf mcp``.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -83,7 +84,9 @@ class ApiClient:
     def __init__(self, base_url: str, token: TokenSource, client: httpx.AsyncClient | None = None) -> None:
         self.base_url = base_url.rstrip("/")
         self._token = token
-        self._client = client or httpx.AsyncClient(base_url=self.base_url, timeout=httpx.Timeout(120.0, connect=10.0))
+        self._client = client or httpx.AsyncClient(
+            base_url=self.base_url, timeout=httpx.Timeout(120.0, connect=10.0)
+        )
 
     def token(self) -> str:
         return self._token() if callable(self._token) else self._token
@@ -91,21 +94,27 @@ class ApiClient:
     def _headers(self) -> dict[str, str]:
         return {"Authorization": f"Bearer {self.token()}", "Accept": "application/json, */*"}
 
-    async def raw(self, method: str, path: str, *, params: dict[str, Any] | None = None, json_body: Any = None) -> httpx.Response | JsonDict:
+    async def raw(
+        self, method: str, path: str, *, params: dict[str, Any] | None = None, json_body: Any = None
+    ) -> httpx.Response | JsonDict:
         """Perform a request. Returns the response, or an error dict when the request failed."""
         try:
             headers = self._headers()
         except RuntimeError as exc:
             return {"error": f"token unavailable: {exc}", "status": 0}
         try:
-            response = await self._client.request(method, path, params=_compact(params), json=json_body, headers=headers)
+            response = await self._client.request(
+                method, path, params=_compact(params), json=json_body, headers=headers
+            )
         except httpx.HTTPError as exc:
             return {"error": f"{type(exc).__name__}: {exc}", "status": 0}
         if response.status_code >= 400:
             return {"error": _error_message(response), "status": response.status_code}
         return response
 
-    async def call(self, method: str, path: str, *, params: dict[str, Any] | None = None, json_body: Any = None) -> Any:
+    async def call(
+        self, method: str, path: str, *, params: dict[str, Any] | None = None, json_body: Any = None
+    ) -> Any:
         """Perform a request and decode the JSON body. API errors come back as {"error", "status"}."""
         response = await self.raw(method, path, params=params, json_body=json_body)
         if isinstance(response, dict):
@@ -127,7 +136,11 @@ def _listing(payload: Any) -> JsonDict:
     return payload
 
 
-_HTTP_OPTIONS: dict[str, Any] = {"streamable_http_path": "/mcp", "stateless_http": True, "json_response": True}
+_HTTP_OPTIONS: dict[str, Any] = {
+    "streamable_http_path": "/mcp",
+    "stateless_http": True,
+    "json_response": True,
+}
 
 
 def _new_server(*, name: str, title: str, instructions: str) -> Any:
@@ -142,12 +155,15 @@ def _http_app(server: Any) -> Any:
     """Stateless streamable HTTP app mounted at /mcp, on either SDK major."""
     if _MCP_V2:
         return server.streamable_http_app(
-            transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=False), **_HTTP_OPTIONS
+            transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=False),
+            **_HTTP_OPTIONS,
         )
     return server.streamable_http_app()
 
 
-def build_server(base_url: str, token: TokenSource, *, transport_client: httpx.AsyncClient | None = None) -> MCPServer:
+def build_server(
+    base_url: str, token: TokenSource, *, transport_client: httpx.AsyncClient | None = None
+) -> MCPServer:
     """Create an MCPServer whose tools call the AISRF REST API at ``base_url``.
 
     ``token`` is either the bearer token itself or a zero-argument callable returning
@@ -177,7 +193,19 @@ def build_server(base_url: str, token: TokenSource, *, transport_client: httpx.A
         the prompt preview, ticket id, path or correlation id. Returns {items, total, limit, offset}.
         """
         statuses = [s.strip() for s in status.split(",") if s.strip()] if status else None
-        return await api.call("GET", "/api/tickets", params={"status": statuses, "agent_id": agent_id, "min_risk": min_risk, "search": search, "campaign_id": campaign_id, "limit": limit, "offset": offset})
+        return await api.call(
+            "GET",
+            "/api/tickets",
+            params={
+                "status": statuses,
+                "agent_id": agent_id,
+                "min_risk": min_risk,
+                "search": search,
+                "campaign_id": campaign_id,
+                "limit": limit,
+                "offset": offset,
+            },
+        )
 
     @server.tool()
     async def get_ticket(ticket_id: str) -> JsonDict:
@@ -200,12 +228,16 @@ def build_server(base_url: str, token: TokenSource, *, transport_client: httpx.A
     @server.tool()
     async def bulk_approve_tickets(ticket_ids: list[str], note: str = "") -> JsonDict:
         """Approve several PENDING tickets at once. Returns a map of ticket id to resulting status or error."""
-        return await api.call("POST", "/api/tickets/bulk/approve", json_body={"ticket_ids": ticket_ids, "note": note})
+        return await api.call(
+            "POST", "/api/tickets/bulk/approve", json_body={"ticket_ids": ticket_ids, "note": note}
+        )
 
     @server.tool()
     async def bulk_deny_tickets(ticket_ids: list[str], note: str = "") -> JsonDict:
         """Deny several PENDING tickets at once. Returns a map of ticket id to resulting status or error."""
-        return await api.call("POST", "/api/tickets/bulk/deny", json_body={"ticket_ids": ticket_ids, "note": note})
+        return await api.call(
+            "POST", "/api/tickets/bulk/deny", json_body={"ticket_ids": ticket_ids, "note": note}
+        )
 
     @server.tool()
     async def ticket_stats() -> JsonDict:
@@ -285,7 +317,9 @@ def build_server(base_url: str, token: TokenSource, *, transport_client: httpx.A
     @server.tool()
     async def agent_events(agent_id: str, limit: int = 200, level: str | None = None) -> JsonDict:
         """Read the agent's activity log (interceptions, analysis, decisions, forwarding). level filters INFO/WARNING/ERROR."""
-        return _listing(await api.call("GET", f"/api/agents/{agent_id}/events", params={"limit": limit, "level": level}))
+        return _listing(
+            await api.call("GET", f"/api/agents/{agent_id}/events", params={"limit": limit, "level": level})
+        )
 
     @server.tool()
     async def agent_stats(agent_id: str) -> JsonDict:
@@ -308,12 +342,27 @@ def build_server(base_url: str, token: TokenSource, *, transport_client: httpx.A
         offset: int = 0,
     ) -> JsonDict:
         """Browse individual red-team probes, optionally filtered by category, technique, severity or free text."""
-        return _listing(await api.call("GET", "/api/redteam/corpus/probes", params={"category": category, "technique": technique, "severity": severity, "search": search, "limit": limit, "offset": offset}))
+        return _listing(
+            await api.call(
+                "GET",
+                "/api/redteam/corpus/probes",
+                params={
+                    "category": category,
+                    "technique": technique,
+                    "severity": severity,
+                    "search": search,
+                    "limit": limit,
+                    "offset": offset,
+                },
+            )
+        )
 
     @server.tool()
     async def list_campaigns(status: str | None = None, agent_id: str | None = None) -> JsonDict:
         """List red-team campaigns, optionally filtered by status or by the agent they run through."""
-        return _listing(await api.call("GET", "/api/redteam/campaigns", params={"status": status, "agent_id": agent_id}))
+        return _listing(
+            await api.call("GET", "/api/redteam/campaigns", params={"status": status, "agent_id": agent_id})
+        )
 
     @server.tool()
     async def create_campaign(
@@ -391,7 +440,13 @@ def build_server(base_url: str, token: TokenSource, *, transport_client: httpx.A
         offset: int = 0,
     ) -> JsonDict:
         """List per-probe results of a campaign. verdict filters (for example vulnerable, resisted, error)."""
-        return _listing(await api.call("GET", f"/api/redteam/campaigns/{campaign_id}/results", params={"verdict": verdict, "category": category, "limit": limit, "offset": offset}))
+        return _listing(
+            await api.call(
+                "GET",
+                f"/api/redteam/campaigns/{campaign_id}/results",
+                params={"verdict": verdict, "category": category, "limit": limit, "offset": offset},
+            )
+        )
 
     @server.tool()
     async def campaign_summary(campaign_id: str) -> JsonDict:
@@ -405,7 +460,9 @@ def build_server(base_url: str, token: TokenSource, *, transport_client: httpx.A
         return _listing(await api.call("GET", "/api/reports"))
 
     @server.tool()
-    async def generate_report(kind: str, format: str = "json", output_path: str | None = None, params: dict[str, Any] | None = None) -> JsonDict:
+    async def generate_report(
+        kind: str, format: str = "json", output_path: str | None = None, params: dict[str, Any] | None = None
+    ) -> JsonDict:
         """Generate a report and save it to disk. Returns {path, media_type, bytes}.
 
         kind is summary, tickets, audit, ticket/<ticket_id>, agent/<agent_id>, campaign/<campaign_id> or codereview/<run_id>.
@@ -422,19 +479,27 @@ def build_server(base_url: str, token: TokenSource, *, transport_client: httpx.A
         return await api.call("GET", "/api/codereview/rules", params={"pack": pack})
 
     @server.tool()
-    async def codereview_start(source: dict[str, Any], name: str = "", options: dict[str, Any] | None = None) -> JsonDict:
+    async def codereview_start(
+        source: dict[str, Any], name: str = "", options: dict[str, Any] | None = None
+    ) -> JsonDict:
         """Start a static analysis run of LLM application source code and return the run (analysis continues in the background).
 
         source is {"type": "git"|"url"|"path"|"snippet", "url": ..., "ref": ..., "token": ..., "credential_id": ...,
         "path": ..., "code": ..., "language": ...}. options is {"packs": [...], "engines": ["rules","semgrep","bandit","llm"],
         "include": [...], "exclude": [...], "max_files": n}. Poll codereview_run until status is COMPLETED.
         """
-        return await api.call("POST", "/api/codereview/runs", json_body=_compact({"name": name, "source": source, "options": options or {}}))
+        return await api.call(
+            "POST",
+            "/api/codereview/runs",
+            json_body=_compact({"name": name, "source": source, "options": options or {}}),
+        )
 
     @server.tool()
     async def codereview_runs(status: str | None = None, limit: int = 50, offset: int = 0) -> JsonDict:
         """List code review runs, newest first, with status, risk score and finding counts."""
-        return await api.call("GET", "/api/codereview/runs", params={"status": status, "limit": limit, "offset": offset})
+        return await api.call(
+            "GET", "/api/codereview/runs", params={"status": status, "limit": limit, "offset": offset}
+        )
 
     @server.tool()
     async def codereview_run(run_id: str) -> JsonDict:
@@ -453,23 +518,45 @@ def build_server(base_url: str, token: TokenSource, *, transport_client: httpx.A
         offset: int = 0,
     ) -> JsonDict:
         """List findings of a run with rule id, severity, file, line, snippet, OWASP and CWE mapping. severity may be comma separated."""
-        return await api.call("GET", f"/api/codereview/runs/{run_id}/findings", params={"severity": severity, "pack": pack, "engine": engine, "file": file, "status": status, "limit": limit, "offset": offset})
+        return await api.call(
+            "GET",
+            f"/api/codereview/runs/{run_id}/findings",
+            params={
+                "severity": severity,
+                "pack": pack,
+                "engine": engine,
+                "file": file,
+                "status": status,
+                "limit": limit,
+                "offset": offset,
+            },
+        )
 
     @server.tool()
     async def codereview_set_finding_status(finding_id: str, status: str, note: str = "") -> JsonDict:
         """Mark a finding as open, false_positive or accepted with a reviewer note (audited)."""
-        return await api.call("POST", f"/api/codereview/findings/{finding_id}/status", json_body={"status": status, "note": note})
+        return await api.call(
+            "POST",
+            f"/api/codereview/findings/{finding_id}/status",
+            json_body={"status": status, "note": note},
+        )
 
     @server.tool()
-    async def codereview_report(run_id: str, format: str = "sarif", output_path: str | None = None) -> JsonDict:
+    async def codereview_report(
+        run_id: str, format: str = "sarif", output_path: str | None = None
+    ) -> JsonDict:
         """Export a code review run as a report file. format is sarif (GitHub code scanning), json, html, pdf, md, csv, xlsx and the rest."""
         return await _save_report(api, f"codereview/{run_id}", format, output_path, None)
 
     # --- audit -----------------------------------------------------------------
     @server.tool()
-    async def list_audit(limit: int = 200, offset: int = 0, action: str | None = None, actor: str | None = None) -> JsonDict:
+    async def list_audit(
+        limit: int = 200, offset: int = 0, action: str | None = None, actor: str | None = None
+    ) -> JsonDict:
         """Read the hash-chained audit log, newest first. action filters by action name (for example ticket.deny)."""
-        return await api.call("GET", "/api/audit", params={"limit": limit, "offset": offset, "action": action, "actor": actor})
+        return await api.call(
+            "GET", "/api/audit", params={"limit": limit, "offset": offset, "action": action, "actor": actor}
+        )
 
     @server.tool()
     async def verify_audit() -> JsonDict:
@@ -485,12 +572,18 @@ def build_server(base_url: str, token: TokenSource, *, transport_client: httpx.A
     @server.tool()
     async def create_reviewer(username: str, password: str, role: str = "reviewer") -> JsonDict:
         """Create a reviewer account. role is viewer (read only), reviewer (can decide tickets) or admin."""
-        return await api.call("POST", "/api/auth/reviewers", json_body={"username": username, "password": password, "role": role})
+        return await api.call(
+            "POST",
+            "/api/auth/reviewers",
+            json_body={"username": username, "password": password, "role": role},
+        )
 
     @server.tool()
     async def set_reviewer_password(reviewer_id: str, password: str) -> JsonDict:
         """Set a new password for a reviewer account."""
-        return await api.call("POST", f"/api/auth/reviewers/{reviewer_id}/password", json_body={"password": password})
+        return await api.call(
+            "POST", f"/api/auth/reviewers/{reviewer_id}/password", json_body={"password": password}
+        )
 
     @server.tool()
     async def deactivate_reviewer(reviewer_id: str) -> JsonDict:
@@ -509,12 +602,22 @@ def build_server(base_url: str, token: TokenSource, *, transport_client: httpx.A
         return await api.call("GET", "/metrics")
 
     # --- resources -------------------------------------------------------------
-    @server.resource("aisrf://tickets/pending", name="pending_tickets", description="Tickets waiting for a human decision.", mime_type="application/json")
+    @server.resource(
+        "aisrf://tickets/pending",
+        name="pending_tickets",
+        description="Tickets waiting for a human decision.",
+        mime_type="application/json",
+    )
     async def pending_tickets_resource() -> str:
         data = await api.call("GET", "/api/tickets", params={"status": ["PENDING"], "limit": 200})
         return json.dumps(data, indent=2, default=str)
 
-    @server.resource("aisrf://stats", name="stats", description="Aggregate ticket statistics.", mime_type="application/json")
+    @server.resource(
+        "aisrf://stats",
+        name="stats",
+        description="Aggregate ticket statistics.",
+        mime_type="application/json",
+    )
     async def stats_resource() -> str:
         data = await api.call("GET", "/api/tickets/stats")
         return json.dumps(data, indent=2, default=str)
@@ -529,7 +632,9 @@ def build_server(base_url: str, token: TokenSource, *, transport_client: httpx.A
     return server
 
 
-async def _save_report(api: ApiClient, kind: str, format: str, output_path: str | None, params: dict[str, Any] | None) -> JsonDict:
+async def _save_report(
+    api: ApiClient, kind: str, format: str, output_path: str | None, params: dict[str, Any] | None
+) -> JsonDict:
     """Download a report through the REST API and write it to disk. Returns {path, media_type, bytes} or an error dict."""
     kind = kind.strip("/")
     response = await api.raw("GET", f"/api/reports/{kind}", params={"format": format, **(params or {})})
@@ -559,7 +664,11 @@ def render_review_prompt(ticket_id: str, ticket: JsonDict) -> str:
     ]
     if findings:
         for f in findings[:15]:
-            lines.append(f"- [{f.get('severity', '?')}] {f.get('title', f.get('analyzer', 'finding'))}: {f.get('detail', f.get('description', ''))}".rstrip(": "))
+            lines.append(
+                f"- [{f.get('severity', '?')}] {f.get('title', f.get('analyzer', 'finding'))}: {f.get('detail', f.get('description', ''))}".rstrip(
+                    ": "
+                )
+            )
     else:
         lines.append("- none")
     lines += [
@@ -583,9 +692,13 @@ def render_review_prompt(ticket_id: str, ticket: JsonDict) -> str:
     return "\n".join(lines)
 
 
-async def _send_json(send: Send, status: int, payload: JsonDict, extra_headers: list[tuple[bytes, bytes]] | None = None) -> None:
+async def _send_json(
+    send: Send, status: int, payload: JsonDict, extra_headers: list[tuple[bytes, bytes]] | None = None
+) -> None:
     body = json.dumps(payload).encode()
-    headers = [(b"content-type", b"application/json"), (b"content-length", str(len(body)).encode())] + (extra_headers or [])
+    headers = [(b"content-type", b"application/json"), (b"content-length", str(len(body)).encode())] + (
+        extra_headers or []
+    )
     await send({"type": "http.response.start", "status": status, "headers": headers})
     await send({"type": "http.response.body", "body": body})
 
@@ -602,12 +715,19 @@ class BearerGuard:
             return
         expected = get_settings().admin_api_token
         if not expected:
-            await _send_json(send, 503, {"error": "MCP endpoint disabled: set AISRF_ADMIN_API_TOKEN to enable it"})
+            await _send_json(
+                send, 503, {"error": "MCP endpoint disabled: set AISRF_ADMIN_API_TOKEN to enable it"}
+            )
             return
         auth = Headers(scope=scope).get("authorization", "")
         token = auth[7:].strip() if auth.lower().startswith("bearer ") else ""
         if not token or not hmac.compare_digest(token, expected):
-            await _send_json(send, 401, {"error": "invalid or missing bearer token"}, [(b"www-authenticate", b'Bearer realm="aisrf-mcp"')])
+            await _send_json(
+                send,
+                401,
+                {"error": "invalid or missing bearer token"},
+                [(b"www-authenticate", b'Bearer realm="aisrf-mcp"')],
+            )
             return
         await self.app(scope, receive, send)
 
@@ -620,7 +740,9 @@ def mount_mcp(app: FastAPI) -> MCPServer:
     session manager must be running while requests are served, so its lifecycle is
     composed into the app lifespan here.
     """
-    client = httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url=INTERNAL_BASE_URL, timeout=httpx.Timeout(300.0))
+    client = httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url=INTERNAL_BASE_URL, timeout=httpx.Timeout(300.0)
+    )
 
     def internal_token() -> str:
         token = getattr(app.state, "internal_token", None)

@@ -3,6 +3,7 @@
 Everything here is deliberately light so that importing the guardrails package never pulls in torch,
 transformers or NeMo. Heavy third-party imports live inside functions in the individual modules.
 """
+
 from __future__ import annotations
 
 import importlib.util
@@ -63,7 +64,9 @@ def log_throttled(key: str, event: str, interval: float = 60.0, **fields: Any) -
     log.warning(event, **fields)
 
 
-def severity_for_score(score: float, floor: Severity = Severity.INFO, cap: Severity = Severity.CRITICAL) -> Severity:
+def severity_for_score(
+    score: float, floor: Severity = Severity.INFO, cap: Severity = Severity.CRITICAL
+) -> Severity:
     """Map a 0..1 risk score onto a severity, bounded by floor and cap."""
     if score >= 0.95:
         sev = Severity.CRITICAL
@@ -83,7 +86,9 @@ def at_least(sev: Severity, floor: Severity) -> Severity:
     return _SEVERITY_ORDER[max(_SEVERITY_ORDER.index(sev), _SEVERITY_ORDER.index(floor))]
 
 
-def conversation_messages(normalized: dict[str, Any] | None, include_system: bool = True, limit: int = 40) -> list[dict[str, str]]:
+def conversation_messages(
+    normalized: dict[str, Any] | None, include_system: bool = True, limit: int = 40
+) -> list[dict[str, str]]:
     """Flatten the normalized request into simple {role, content} chat messages (system, user, assistant, tool)."""
     from ..analysis.analyzers.common import safe_text
 
