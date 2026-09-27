@@ -216,10 +216,12 @@ jobs:
             os_name: macos
             arch: arm64
             optional: false
-          - runner: macos-13
+          # GitHub retired the Intel macos-13 runners; build x86_64 with an Intel CPython under Rosetta on Apple Silicon.
+          - runner: macos-14
             os_name: macos
             arch: x86_64
             optional: true
+            python: cpython-3.12-macos-x86_64-none
     steps:
       - uses: actions/checkout@v4
         with:
@@ -231,9 +233,10 @@ jobs:
       - name: Create venv and install with PyInstaller
         shell: bash
         run: |
-          uv venv .venv --python ${{ env.PYTHON_VERSION }}
+          uv venv .venv --python "${{ matrix.python || env.PYTHON_VERSION }}"
           if [ "$RUNNER_OS" = "Windows" ]; then PY=.venv/Scripts/python.exe; else PY=.venv/bin/python; fi
           echo "PY=$PY" >> "$GITHUB_ENV"
+          "$PY" -c "import platform, sys; print(sys.version, platform.machine())"
           uv pip install --python "$PY" -e . pyinstaller
       - name: Build, smoke test, archive and checksum
         shell: bash
