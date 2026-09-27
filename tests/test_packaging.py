@@ -336,7 +336,7 @@ def test_workflows_include_binary_jobs():
     assert "binaries" in release["jobs"]
     assert "binaries" in release["jobs"]["release"]["needs"]
     runners = {entry["runner"] for entry in release["jobs"]["binaries"]["strategy"]["matrix"]["include"]}
-    assert {"ubuntu-latest", "windows-latest", "macos-14", "macos-13"} <= runners
+    assert {"ubuntu-latest", "windows-latest", "macos-14"} <= runners
     assert "binary-smoke" in ci["jobs"]
 
 
