@@ -25,6 +25,23 @@ def section_for(version: str, text: str) -> str:
     return m.group("body").strip() if m else ""
 
 
+def unwrap(text: str) -> str:
+    """Join hard-wrapped bullet continuation lines so release notes never carry stray line breaks."""
+    out: list[str] = []
+    for line in text.split("\n"):
+        if (
+            out
+            and line.startswith("  ")
+            and line.strip()
+            and out[-1].lstrip().startswith("- ")
+            and not line.lstrip().startswith("- ")
+        ):
+            out[-1] = out[-1].rstrip() + " " + line.strip()
+        else:
+            out.append(line)
+    return "\n".join(out)
+
+
 def main(argv: list[str]) -> int:
     if len(argv) != 2:
         print(__doc__.strip(), file=sys.stderr)
@@ -33,7 +50,7 @@ def main(argv: list[str]) -> int:
     if not body:
         print(f"no CHANGELOG.md section for {argv[1]}", file=sys.stderr)
         return 1
-    print(body)
+    print(unwrap(body))
     return 0
 
 
