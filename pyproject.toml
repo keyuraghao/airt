@@ -36,8 +36,8 @@ dependencies = [
 postgres = ["asyncpg>=0.29"]
 mitm = ["mitmproxy>=10"]
 guardrails = ["llm-guard>=0.3", "nemoguardrails>=0.10", "rebuff>=0.0.5"]
-scanners = ["garak>=0.10", "pyrit>=0.5"]
-all = ["asyncpg>=0.29", "mitmproxy>=10", "llm-guard>=0.3", "nemoguardrails>=0.10", "rebuff>=0.0.5", "garak>=0.10", "pyrit>=0.5"]
+scanners = ["garak>=0.10", "pyrit>=1.1.0"]
+all = ["asyncpg>=0.29", "mitmproxy>=10", "llm-guard>=0.3", "nemoguardrails>=0.10", "rebuff>=0.0.5", "garak>=0.10", "pyrit>=1.1.0"]
 dev = ["pytest>=8", "pytest-asyncio>=0.23", "ruff>=0.5", "asgi-lifespan>=2"]
 
 [project.scripts]
