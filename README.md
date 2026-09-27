@@ -122,6 +122,51 @@ helm install aisrf deploy/helm/aisrf -n aisrf --create-namespace --set secretEnv
 | Transparent | `mitmdump -s aisrf/integrations/mitm_addon.py` with the mitmproxy CA on the client |
 | Programmatic | `aisrf.gateway.pipeline.submit()` from inside the process (used by the red-team engines) |
 
+## Works with any provider
+
+The gateway is provider-agnostic. The client keeps using its normal SDK and request format; the agent record decides where the request goes and which credential is swapped in. One agent equals one upstream, so create one agent per provider (or per application and provider).
+
+| `upstream_provider` | Typical `upstream_base_url` | Header AISRF injects | Client |
+| --- | --- | --- | --- |
+| `openai` | `https://api.openai.com/v1` | `Authorization: Bearer` | OpenAI SDK, `base_url=http://gw/v1` |
+| `anthropic` | `https://api.anthropic.com/v1` | `x-api-key` and `anthropic-version` | Anthropic SDK, `base_url=http://gw` |
+| `groq`, `together`, `mistral`, `deepseek`, `openrouter` | the provider's OpenAI-compatible URL | `Authorization: Bearer` | OpenAI SDK |
+| `ollama` | `http://localhost:11434/v1` | `Authorization: Bearer` (optional) | OpenAI SDK |
+| `azure` | your Azure OpenAI deployment URL | `api-key` | OpenAI SDK or curl via `/proxy/` |
+| `google` | `https://generativelanguage.googleapis.com` | `x-goog-api-key` | Gemini SDK or curl via `/proxy/` |
+| `custom` | any HTTP API | the header you name in `upstream_auth_header` | anything, via `/proxy/<path>` |
+
+Requests are forwarded unchanged. AISRF analyzes OpenAI chat, completions, responses and embeddings, Anthropic messages, Gemini, Ollama, Cohere and generic JSON bodies, but it does not translate between formats, so the SDK must speak the format of the upstream the agent points at.
+
+```python
+# OpenAI, or any OpenAI-compatible provider (Groq, Together, Mistral, DeepSeek, OpenRouter, Ollama, vLLM)
+from openai import OpenAI
+client = OpenAI(base_url="http://localhost:8080/v1", api_key="aisrf_...", timeout=330, max_retries=0)
+client.chat.completions.create(model="gpt-4o-mini", messages=[{"role": "user", "content": "hello"}])
+```
+
+```python
+# Anthropic: agent created with upstream_provider="anthropic"
+from anthropic import Anthropic
+client = Anthropic(base_url="http://localhost:8080", api_key="aisrf_...", timeout=330, max_retries=0)
+client.messages.create(model="claude-3-5-sonnet-latest", max_tokens=200, messages=[{"role": "user", "content": "hello"}])
+```
+
+```bash
+# Gemini, or any other HTTP API, through the generic proxy: agent created with upstream_provider="google"
+curl -X POST http://localhost:8080/proxy/v1beta/models/gemini-1.5-flash:generateContent \
+  -H "X-AISRF-Key: aisrf_..." -H "Content-Type: application/json" \
+  -d '{"contents":[{"role":"user","parts":[{"text":"hello"}]}]}'
+```
+
+```bash
+# Local Ollama: agent created with upstream_provider="ollama" and upstream_base_url="http://localhost:11434/v1"
+curl http://localhost:8080/v1/chat/completions -H "Authorization: Bearer aisrf_..." -H "Content-Type: application/json" \
+  -d '{"model":"llama3.1","messages":[{"role":"user","content":"hello"}]}'
+```
+
+Set `timeout` above the approval hold (300 seconds by default) and `max_retries=0`, otherwise the SDK retries a request a human is still deciding on. Applications that cannot wait send `X-AISRF-Async: 1` and poll `/gateway/tickets/{id}` instead.
+
 ## Red teaming and scanners
 
 ```bash
