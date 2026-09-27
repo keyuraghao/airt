@@ -57,9 +57,8 @@ class Notifier:
         self._client: httpx.AsyncClient | None = None
 
     async def start(self) -> None:
+        """Always subscribe so webhook URLs added later from Settings take effect without a restart."""
         settings = get_settings()
-        if not settings.notify_webhook_urls:
-            return
         self._client = httpx.AsyncClient(timeout=10)
         self._queue = broadcaster.subscribe("tickets")
         self._task = asyncio.create_task(self._run())
@@ -81,7 +80,7 @@ class Notifier:
         while True:
             item = await self._queue.get()
             try:
-                if item.get("event") not in settings.notify_events:
+                if not settings.notify_webhook_urls or item.get("event") not in settings.notify_events:
                     continue
                 ticket = item.get("ticket", {})
                 if int(ticket.get("risk_score") or 0) < settings.notify_min_risk:

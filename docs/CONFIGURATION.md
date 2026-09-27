@@ -11,7 +11,7 @@ process lifetime (`reset_settings_cache()` exists for tests).
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `AISRF_APP_NAME` | `AISRF Gateway` | Title in the dashboard and OpenAPI |
+| `AISRF_APP_NAME` | `AISRF` | Title in the dashboard and OpenAPI |
 | `AISRF_ENVIRONMENT` | `development` | `development`, `staging`, `production`; production forces JSON console logs |
 | `AISRF_HOST` | `0.0.0.0` | Bind address |
 | `AISRF_PORT` | `8080` | Port |
