@@ -89,7 +89,7 @@ See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for compose, Postgres and TLS.
 
 ## Install
 
-No Python required: every release ships self-contained binaries for Linux (x86_64, arm64), macOS (Apple silicon, Intel) and Windows (x86_64), verified by SHA256.
+No Python required: every release ships self-contained binaries for Linux (x86_64, arm64), macOS (Apple silicon) and Windows (x86_64), verified by SHA256.
 
 ```bash
 # Linux and macOS

@@ -34,6 +34,10 @@ case "$(uname -m)" in
   arm64|aarch64) ARCH="arm64" ;;
   *) die "unsupported architecture: $(uname -m)" ;;
 esac
+if [ "$OS" = "macos" ] && [ "$ARCH" != "arm64" ]; then
+  echo "AISRF macOS binaries are built for Apple silicon only. Intel Macs are not supported; install from source with pip instead." >&2
+  exit 1
+fi
 
 if [ "$VERSION" = "latest" ]; then
   say "resolving the latest release of ${REPO}"

@@ -216,12 +216,6 @@ jobs:
             os_name: macos
             arch: arm64
             optional: false
-          # GitHub retired the Intel macos-13 runners; build x86_64 with an Intel CPython under Rosetta on Apple Silicon.
-          - runner: macos-14
-            os_name: macos
-            arch: x86_64
-            optional: true
-            python: cpython-3.12-macos-x86_64-none
     steps:
       - uses: actions/checkout@v4
         with:

@@ -20,8 +20,8 @@ run the same code: the `aisrf` CLI, `aisrf serve` for the gateway and the dashbo
 | Windows service | `deploy\windows\install-service.ps1` | no (binary) | Windows servers |
 
 Release assets (GitHub Releases page): `aisrf-<version>-linux-x86_64.tar.gz`,
-`aisrf-<version>-linux-arm64.tar.gz`, `aisrf-<version>-macos-arm64.tar.gz`,
-`aisrf-<version>-macos-x86_64.tar.gz`, `aisrf-<version>-windows-x86_64.zip`, one
+`aisrf-<version>-linux-arm64.tar.gz`, `aisrf-<version>-macos-arm64.tar.gz` (Apple silicon only),
+`aisrf-<version>-windows-x86_64.zip`, one
 `SHA256SUMS-<os>-<arch>.txt` per archive, plus the wheel, sdist, SBOM and image digest.
 
 ## Self-contained binaries
