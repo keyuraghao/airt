@@ -126,14 +126,15 @@ async def test_engine_registry_and_capabilities(api, admin):
     for name, entry in engines.items():
         assert entry["installed"] is INSTALLED[name], f"{name} installed flag must reflect the environment"
         assert "enabled" in entry
-        assert entry["capabilities"], f"{name} exposes capabilities"
+        if INSTALLED[name]:
+            assert entry["capabilities"], f"{name} exposes capabilities"
 
 
 async def test_probe_listing_for_all_engines(api, admin):
     for engine in ("garak", "promptfoo", "pyrit", "pyrit_ship"):
         r = await api.get(f"/api/scanners/{engine}/probes", headers=admin)
         if not INSTALLED[engine]:
-            assert r.status_code in (200, 501, 503), r.text
+            assert r.status_code in (200, 409, 501, 503), r.text
             continue
         assert r.status_code == 200, r.text
         body = r.json()

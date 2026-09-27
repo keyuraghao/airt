@@ -549,6 +549,9 @@ async def test_mcp_codereview_tools(client, admin_headers) -> None:
     assert {"codereview_rules", "codereview_start", "codereview_runs", "codereview_run", "codereview_findings", "codereview_set_finding_status", "codereview_report"} <= names
 
     def payload(result):
+        if isinstance(result, tuple):  # mcp 1.x returns (content, structured_content)
+            content, structured = result
+            return structured if structured is not None else json.loads(content[0].text)
         return result.structured_content if result.structured_content is not None else json.loads(result.content[0].text)
 
     rules = payload(await server.call_tool("codereview_rules", {"pack": "llm_output"}))
