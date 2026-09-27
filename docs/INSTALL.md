@@ -24,7 +24,6 @@ Release assets (GitHub Releases page): `aisrf-<version>-linux-x86_64.tar.gz`,
 `aisrf-<version>-windows-x86_64.zip`, one
 `SHA256SUMS-<os>-<arch>.txt` per archive, plus the wheel, sdist, SBOM and image digest.
 
-
 Note: garak pins newer torch, transformers and nltk than LLM Guard accepts, so `scanners` cannot be installed into the same environment as `guardrails`. Install `aisrf[scanners]` into its own virtual environment or container (the CI heavy job does exactly that); the `all` extra therefore excludes `scanners`.
 
 ## Self-contained binaries
