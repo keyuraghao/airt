@@ -16,7 +16,21 @@ AISRF sits between your LLM-powered applications or autonomous agents and the ba
 
 ## Why
 
-Agentic systems issue thousands of model calls nobody reads. Prompt injection, data exfiltration and tool abuse ride along inside them. AISRF makes the traffic visible and reviewable, records everything with a tamper-evident audit trail, and lets a security team test the same models offensively with a corpus of 300+ probes plus garak, promptfoo and PyRIT, all through one gateway with one set of logs.
+Teams ship autonomous agents that issue thousands of model calls nobody reads, and the tools around them each cover one piece: gateways (LiteLLM, Portkey, Kong, Cloudflare AI Gateway) route and meter traffic but forward everything; guardrail products (Lakera, LLM Guard, NeMo Guardrails, Rebuff) detect problems but each in its own format with no shared review workflow; red-team tools (garak, promptfoo, PyRIT) probe models offline, disconnected from production traffic; code scanners know nothing about prompts flowing into shells or unpinned model downloads; and when a request is blocked or allowed, there is rarely a record of who decided and on what evidence.
+
+AISRF is the layer that holds the request. Every outbound call becomes a ticket that must be approved or denied, with the analysis, the guardrail verdicts, the human decision and the upstream response recorded together in a hash-chained audit log.
+
+What it does differently:
+
+- Human in the loop by design: synchronous hold, asynchronous polling, bulk review, expiry, a keyboard-driven queue and Slack paging.
+- One review surface for every detector: built-in analyzers, Rebuff, LLM Guard, NeMo, Lakera and TypeSafe emit the same finding format tagged with the OWASP LLM Top 10.
+- Confidence-gated automation: clearly benign traffic auto-approves, clear attacks auto-deny, and only uncertain requests cost human time or an LLM judge; a multi-second judge call becomes a 100 ms typed decision for most traffic, with the savings metered.
+- Red teaming through the production path: native corpus, garak, promptfoo and PyRIT probes travel through the same ticket pipeline as real traffic, with side-by-side model comparison.
+- Clients never hold provider credentials: agent keys are hashed, upstream keys encrypted and swapped in at forward time, scan tokens short-lived.
+- LLM-aware static analysis with 92 original rules and SARIF output, so the same classes of bugs are caught before the code ships.
+- Everything reviewable and reportable: 12 report formats, an MCP server so an assistant can triage the queue, and a settings center where every threshold, rule and integration is editable live.
+
+It is not a replacement for a rate-limiting gateway or a model router; it runs beside them, in front of the backend you want protected.
 
 ## Screenshots
 
