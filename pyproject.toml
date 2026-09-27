@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "aisrf"
-version = "1.0.0"
+version = "1.1.0"
 description = "AISRF - AI Security & Research Framework: human-in-the-loop interception, analysis and red teaming for LLM traffic"
 readme = "README.md"
 requires-python = ">=3.11"

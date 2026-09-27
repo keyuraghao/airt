@@ -45,8 +45,7 @@ jobs:
           python -m pip install --quiet "ruff>=0.5"
           python -m ruff check scripts
       - name: Ruff format check on scripts
-        # TODO: flip to continue-on-error: false once scripts/screenshots.py is formatted.
-        continue-on-error: true
+        continue-on-error: false
         run: python -m ruff format --check scripts
 
   python:

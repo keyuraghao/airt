@@ -5,4 +5,4 @@ applications / autonomous agents and the backend model providers or enterprise
 systems they call. Every outbound request becomes a reviewable ticket.
 """
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"

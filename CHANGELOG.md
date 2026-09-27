@@ -8,6 +8,8 @@ heading (see `docs/RELEASING.md`).
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-09-27
+
 ### Added
 
 - TypeSafe decision layer (`aisrf/typesafe/`): `typesafe_guard` and `typesafe_response_guard`
@@ -117,5 +119,6 @@ Initial public release of AISRF, the AI Security & Research Framework.
   injected only at forward time; client credential headers are stripped before forwarding and
   stored headers are redacted; bearer token comparison is constant time.
 
-[Unreleased]: https://github.com/keyuraghao/aisrf/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/keyuraghao/aisrf/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/keyuraghao/aisrf/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/keyuraghao/aisrf/releases/tag/v1.0.0
