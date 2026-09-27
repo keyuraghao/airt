@@ -483,7 +483,7 @@ def codereview_run(
     token_env: Annotated[str | None, typer.Option("--token-env", help="Name of an environment variable holding the access token for --git or --url.")] = None,
     credential: Annotated[str | None, typer.Option("--credential", help="Id of a stored credential (admin).")] = None,
     zip_path: Annotated[Path | None, typer.Option("--zip", help="Local zip or tar archive to upload.")] = None,
-    url: Annotated[str | None, typer.Option("--url", "--archive-url", help="HTTP(S) URL of a zip or tar archive.")] = None,
+    url: Annotated[str | None, typer.Option("--archive-url", help="HTTP(S) URL of a zip or tar archive.")] = None,
     path: Annotated[str | None, typer.Option("--path", help="Local directory on the server (admin, must be allowlisted).")] = None,
     name: Annotated[str | None, typer.Option("--name", help="Run name.")] = None,
     packs: Annotated[list[str] | None, typer.Option("--packs", help="Rule pack (repeatable, empty = all).")] = None,
