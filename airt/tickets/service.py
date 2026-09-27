@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import timedelta
 from typing import Any
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..agents.service import log_agent_event
@@ -13,7 +13,7 @@ from ..audit import service as audit
 from ..config import get_settings
 from ..gateway.hold import hold_registry
 from ..logging import broadcaster, get_logger
-from ..models import Agent, Ticket, TicketEvent, TicketStatus, utcnow
+from ..models import Agent, Counter, Ticket, TicketEvent, TicketStatus, utcnow
 
 log = get_logger("airt.tickets")
 
@@ -27,8 +27,17 @@ class InvalidTransition(TicketError):
 
 
 async def _next_number(session: AsyncSession) -> int:
-    current = (await session.execute(select(func.max(Ticket.number)))).scalar_one()
-    return int(current or 0) + 1
+    """Allocate the next ticket number atomically.
+
+    The UPDATE takes the write lock on the counter row for the rest of the transaction, so concurrent
+    ticket creations are serialized by the database instead of racing on max(number) + 1.
+    """
+    res = await session.execute(update(Counter).where(Counter.name == "ticket").values(value=Counter.value + 1))
+    if not res.rowcount:
+        current = (await session.execute(select(func.max(Ticket.number)))).scalar_one()
+        session.add(Counter(name="ticket", value=int(current or 0) + 1))
+        await session.flush()
+    return int((await session.execute(select(Counter.value).where(Counter.name == "ticket"))).scalar_one())
 
 
 async def add_event(

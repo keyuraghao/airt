@@ -4,55 +4,124 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+  UV_SYSTEM_PYTHON: "0"
+
 jobs:
+  style:
+    name: style guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: No em dashes anywhere in the tree
+        shell: bash
+        run: |
+          # Byte sequence of U+2014 so this file never has to contain the character itself.
+          if grep -rnI --exclude-dir=.venv --exclude-dir=node_modules --exclude-dir=.git $'\xe2\x80\x94' .; then
+            echo "::error::em dash character found, use a hyphen or a comma"
+            exit 1
+          fi
+          echo "no em dashes found"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Style and merge-marker guard
+        run: python scripts/check_style.py
+      - name: Ruff on scripts
+        run: |
+          python -m pip install --quiet "ruff>=0.5"
+          python -m ruff check scripts
+      - name: Ruff format check on scripts
+        # TODO: flip to continue-on-error: false once scripts/screenshots.py is formatted.
+        continue-on-error: true
+        run: python -m ruff format --check scripts
+
   python:
     name: ruff + pytest (py${{ matrix.python }})
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
         python: ["3.11", "3.12"]
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
+      - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
+          cache-dependency-glob: "pyproject.toml"
       - name: Create venv and install
         run: |
           uv venv .venv --python ${{ matrix.python }}
-          uv pip install --python .venv/bin/python -e ".[dev]"
-      - name: Ruff (integrations, examples)
-        run: |
-          .venv/bin/ruff check airt/integrations examples
-          .venv/bin/ruff format --check airt/integrations examples
-      - name: Ruff (whole tree, advisory until the core is lint clean)
+          uv pip install --python .venv/bin/python -e ".[dev]" pytest-cov
+      - name: Ruff check (strict)
+        continue-on-error: false
+        run: .venv/bin/ruff check --output-format=github airt tests examples
+      - name: Ruff format check
+        # TODO: flip to continue-on-error: false once the core is formatted (`make fmt`).
         continue-on-error: true
-        run: .venv/bin/ruff check airt tests
-      - name: Pytest
+        run: .venv/bin/ruff format --check airt tests examples
+      - name: Pytest with coverage
         env:
           AIRT_SECRET_KEY: ci-only-secret-key-not-for-production
           AIRT_LOG_JSON_CONSOLE: "true"
-        run: .venv/bin/python -m pytest -q
+        run: |
+          .venv/bin/python -m pytest -q \
+            --cov=airt --cov-branch \
+            --cov-report=term-missing:skip-covered \
+            --cov-report=xml:coverage.xml \
+            --junitxml=pytest-junit.xml
+      - name: Coverage summary
+        if: always()
+        run: |
+          echo "## Coverage (py${{ matrix.python }})" >> "$GITHUB_STEP_SUMMARY"
+          .venv/bin/python -m coverage report --format=markdown --skip-covered >> "$GITHUB_STEP_SUMMARY" || true
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-py${{ matrix.python }}
+          path: |
+            coverage.xml
+            pytest-junit.xml
+          retention-days: 14
+          if-no-files-found: warn
       - name: Import integrations without optional extras
         run: .venv/bin/python -c "import airt.integrations.python_sdk, airt.integrations.mitm_addon"
+      - name: CLI smoke test
+        run: |
+          .venv/bin/airt version
+          .venv/bin/airt --help > /dev/null
 
   node:
     name: node sdk self-test
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
       - run: node sdk/node/test.js
+      - name: Package dry run
+        working-directory: sdk/node
+        run: npm pack --dry-run
 
   docker:
     name: docker build
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs: [python]
     steps:
       - uses: actions/checkout@v4
@@ -62,6 +131,11 @@ jobs:
         with:
           context: .
           push: false
+          load: true
           tags: airt:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: Smoke test the image
+        run: |
+          docker run --rm airt:ci version
+          docker run --rm -e AIRT_SECRET_KEY=ci-only-secret-key-not-for-production airt:ci init-db

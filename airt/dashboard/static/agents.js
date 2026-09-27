@@ -50,6 +50,7 @@
       upstream_api_key: out.upstream_api_key ? out.upstream_api_key : null,
       upstream_auth_header: out.upstream_auth_header || "",
       require_approval: !!form.querySelector("[name=require_approval]").checked,
+      inject_canary: !!(form.querySelector("[name=inject_canary]") && form.querySelector("[name=inject_canary]").checked),
       auto_approve_below_risk: Number(out.auto_approve_below_risk || 0),
       auto_deny_at_risk: Number(out.auto_deny_at_risk || 90),
       auto_deny_patterns: lines(out.auto_deny_patterns),

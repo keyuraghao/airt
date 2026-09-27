@@ -4,9 +4,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
-import sys
 import tempfile
-import types
 from pathlib import Path
 
 import pytest
@@ -20,7 +18,6 @@ os.environ["AIRT_ADMIN_PASSWORD"] = "admin"
 os.environ["AIRT_DATA_DIR"] = str(Path(_TMPDIR) / "data")
 os.environ["AIRT_LOG_DIR"] = str(Path(_TMPDIR) / "logs")
 
-# --- stub the sibling modules that other builders own, so create_app() imports ----
 
 import httpx  # noqa: E402
 from httpx import ASGITransport  # noqa: E402
@@ -386,7 +383,12 @@ async def test_group_runs_two_targets_concurrently_and_compares(app_client) -> N
     assert cmp["vulnerability_rates"][leaky_id] > cmp["vulnerability_rates"][strict_id]
     assert cmp["ranking"] == [strict_id, leaky_id]
     assert cmp["verdict_totals"][leaky_id].get("VULNERABLE", 0) > 0
-    assert cmp["verdict_totals"][strict_id].get("VULNERABLE", 0) == 0
+    # the strict upstream never leaks: its only VULNERABLE verdicts are benign false refusals
+    strict_summary = (await app_client.get(f"/api/redteam/campaigns/{strict_id}/summary")).json()
+    assert cmp["verdict_totals"][strict_id].get("VULNERABLE", 0) == strict_summary["benign_false_refusals"]
+    for cat in ("system_prompt_extraction", "data_exfiltration"):
+        assert cmp["matrix"][cat][strict_id]["vulnerable"] == 0
+        assert cmp["matrix"][cat][leaky_id]["vulnerable"] > 0
     # matrix has every campaign under every category
     assert "system_prompt_extraction" in cmp["matrix"]
     for cat, cells in cmp["matrix"].items():

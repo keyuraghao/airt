@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1700" height="980" viewBox="0 0 1700 980" font-family="Liberation Sans, Arial, Helvetica, sans-serif">
+<title>Airt red-team campaign flow</title>
+<defs><marker id="arw2dd4bf" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#2dd4bf"/></marker><marker id="arw2dd4bfs" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 10 0 L 0 5 L 10 10 z" fill="#2dd4bf"/></marker><marker id="arw4ade80" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#4ade80"/></marker><marker id="arw4ade80s" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 10 0 L 0 5 L 10 10 z" fill="#4ade80"/></marker><marker id="arwa78bfa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#a78bfa"/></marker><marker id="arwa78bfas" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 10 0 L 0 5 L 10 10 z" fill="#a78bfa"/></marker><marker id="arwfb923c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#fb923c"/></marker><marker id="arwfb923cs" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 10 0 L 0 5 L 10 10 z" fill="#fb923c"/></marker></defs>
+<rect x="0" y="0" width="1700" height="980" rx="18" ry="18" fill="#0f172a"/>
+<text x="32" y="44" font-size="24" font-weight="bold" fill="#e5e7eb">Airt red-team campaign flow</text>
+<text x="32" y="66" font-size="13" fill="#a3adbd">Every probe is a reviewable ticket through the same gateway pipeline; external scanners join through short-lived scan tokens.</text>
+<rect x="32.0" y="90.0" width="1636.0" height="250.0" rx="14" ry="14" fill="#162036" stroke="#fb923c" stroke-width="1.5" opacity="1.0"/>
+<text x="48.0" y="116.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="16" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">1. Campaign creation</text>
+<text x="48.0" y="134.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#a3adbd" text-anchor="start" font-weight="normal" opacity="1.0">airt redteam run / POST /api/redteam/campaigns / MCP create_campaign / dashboard /redteam</text>
+<rect x="48.0" y="150.0" width="300.0" height="170.0" rx="10" ry="10" fill="#7c2d12" stroke="#fb923c" stroke-width="1.6" opacity="1.0"/>
+<text x="60.0" y="176.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">Probe corpus (YAML, 300+ probes)</text>
+<text x="60.0" y="196.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">16 categories: prompt_injection, jailbreak,</text>
+<text x="60.0" y="211.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">system_prompt_extraction, data_exfiltration,</text>
+<text x="60.0" y="226.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">pii_leakage, tool_abuse, harmful_content,</text>
+<text x="60.0" y="241.5" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">encoding_attacks, multi_turn, many_shot,</text>
+<text x="60.0" y="256.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">misinformation_hallucination, bias_fairness,</text>
+<text x="60.0" y="271.1" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">privacy_memorization, code_safety,</text>
+<text x="60.0" y="286.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">denial_of_wallet, benign_control</text>
+<rect x="368.0" y="150.0" width="280.0" height="170.0" rx="10" ry="10" fill="#7c2d12" stroke="#fb923c" stroke-width="1.6" opacity="1.0"/>
+<text x="380.0" y="176.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">Selection</text>
+<text x="380.0" y="196.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">filter by category, technique,</text>
+<text x="380.0" y="211.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">severity; sampling with --seed;</text>
+<text x="380.0" y="226.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">--max-probes; system prompt;</text>
+<text x="380.0" y="241.5" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">target path (/v1/chat/completions)</text>
+<text x="380.0" y="256.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">and target model</text>
+<rect x="668.0" y="150.0" width="280.0" height="170.0" rx="10" ry="10" fill="#7c2d12" stroke="#fb923c" stroke-width="1.6" opacity="1.0"/>
+<text x="680.0" y="176.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">Mutators</text>
+<text x="680.0" y="196.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">base64, rot13, leetspeak,</text>
+<text x="680.0" y="211.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">reverse, split, suffix</text>
+<text x="680.0" y="226.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0"></text>
+<text x="680.0" y="241.5" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">each probe x mutator becomes</text>
+<text x="680.0" y="256.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">one probe_result row (PENDING)</text>
+<rect x="968.0" y="150.0" width="340.0" height="170.0" rx="10" ry="10" fill="#7c2d12" stroke="#fb923c" stroke-width="1.6" opacity="1.0"/>
+<text x="980.0" y="176.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">Comparison group: N targets in parallel</text>
+<text x="980.0" y="196.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">one campaign per target (agent, model,</text>
+<text x="980.0" y="211.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">system prompt), same probe set and seed;</text>
+<text x="980.0" y="226.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">start_group() runs them concurrently;</text>
+<text x="980.0" y="241.5" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">AIRT_REDTEAM_CONCURRENCY probes in flight</text>
+<text x="980.0" y="256.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">per campaign, campaign state:</text>
+<text x="980.0" y="271.1" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">CREATED RUNNING PAUSED COMPLETED FAILED CANCELLED</text>
+<rect x="1328.0" y="150.0" width="328.0" height="170.0" rx="10" ry="10" fill="#1f2937" stroke="#9ca3af" stroke-width="1.6" opacity="1.0"/>
+<text x="1340.0" y="176.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">Materialized campaign</text>
+<text x="1340.0" y="196.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">campaigns row + probe_results rows</text>
+<text x="1340.0" y="211.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">config: categories, mutators, seed,</text>
+<text x="1340.0" y="226.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">target, concurrency; SSE progress on</text>
+<text x="1340.0" y="241.5" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">/api/stream/campaigns; pause / resume /</text>
+<text x="1340.0" y="256.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">cancel at any time</text>
+<path d="M 348.0 235.0 L 368.0 235.0" fill="none" stroke="#fb923c" stroke-width="1.8" marker-end="url(#arwfb923c)"/>
+<path d="M 648.0 235.0 L 668.0 235.0" fill="none" stroke="#fb923c" stroke-width="1.8" marker-end="url(#arwfb923c)"/>
+<path d="M 948.0 235.0 L 968.0 235.0" fill="none" stroke="#fb923c" stroke-width="1.8" marker-end="url(#arwfb923c)"/>
+<path d="M 1308.0 235.0 L 1328.0 235.0" fill="none" stroke="#fb923c" stroke-width="1.8" marker-end="url(#arwfb923c)"/>
+<rect x="32.0" y="370.0" width="1636.0" height="230.0" rx="14" ry="14" fill="#162036" stroke="#2dd4bf" stroke-width="1.5" opacity="1.0"/>
+<text x="48.0" y="396.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="16" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">2. Probes through the human-in-the-loop pipeline</text>
+<text x="48.0" y="414.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#a3adbd" text-anchor="start" font-weight="normal" opacity="1.0">airt.gateway.pipeline.submit(source=redteam, campaign_id, probe_id): identical to an HTTP call</text>
+<rect x="48.0" y="428.0" width="250.0" height="140.0" rx="10" ry="10" fill="#134e4a" stroke="#2dd4bf" stroke-width="1.6" opacity="1.0"/>
+<text x="60.0" y="454.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">pipeline.submit()</text>
+<text x="60.0" y="474.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">build provider body from</text>
+<text x="60.0" y="489.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">probe messages + mutator,</text>
+<text x="60.0" y="504.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">normalize, create ticket</text>
+<text x="60.0" y="519.4" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">PENDING with campaign_id</text>
+<text x="60.0" y="534.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">and probe_id</text>
+<rect x="320.0" y="428.0" width="250.0" height="140.0" rx="10" ry="10" fill="#134e4a" stroke="#2dd4bf" stroke-width="1.6" opacity="1.0"/>
+<text x="332.0" y="454.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">Analyzers + policy</text>
+<text x="332.0" y="474.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">same 10 request analyzers</text>
+<text x="332.0" y="489.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">and guardrail integrations;</text>
+<text x="332.0" y="504.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">agent policy may auto-deny</text>
+<text x="332.0" y="519.4" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">(verdict BLOCKED) or</text>
+<text x="332.0" y="534.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">auto-approve</text>
+<rect x="592.0" y="428.0" width="250.0" height="140.0" rx="10" ry="10" fill="#713f12" stroke="#fbbf24" stroke-width="1.6" opacity="1.0"/>
+<text x="604.0" y="454.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">Human approval</text>
+<text x="604.0" y="474.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">ticket held for a reviewer</text>
+<text x="604.0" y="489.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">(dashboard / MCP / CLI);</text>
+<text x="604.0" y="504.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">auto-runs when</text>
+<text x="604.0" y="519.4" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">AIRT_REQUIRE_APPROVAL_FOR_</text>
+<text x="604.0" y="534.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">REDTEAM_PROBES=false</text>
+<rect x="864.0" y="428.0" width="250.0" height="140.0" rx="10" ry="10" fill="#4c1d95" stroke="#a78bfa" stroke-width="1.6" opacity="1.0"/>
+<text x="876.0" y="454.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">Target model</text>
+<text x="876.0" y="474.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">forwarder swaps in the</text>
+<text x="876.0" y="489.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">upstream key, canary</text>
+<text x="876.0" y="504.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">injected in the system</text>
+<text x="876.0" y="519.4" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">prompt, per-probe timeout</text>
+<text x="876.0" y="534.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">AIRT_REDTEAM_PROBE_TIMEOUT</text>
+<rect x="1136.0" y="428.0" width="250.0" height="140.0" rx="10" ry="10" fill="#134e4a" stroke="#2dd4bf" stroke-width="1.6" opacity="1.0"/>
+<text x="1148.0" y="454.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">Evaluators</text>
+<text x="1148.0" y="474.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">refusal detector,</text>
+<text x="1148.0" y="489.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">canary leak (strongest),</text>
+<text x="1148.0" y="504.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">success_indicators regexes,</text>
+<text x="1148.0" y="519.4" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">harmful / guardrail findings,</text>
+<text x="1148.0" y="534.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">optional LLM judge</text>
+<rect x="1408.0" y="428.0" width="250.0" height="140.0" rx="10" ry="10" fill="#14532d" stroke="#4ade80" stroke-width="1.6" opacity="1.0"/>
+<text x="1420.0" y="454.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">Verdicts</text>
+<text x="1420.0" y="474.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">VULNERABLE  RESISTED</text>
+<text x="1420.0" y="489.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">BLOCKED  ERROR</text>
+<text x="1420.0" y="504.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">INCONCLUSIVE</text>
+<text x="1420.0" y="519.4" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">+ confidence + evidence</text>
+<text x="1420.0" y="534.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">+ ticket_id, latency_ms</text>
+<path d="M 298.0 498.0 L 320.0 498.0" fill="none" stroke="#2dd4bf" stroke-width="1.8" marker-end="url(#arw2dd4bf)"/>
+<path d="M 570.0 498.0 L 592.0 498.0" fill="none" stroke="#2dd4bf" stroke-width="1.8" marker-end="url(#arw2dd4bf)"/>
+<path d="M 842.0 498.0 L 864.0 498.0" fill="none" stroke="#2dd4bf" stroke-width="1.8" marker-end="url(#arw2dd4bf)"/>
+<path d="M 1114.0 498.0 L 1136.0 498.0" fill="none" stroke="#2dd4bf" stroke-width="1.8" marker-end="url(#arw2dd4bf)"/>
+<path d="M 1386.0 498.0 L 1408.0 498.0" fill="none" stroke="#2dd4bf" stroke-width="1.8" marker-end="url(#arw2dd4bf)"/>
+<path d="M 1492.0 320.0 L 1492.0 370.0" fill="none" stroke="#fb923c" stroke-width="1.8" marker-end="url(#arwfb923c)"/>
+<path d="M 173.0 340.0 L 173.0 370.0" fill="none" stroke="#fb923c" stroke-width="1.8" marker-end="url(#arwfb923c)"/>
+<path d="M 1492 355 L 173.0 355" fill="none" stroke="#fb923c" stroke-width="1.8"/>
+<rect x="630.2" y="347.0" width="459.7" height="18.3" rx="4" ry="4" fill="#0f172a" stroke="#0f172a" stroke-width="0" opacity="0.92"/>
+<text x="860.0" y="359.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#e5e7eb" text-anchor="middle" font-weight="normal" opacity="1.0">start(): one submit() per probe entry, AIRT_REDTEAM_CONCURRENCY at a time</text>
+<rect x="32.0" y="630.0" width="1010.0" height="262.0" rx="14" ry="14" fill="#162036" stroke="#4ade80" stroke-width="1.5" opacity="1.0"/>
+<text x="48.0" y="656.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="16" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">3. Summary and reports</text>
+<text x="48.0" y="674.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#a3adbd" text-anchor="start" font-weight="normal" opacity="1.0">engine.build_summary(), compare_group(), airt/reports builders + renderers</text>
+<rect x="48.0" y="688.0" width="300.0" height="136.0" rx="10" ry="10" fill="#14532d" stroke="#4ade80" stroke-width="1.6" opacity="1.0"/>
+<text x="60.0" y="714.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">Campaign summary</text>
+<text x="60.0" y="734.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">by_verdict totals, vulnerability rate,</text>
+<text x="60.0" y="749.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">per-category and per-technique rates,</text>
+<text x="60.0" y="764.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">per-severity breakdown, benign over-refusal</text>
+<text x="60.0" y="779.4" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">rate, OWASP LLM Top 10 coverage</text>
+<text x="60.0" y="794.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">(taxonomy.coverage), duration</text>
+<rect x="368.0" y="688.0" width="300.0" height="136.0" rx="10" ry="10" fill="#14532d" stroke="#4ade80" stroke-width="1.6" opacity="1.0"/>
+<text x="380.0" y="714.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">Comparison matrix</text>
+<text x="380.0" y="734.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">category x target: vulnerable / tested /</text>
+<text x="380.0" y="749.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">rate; per-probe verdict rows across</text>
+<text x="380.0" y="764.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">targets; ranking by vulnerability rate;</text>
+<text x="380.0" y="779.4" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">verdict totals per campaign</text>
+<rect x="688.0" y="688.0" width="338.0" height="136.0" rx="10" ry="10" fill="#1f2937" stroke="#9ca3af" stroke-width="1.6" opacity="1.0"/>
+<text x="700.0" y="714.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">Reports (12 formats)</text>
+<text x="700.0" y="734.9" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">/api/reports/campaign/{id}?format=...</text>
+<text x="700.0" y="749.8" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">json yaml csv tsv md html pdf xlsx txt xml</text>
+<text x="700.0" y="764.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">sarif (code scanning) junit (CI gating);</text>
+<text x="700.0" y="779.4" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">airt report campaign/ID -f sarif -o out.sarif;</text>
+<text x="700.0" y="794.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">MCP generate_report</text>
+<path d="M 348.0 756.0 L 368.0 756.0" fill="none" stroke="#4ade80" stroke-width="1.8" marker-end="url(#arw4ade80)"/>
+<path d="M 668.0 756.0 L 688.0 756.0" fill="none" stroke="#4ade80" stroke-width="1.8" marker-end="url(#arw4ade80)"/>
+<path d="M 1533.0 568.0 L 1533.0 615.0 L 198.0 615.0 L 198.0 630.0" fill="none" stroke="#4ade80" stroke-width="1.8" marker-end="url(#arw4ade80)"/>
+<rect x="812.7" y="594.0" width="137.7" height="19.6" rx="4" ry="4" fill="#0f172a" stroke="#0f172a" stroke-width="0" opacity="0.92"/>
+<text x="881.5" y="607.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#e5e7eb" text-anchor="middle" font-weight="normal" opacity="1.0">verdicts aggregated</text>
+<rect x="1070.0" y="630.0" width="598.0" height="262.0" rx="14" ry="14" fill="#162036" stroke="#a78bfa" stroke-width="1.5" opacity="1.0"/>
+<text x="1086.0" y="656.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="16" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">External engines through the same gateway</text>
+<text x="1086.0" y="674.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#a3adbd" text-anchor="start" font-weight="normal" opacity="1.0">short-lived scan tokens (scn_, TTL, revocable, bound to a campaign) let a scanner act as the agent</text>
+<rect x="1086.0" y="688.0" width="176.0" height="32.0" rx="10" ry="10" fill="#4c1d95" stroke="#a78bfa" stroke-width="1.6" opacity="1.0"/>
+<text x="1098.0" y="712.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">garak</text>
+<text x="1276.0" y="702.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">probes: promptinject, dan, encoding, leakreplay; generations</text>
+<text x="1276.0" y="716.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">per probe</text>
+<rect x="1086.0" y="732.0" width="176.0" height="32.0" rx="10" ry="10" fill="#4c1d95" stroke="#a78bfa" stroke-width="1.6" opacity="1.0"/>
+<text x="1098.0" y="756.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">promptfoo</text>
+<text x="1276.0" y="746.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">plugins: harmful, pii, prompt-extraction, hijacking;</text>
+<text x="1276.0" y="760.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">strategies: jailbreak, base64</text>
+<rect x="1086.0" y="776.0" width="176.0" height="32.0" rx="10" ry="10" fill="#4c1d95" stroke="#a78bfa" stroke-width="1.6" opacity="1.0"/>
+<text x="1098.0" y="800.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">PyRIT</text>
+<text x="1276.0" y="790.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">converters Base64Converter, ROT13Converter;</text>
+<text x="1276.0" y="804.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">SelfAskRefusalScorer</text>
+<rect x="1086.0" y="820.0" width="176.0" height="32.0" rx="10" ry="10" fill="#4c1d95" stroke="#a78bfa" stroke-width="1.6" opacity="1.0"/>
+<text x="1098.0" y="844.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">PyRIT-Ship + Burp</text>
+<text x="1276.0" y="834.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">Burp Suite traffic replayed through the gateway with the scan</text>
+<text x="1276.0" y="848.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">token</text>
+<text x="1086.0" y="876.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#a3adbd" text-anchor="start" font-weight="normal" opacity="1.0">Scanner base_url -&gt; gw /v1 or /proxy + token: every request is a ticket (source=redteam, campaign_id),</text>
+<text x="1086.0" y="890.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#a3adbd" text-anchor="start" font-weight="normal" opacity="1.0">analysed, policy-checked, human-approved and response-scanned; findings share the taxonomy in reports.</text>
+<path d="M 1370.0 630.0 L 1370.0 600.0" fill="none" stroke="#a78bfa" stroke-width="1.8" marker-end="url(#arwa78bfa)"/>
+<rect x="1207.1" y="575.0" width="325.8" height="19.6" rx="4" ry="4" fill="#0f172a" stroke="#0f172a" stroke-width="0" opacity="0.92"/>
+<text x="1370.0" y="588.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#e5e7eb" text-anchor="middle" font-weight="normal" opacity="1.0">scan token traffic enters the pipeline in row 2</text>
+<rect x="32.0" y="916.0" width="1040.0" height="52.0" rx="10" ry="10" fill="#162036" stroke="#334155" stroke-width="1.5" opacity="1.0"/>
+<text x="44.0" y="935.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#a3adbd" text-anchor="start" font-weight="bold" opacity="1.0">Legend</text>
+<rect x="46.0" y="946.0" width="22.0" height="14.0" rx="4" ry="4" fill="#7c2d12" stroke="#fb923c" stroke-width="1.2" opacity="1.0"/>
+<text x="76.0" y="957.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">campaign setup</text>
+<rect x="216.0" y="946.0" width="22.0" height="14.0" rx="4" ry="4" fill="#134e4a" stroke="#2dd4bf" stroke-width="1.2" opacity="1.0"/>
+<text x="246.0" y="957.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">gateway pipeline</text>
+<rect x="386.0" y="946.0" width="22.0" height="14.0" rx="4" ry="4" fill="#713f12" stroke="#fbbf24" stroke-width="1.2" opacity="1.0"/>
+<text x="416.0" y="957.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">human decision</text>
+<rect x="556.0" y="946.0" width="22.0" height="14.0" rx="4" ry="4" fill="#4c1d95" stroke="#a78bfa" stroke-width="1.2" opacity="1.0"/>
+<text x="586.0" y="957.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">target / external engine</text>
+<rect x="726.0" y="946.0" width="22.0" height="14.0" rx="4" ry="4" fill="#14532d" stroke="#4ade80" stroke-width="1.2" opacity="1.0"/>
+<text x="756.0" y="957.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">results</text>
+<rect x="896.0" y="946.0" width="22.0" height="14.0" rx="4" ry="4" fill="#1f2937" stroke="#9ca3af" stroke-width="1.2" opacity="1.0"/>
+<text x="926.0" y="957.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">persistence / reports</text>
+</svg>

@@ -1,6 +1,7 @@
 """Shared helpers for the built-in analyzers: text normalisation, homoglyph folding, masking and message iteration."""
 from __future__ import annotations
 
+import contextlib
 import re
 import unicodedata
 from collections.abc import Iterable, Iterator
@@ -122,10 +123,8 @@ def normalize_text(text: Any) -> str:
     s = safe_text(text)
     if not s:
         return ""
-    try:
+    with contextlib.suppress(Exception):
         s = unicodedata.normalize("NFKC", s)
-    except Exception:
-        pass
     s = strip_zero_width(s)
     s = fold_homoglyphs(s)
     s = _WS_RE.sub(" ", s)
@@ -279,7 +278,7 @@ def make_finding(
 class Signature:
     """A compiled regex signature with a weight and human readable label."""
 
-    __slots__ = ("regex", "weight", "label", "tag")
+    __slots__ = ("label", "regex", "tag", "weight")
 
     def __init__(self, pattern: str, weight: float, label: str, tag: str = "", flags: int = re.IGNORECASE) -> None:
         self.regex = re.compile(pattern, flags)

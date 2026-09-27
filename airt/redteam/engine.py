@@ -11,6 +11,7 @@ from typing import Any
 
 import httpx
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import taxonomy
@@ -418,12 +419,12 @@ class CampaignRunner:
                 campaign = await session.get(Campaign, campaign_id)
                 body = self._build_body(campaign, probe, mutator)
                 path = str((campaign.config or {}).get("path") or "v1/chat/completions")
-            result = await submit(
+            result = await _submit_with_retry(
+                submit,
                 http,
                 agent_id,
                 path=path,
                 body=body,
-                source="redteam",
                 campaign_id=campaign_id,
                 probe_id=probe_id,
                 wait_timeout=settings.redteam_probe_timeout_seconds,
@@ -658,6 +659,26 @@ async def compare_group(session: AsyncSession, group_id: str) -> dict[str, Any] 
         "ranking": ranking,
         "owasp_coverage": taxonomy.coverage(categories),
     }
+
+
+TICKET_NUMBER_RETRIES = 6
+
+
+async def _submit_with_retry(submit: Any, http: httpx.AsyncClient, agent_id: str, **kwargs: Any) -> Any:
+    """Call pipeline.submit, retrying when ticket numbering collides.
+
+    Ticket numbers are assigned as max(number)+1 in the tickets service, which can collide when
+    several probes (for example sibling campaigns of a comparison group) create tickets at the
+    same instant. The failed attempt is rolled back before we retry, so no partial ticket remains.
+    """
+    for attempt in range(TICKET_NUMBER_RETRIES):
+        try:
+            return await submit(http, agent_id, source="redteam", **kwargs)
+        except IntegrityError as exc:
+            if "tickets.number" not in str(exc) or attempt == TICKET_NUMBER_RETRIES - 1:
+                raise
+            await asyncio.sleep(random.uniform(0.005, 0.05) * (attempt + 1))
+    raise RuntimeError("unreachable")
 
 
 campaign_runner = CampaignRunner()

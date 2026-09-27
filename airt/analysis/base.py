@@ -7,7 +7,7 @@ from dataclasses import asdict, dataclass, field
 from typing import Any, Protocol, runtime_checkable
 
 
-class Severity(str, enum.Enum):
+class Severity(enum.StrEnum):
     INFO = "INFO"
     LOW = "LOW"
     MEDIUM = "MEDIUM"

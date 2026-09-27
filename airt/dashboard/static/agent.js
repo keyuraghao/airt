@@ -86,7 +86,7 @@
       set("upstream_extra_headers", Object.keys(a.upstream_extra_headers || {}).length ? JSON.stringify(a.upstream_extra_headers) : "");
       set("auto_approve_below_risk", a.auto_approve_below_risk); set("auto_deny_at_risk", a.auto_deny_at_risk);
       set("auto_deny_patterns", (a.auto_deny_patterns || []).join("\n")); set("allowed_paths", (a.allowed_paths || []).join("\n")); set("allowed_models", (a.allowed_models || []).join("\n"));
-      set("rate_limit_per_minute", a.rate_limit_per_minute); set("require_approval", a.require_approval);
+      set("rate_limit_per_minute", a.rate_limit_per_minute); set("require_approval", a.require_approval); set("inject_canary", a.inject_canary);
       A.$("#all-tickets-link").href = "/tickets?status=&agent_id=" + encodeURIComponent(a.id);
     }
     function load() { return A.get("/api/agents/" + encodeURIComponent(id)).then(render).catch(A.fail); }

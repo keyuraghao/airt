@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640" role="img" aria-label="Airt: every AI request, reviewed by a human before it reaches your backend">
+  <title>Airt social preview</title>
+  <defs>
+    <radialGradient id="glow" cx="0.28" cy="0.5" r="0.55">
+      <stop offset="0" stop-color="#22D3EE" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#22D3EE" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1280" height="640" fill="#0B1220"/>
+  <rect width="1280" height="640" fill="url(#glow)"/>
+  <!-- Faint portcullis rhythm along the top edge -->
+  <g fill="#1E293B">
+    <rect x="0" y="0" width="1280" height="6"/>
+  </g>
+  <!-- Mark, 256 px -->
+  <g transform="translate(112 192) scale(4)">
+    <rect x="5" y="5" width="54" height="54" rx="13" fill="none" stroke="#FFFFFF" stroke-width="5"/>
+    <g fill="#FFFFFF">
+      <polygon points="18,6 22,6 22,12 20,16 18,12"/>
+      <polygon points="30,6 34,6 34,12 32,16 30,12"/>
+      <polygon points="42,6 46,6 46,12 44,16 42,12"/>
+    </g>
+    <g transform="translate(32 37) rotate(45)">
+      <polygon points="0,-20 -8.5,0 8.5,0" fill="#22D3EE"/>
+      <polygon points="0,20 -8.5,0 8.5,0" fill="#F59E0B"/>
+    </g>
+    <circle cx="32" cy="37" r="5.8" fill="#0B1220"/>
+    <path d="M29 37.2 L31.3 39.5 L35.2 35.1" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <g font-family="Inter, 'Segoe UI', 'Noto Sans', Roboto, Helvetica, Arial, sans-serif">
+    <text x="436" y="292" font-size="150" font-weight="700" letter-spacing="2" fill="#FFFFFF">Airt</text>
+    <text x="444" y="344" font-size="22" font-weight="600" letter-spacing="5" fill="#22D3EE">AI SECURITY &amp; RESEARCH FRAMEWORK</text>
+    <rect x="444" y="374" width="56" height="4" rx="2" fill="#F59E0B"/>
+    <text x="444" y="426" font-size="32" font-weight="500" fill="#FFFFFF" fill-opacity="0.85">Every AI request, reviewed by a human</text>
+    <text x="444" y="470" font-size="32" font-weight="500" fill="#FFFFFF" fill-opacity="0.85">before it reaches your backend</text>
+  </g>
+</svg>

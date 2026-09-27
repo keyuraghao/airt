@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability (private)
+    url: https://github.com/keyuraghao/airt/security/advisories/new
+    about: Report a vulnerability privately through GitHub security advisories. Never file it as a public issue. See SECURITY.md.
+  - name: Questions and ideas
+    url: https://github.com/keyuraghao/airt/discussions
+    about: Usage questions, integration help, "how would I..." and early feature ideas belong in Discussions.
+  - name: Documentation
+    url: https://github.com/keyuraghao/airt/tree/main/docs
+    about: Architecture, API, configuration, integrations, deployment, red teaming, reports and MCP guides.

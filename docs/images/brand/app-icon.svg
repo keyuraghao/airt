@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Airt app icon">
+  <title>Airt app icon</title>
+  <!-- Full-bleed tile for PWA / app icons: the tile is the gate frame -->
+  <rect width="64" height="64" rx="14" fill="#0B1220"/>
+  <g fill="#FFFFFF">
+    <polygon points="17,0 23,0 23,10 20,15 17,10"/>
+    <polygon points="29,0 35,0 35,10 32,15 29,10"/>
+    <polygon points="41,0 47,0 47,10 44,15 41,10"/>
+  </g>
+  <g transform="translate(32 37) rotate(45)">
+    <polygon points="0,-22 -9.5,0 9.5,0" fill="#22D3EE"/>
+    <polygon points="0,22 -9.5,0 9.5,0" fill="#F59E0B"/>
+  </g>
+  <circle cx="32" cy="37" r="6.4" fill="#0B1220"/>
+  <path d="M28.7 37.2 L31.3 39.8 L35.6 35" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

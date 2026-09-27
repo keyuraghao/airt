@@ -20,7 +20,7 @@ def new_id(prefix: str = "") -> str:
     return f"{prefix}{uuid.uuid4().hex}"
 
 
-class TicketStatus(str, enum.Enum):
+class TicketStatus(enum.StrEnum):
     PENDING = "PENDING"  # waiting for a human decision
     APPROVED = "APPROVED"  # human (or policy) approved, not yet forwarded
     DENIED = "DENIED"  # blocked; nothing was sent upstream
@@ -30,7 +30,7 @@ class TicketStatus(str, enum.Enum):
     FAILED = "FAILED"  # upstream / network error after approval
 
 
-class RiskLevel(str, enum.Enum):
+class RiskLevel(enum.StrEnum):
     NONE = "NONE"
     LOW = "LOW"
     MEDIUM = "MEDIUM"
@@ -206,7 +206,7 @@ class AuditEntry(Base):
     hash: Mapped[str] = mapped_column(String(64), unique=True)
 
 
-class CampaignStatus(str, enum.Enum):
+class CampaignStatus(enum.StrEnum):
     CREATED = "CREATED"
     RUNNING = "RUNNING"
     PAUSED = "PAUSED"
@@ -267,3 +267,11 @@ class AppSetting(Base):
     value: Mapped[dict] = mapped_column(JSON, default=dict)  # {"v": <json value>}
     updated_by: Mapped[str] = mapped_column(String(80), default="")
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
+class Counter(Base):
+    """Atomic sequence rows (ticket numbers) that stay unique under concurrent writers on SQLite and Postgres."""
+
+    __tablename__ = "counters"
+    name: Mapped[str] = mapped_column(String(40), primary_key=True)
+    value: Mapped[int] = mapped_column(Integer, default=0)

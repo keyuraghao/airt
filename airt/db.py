@@ -65,6 +65,22 @@ async def init_db() -> None:
             await conn.execute(text("PRAGMA journal_mode=WAL"))
             await conn.execute(text("PRAGMA foreign_keys=ON"))
         await conn.run_sync(Base.metadata.create_all)
+    await _seed_counters()
+
+
+async def _seed_counters() -> None:
+    from sqlalchemy import func, select
+
+    from .models import Counter, Ticket
+
+    async with get_sessionmaker()() as session:
+        if await session.get(Counter, "ticket") is None:
+            current = (await session.execute(select(func.max(Ticket.number)))).scalar_one()
+            session.add(Counter(name="ticket", value=int(current or 0)))
+            try:
+                await session.commit()
+            except Exception:
+                await session.rollback()
 
 
 async def dispose_db() -> None:

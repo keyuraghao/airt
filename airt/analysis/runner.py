@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import inspect
 import time
 from typing import Any
@@ -73,10 +74,8 @@ def _apply_overrides(findings: list[Finding]) -> list[Finding]:
             continue
         ov = overrides.get(f.category) or overrides.get(f.analyzer)
         if ov:
-            try:
+            with contextlib.suppress(ValueError):
                 f.severity = Severity(str(ov).upper())
-            except ValueError:
-                pass
         out.append(f)
     return out
 

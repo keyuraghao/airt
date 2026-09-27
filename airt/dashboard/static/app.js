@@ -190,8 +190,8 @@
   AIRT.fmtSecs = function (v) { if (v == null) return "n/a"; v = Number(v); if (v < 60) return v.toFixed(1) + " s"; if (v < 3600) return (v / 60).toFixed(1) + " min"; return (v / 3600).toFixed(1) + " h"; };
   AIRT.timeEl = function (v, opts) {
     opts = opts || {};
-    var t = AIRT.el("time", { class: "rel " + (opts.class || ""), datetime: v || "", title: AIRT.fmtTs(v), text: opts.absolute ? AIRT.fmtTs(v) : AIRT.relTime(v) });
-    return t;
+    var absolute = opts.absolute || (AIRT.ui && AIRT.ui.date_format === "absolute");
+    return AIRT.el("time", { class: (absolute ? "abs " : "rel ") + (opts.class || ""), datetime: v || "", title: absolute ? AIRT.relTime(v) : AIRT.fmtTs(v), text: absolute ? AIRT.fmtTs(v) : AIRT.relTime(v) });
   };
   setInterval(function () {
     AIRT.$$("time.rel").forEach(function (t) { var v = t.getAttribute("datetime"); if (v) t.textContent = AIRT.relTime(v); });
@@ -295,7 +295,13 @@
   };
 
   /* ---------- sound ---------- */
-  AIRT.soundEnabled = function () { try { return localStorage.getItem("airt.sound") !== "off"; } catch (e) { return true; } };
+  AIRT.soundEnabled = function () {
+    var v = null;
+    try { v = localStorage.getItem("airt.sound"); } catch (e) {}
+    if (v === "on") return true;
+    if (v === "off") return false;
+    return !(AIRT.ui && AIRT.ui.sound_on_new_ticket === false);
+  };
   AIRT.setSound = function (on) { try { localStorage.setItem("airt.sound", on ? "on" : "off"); } catch (e) {} };
   AIRT.beep = function () {
     if (!AIRT.soundEnabled()) return;
@@ -342,18 +348,42 @@
     });
   }
 
+  /* ---------- UI namespace (branding, theme, accent), applied on every page ---------- */
+  AIRT.ui = {};
+  try { AIRT.ui = JSON.parse(localStorage.getItem("airt.ui") || "{}") || {}; } catch (e) { AIRT.ui = {}; }
+  function hexToRgb(hex) {
+    var m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex || "");
+    return m ? [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)] : null;
+  }
+  function mix(rgb, target, amount) { return "#" + rgb.map(function (c) { return ("0" + Math.round(c + (target - c) * amount).toString(16)).slice(-2); }).join(""); }
+  AIRT.applyUi = function (ui, preview) {
+    ui = ui || {};
+    if (!preview) { AIRT.ui = ui; try { localStorage.setItem("airt.ui", JSON.stringify(ui)); } catch (e) {} }
+    var root = document.documentElement;
+    var rgb = hexToRgb(ui.accent_color);
+    if (rgb) {
+      root.style.setProperty("--accent", ui.accent_color);
+      root.style.setProperty("--accent-strong", mix(rgb, 255, 0.25));
+      root.style.setProperty("--accent-bg", "rgba(" + rgb.join(",") + ",0.14)");
+    } else { root.style.removeProperty("--accent"); root.style.removeProperty("--accent-strong"); root.style.removeProperty("--accent-bg"); }
+    var brand = ui.brand_name || "Airt";
+    AIRT.$$(".nav .brand, .login-card .brand span").forEach(function (n) { var last = n.lastChild; if (last && last.nodeType === 3) last.textContent = " " + brand; else if (n.tagName === "SPAN") n.textContent = brand; });
+    if (ui.brand_name && ui.brand_name !== "Airt") document.title = document.title.replace(/ - [^-]+$/, " - " + brand);
+    var local = null;
+    try { local = localStorage.getItem("airt.theme"); } catch (e) {}
+    var theme = local || ui.theme;
+    if (theme === "dark" || theme === "light") root.setAttribute("data-theme", theme); else root.removeAttribute("data-theme");
+  };
+  AIRT.applyUi(AIRT.ui, true);
+  if (AIRT.principal) AIRT.get("/api/settings/ns/ui").then(function (r) { AIRT.applyUi(Object.assign({}, r.defaults || {}, r.value || {}), false); }).catch(function () {});
+
   /* ---------- logout and theme ---------- */
   var logoutBtn = AIRT.$("#nav-logout");
   if (logoutBtn) logoutBtn.addEventListener("click", function () {
     AIRT.post("/api/auth/logout").catch(function () {}).then(function () { window.location.href = "/login"; });
   });
   var themeBtn = AIRT.$("#nav-theme");
-  var applyTheme = function () {
-    var t = null;
-    try { t = localStorage.getItem("airt.theme"); } catch (e) {}
-    if (t) document.documentElement.setAttribute("data-theme", t); else document.documentElement.removeAttribute("data-theme");
-  };
-  applyTheme();
+  var applyTheme = function () { AIRT.applyUi(AIRT.ui, true); };
   if (themeBtn) themeBtn.addEventListener("click", function () {
     var cur = document.documentElement.getAttribute("data-theme");
     var dark = cur ? cur === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -405,4 +435,35 @@
       try { AIRT.pages[page](); } catch (e) { AIRT.fail(e); }
     }
   });
+})();
+/* Taxonomy helpers shared by the ticket and campaign pages. */
+(function () {
+  "use strict";
+  var AIRT = window.AIRT;
+  AIRT.taxonomy = null;
+  AIRT.loadTaxonomy = function () {
+    if (AIRT.taxonomy) return Promise.resolve(AIRT.taxonomy);
+    return AIRT.get("/api/settings/taxonomy").then(function (t) { AIRT.taxonomy = t; return t; }).catch(function () { return null; });
+  };
+  /* Small chips for OWASP / Greshake / Thacker labels. Uses the labels on the object when present,
+     otherwise falls back to the category map from the loaded taxonomy. */
+  AIRT.taxonomyChips = function (obj) {
+    obj = obj || {};
+    var t = AIRT.taxonomy, names = {};
+    (t && t.owasp || []).forEach(function (o) { names[o.id] = o; });
+    var owasp = obj.owasp_labels, greshake = obj.greshake, thacker = obj.thacker;
+    var m = t && t.category_map && obj.category ? t.category_map[obj.category] : null;
+    if ((!owasp || !owasp.length) && m) owasp = m.owasp;
+    if ((!greshake || !greshake.length) && m) greshake = m.greshake;
+    if ((!thacker || !thacker.length) && m) thacker = m.thacker;
+    var wrap = AIRT.el("div", { class: "chips" });
+    (owasp || []).forEach(function (id) {
+      var o = names[id];
+      var chip = AIRT.el(o && o.url ? "a" : "span", { class: "chip owasp", text: id, title: o ? o.name + ": " + (o.description || "") : id, href: o && o.url ? o.url : null, target: o && o.url ? "_blank" : null, rel: "noopener" });
+      wrap.appendChild(chip);
+    });
+    (greshake || []).forEach(function (x) { wrap.appendChild(AIRT.el("span", { class: "chip greshake", text: x, title: t && ((t.greshake_threats || {})[x] || (t.greshake_delivery || {})[x]) || "Greshake et al. threat" })); });
+    (thacker || []).forEach(function (x) { wrap.appendChild(AIRT.el("span", { class: "chip thacker", text: x, title: t && (t.thacker_techniques || {})[x] || "Thacker technique" })); });
+    return wrap.children.length ? wrap : null;
+  };
 })();

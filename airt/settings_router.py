@@ -29,7 +29,7 @@ class ResetIn(BaseModel):
 async def get_schema(_: Principal = Depends(current_principal)) -> dict[str, Any]:
     return {
         "fields": settings_store.schema(),
-        "groups": list(settings_store.GROUPS) + ["Advanced"],
+        "groups": [*list(settings_store.GROUPS), "Advanced"],
         "namespaces": list(settings_store.NAMESPACE_DEFAULTS),
     }
 

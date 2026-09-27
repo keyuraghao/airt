@@ -1,13 +1,11 @@
 """Data exfiltration detection: markdown/link beacons, system prompt extraction and conversation forwarding to external endpoints."""
 from __future__ import annotations
 
-import re
 from typing import Any
 
-from ...analysis.base import Finding, Severity
+from ...analysis.base import Finding
 from .common import (
     Signature,
-    bump_severity,
     compile_signatures,
     is_tool_context,
     iter_messages,

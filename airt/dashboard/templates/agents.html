@@ -34,6 +34,8 @@
     <label class="field">Allowed models (one per line, empty = all)<textarea name="allowed_models" rows="2"></textarea></label>
     <label class="field">Rate limit per minute (0 = unlimited)<input type="number" name="rate_limit_per_minute" min="0" value="0"></label>
     <label class="check"><input type="checkbox" name="require_approval" checked> Require human approval</label>
+    <label class="check" title="A random canary word is injected into every system prompt; if it appears in the model response the leak is flagged (and blocked when the global policy says so)"><input type="checkbox" name="inject_canary"> Inject canary word (Rebuff style)</label>
+    <div class="span-2 hint">Canary: a random marker is added to the system prompt so system prompt leakage can be detected in responses. Leaks are flagged as findings and can block the response.</div>
     <div class="span-2 flex"><button type="submit" class="btn primary">Create agent</button><span class="hint">The AIRT API key is shown once after creation.</span></div>
   </form>
 </div>

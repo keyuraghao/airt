@@ -90,5 +90,7 @@
     }).catch(function () {});
     var refresh = A.debounce(function () { loadStats(); loadPending(); }, 800);
     A.onTicketEvent(function (name, data) { feedItem(name, data); refresh(); });
+    var every = Number((A.ui && A.ui.refresh_seconds) || 0);
+    if (every > 0) setInterval(function () { if (!A.ticketStream || !A.ticketStream.connected) refresh(); }, every * 1000);
   };
 })();

@@ -29,6 +29,7 @@
       var sev = String(f.severity || "INFO").toLowerCase();
       return A.el("div", { class: "finding " + sev }, [
         A.el("div", { class: "flex wrap" }, [A.badge(f.severity || "INFO"), A.el("span", { class: "title", text: f.title || f.category || "finding" }), A.el("span", { class: "hint", text: (f.analyzer || "") + (f.category ? " / " + f.category : "") })]),
+        A.taxonomyChips(f),
         f.description ? A.el("div", { class: "small muted", text: f.description }) : null,
         f.evidence ? A.el("div", { class: "evidence", text: f.evidence }) : null,
         A.el("div", { class: "hint" }, [f.location ? "at " + f.location + "  " : "", f.confidence != null ? "confidence " + Math.round(Number(f.confidence) * 100) + "%" : "", (f.tags || []).length ? "  tags: " + f.tags.join(", ") : ""])
@@ -161,7 +162,7 @@
       else if (e.key === "d" && !A.$("#deny-btn").disabled) decide(false);
     });
     function load() { return A.get("/api/tickets/" + encodeURIComponent(id)).then(render).catch(A.fail); }
-    load();
+    A.loadTaxonomy().then(load);
     A.onTicketEvent(function (name, data) { if (data && data.ticket && data.ticket.id === id) load(); });
   };
 })();

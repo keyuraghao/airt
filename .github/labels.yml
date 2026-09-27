@@ -1,0 +1,98 @@
+# Source of truth for repository labels, applied by .github/workflows/labels.yml (crazy-max/ghaction-github-labeler).
+# Release note categories in .github/release.yml key off these names.
+- name: breaking
+  color: b60205
+  description: Backwards incompatible change, needs a major version bump and a migration note
+- name: security
+  color: d93f0b
+  description: Security fix or hardening (gateway path, auth, credentials, audit chain)
+- name: feature
+  color: 0e8a16
+  description: New capability
+- name: enhancement
+  color: a2eeef
+  description: Improvement to an existing capability
+- name: fix
+  color: d73a4a
+  description: Fixes a defect
+- name: bug
+  color: d73a4a
+  description: Confirmed defect report
+- name: docs
+  color: 0075ca
+  description: Documentation only
+- name: documentation
+  color: 0075ca
+  description: Documentation only (alias kept for GitHub defaults)
+- name: dependencies
+  color: 0366d6
+  description: Dependency updates
+- name: python
+  color: 3572a5
+  description: Python package or pip dependencies
+- name: node
+  color: f1e05a
+  description: Node SDK (sdk/node) or npm dependencies
+- name: docker
+  color: 2496ed
+  description: Dockerfile, compose or container image
+- name: ci
+  color: 5319e7
+  description: GitHub Actions, release automation, repository tooling
+- name: analyzers
+  color: c5def5
+  description: Request or response analyzers and scoring
+- name: red-team
+  color: e99695
+  description: Probe corpus, mutators, campaign engine
+- name: gateway
+  color: bfd4f2
+  description: Interception, policy engine, forwarder, hold registry
+- name: dashboard
+  color: fbca04
+  description: Reviewer UI
+- name: mcp
+  color: 7057ff
+  description: MCP server and tools
+- name: reports
+  color: c2e0c6
+  description: Report builders and renderers
+- name: integrations
+  color: bfdadc
+  description: SDK patching, mitmproxy addon, guardrail and scanner integrations
+- name: roadmap
+  color: 1d76db
+  description: Tracked in docs/ROADMAP.md
+- name: good first issue
+  color: 7057ff
+  description: Small, well scoped, a good entry point
+- name: help wanted
+  color: 008672
+  description: Maintainers would welcome a contribution
+- name: question
+  color: d876e3
+  description: Usage question, consider Discussions
+- name: needs-info
+  color: fef2c0
+  description: Waiting for details from the reporter
+- name: pinned
+  color: ededed
+  description: Never marked stale
+- name: stale
+  color: eeeeee
+  description: No recent activity, will be closed unless updated
+- name: skip-changelog
+  color: cccccc
+  description: Exclude from auto-generated release notes
+- name: work in progress
+  color: e4e669
+  description: Not ready for review
+- name: duplicate
+  color: cfd3d7
+  description: Already tracked elsewhere
+- name: invalid
+  color: e4e669
+  description: Not actionable as filed
+- name: wontfix
+  color: ffffff
+  description: Will not be worked on

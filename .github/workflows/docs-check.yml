@@ -1,0 +1,53 @@
+name: Docs check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "**/*.md"
+      - ".github/workflows/docs-check.yml"
+      - ".lycheeignore"
+  pull_request:
+    paths:
+      - "**/*.md"
+      - ".github/workflows/docs-check.yml"
+      - ".lycheeignore"
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  links:
+    name: markdown link check (non-blocking)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check links in docs and README
+        uses: lycheeverse/lychee-action@v2
+        with:
+          fail: true
+          args: >-
+            --no-progress
+            --max-concurrency 8
+            --timeout 20
+            --retry-wait-time 2
+            --max-retries 2
+            --accept 200,201,202,203,204,206,301,302,303,307,308,403,429
+            --exclude-mail
+            --exclude "^https?://(localhost|127\.0\.0\.1|0\.0\.0\.0|gw|db\.internal|postgres)([:/]|$)"
+            --exclude "^https?://[^/]*example\.com"
+            --exclude "^https?://hooks\.slack\.com"
+            --exclude "^https?://api\.lakera\.ai"
+            README.md CONTRIBUTING.md SECURITY.md CHANGELOG.md CODE_OF_CONDUCT.md "docs/**/*.md" "examples/**/*.md" "sdk/node/**/*.md"
+      - name: Note
+        if: always()
+        run: echo "Link check is advisory; broken links show above but do not block the build."

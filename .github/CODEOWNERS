@@ -1,0 +1,13 @@
+# Default owner for everything in the repository. Order matters: the last matching pattern wins.
+*                       @keyuraghao
+
+# Security sensitive paths: always require the maintainer's review.
+/airt/gateway/          @keyuraghao
+/airt/auth.py           @keyuraghao
+/airt/security.py       @keyuraghao
+/airt/audit/            @keyuraghao
+/SECURITY.md            @keyuraghao
+/.github/               @keyuraghao
+/scripts/               @keyuraghao
+/Dockerfile             @keyuraghao
+/pyproject.toml         @keyuraghao

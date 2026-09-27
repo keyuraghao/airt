@@ -1,4 +1,4 @@
-"""AIRT - Enterprise AI Red Team Gateway.
+"""AIRT - AI Security & Research Framework.
 
 A human-in-the-loop interception layer that sits between LLM-powered frontend
 applications / autonomous agents and the backend model providers or enterprise

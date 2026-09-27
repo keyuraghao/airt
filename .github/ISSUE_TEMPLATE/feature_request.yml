@@ -1,0 +1,56 @@
+name: Feature request
+description: Propose a new analyzer, probe category, integration, report format, policy rule or workflow improvement.
+title: "[feature]: "
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Check docs/ROADMAP.md first: if the item is already planned, comment on the tracking issue instead. Early or open-ended ideas fit better in Discussions.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do that Airt makes hard or impossible today? Who is affected (reviewers, agent developers, operators)?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: The behaviour you would like. For analyzers or probes include example inputs and the expected finding or verdict. For settings, the `AIRT_*` name and default you have in mind.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Workarounds you tried, or how other tools handle it.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Gateway / interception
+        - Policy engine
+        - Analyzers
+        - Red team
+        - Reports
+        - Dashboard
+        - CLI
+        - MCP server
+        - Integrations / SDKs
+        - Runtime settings / guardrails / scanners
+        - Deployment / operations
+        - Other
+  - type: textarea
+    id: security
+    attributes:
+      label: Security impact
+      description: Does the change touch the request path, authentication, credential handling, the audit log or what a reviewer sees? Say how.
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contribution
+      options:
+        - label: I am willing to open a pull request for this.

@@ -98,7 +98,7 @@
       var main = A.el("tr", null, [
         A.el("td", null, toggle),
         A.el("td", null, [A.el("div", { class: "mono small", text: r.probe_id || "" }), A.el("div", { class: "small muted truncate", text: r.name || "" })]),
-        A.el("td", { class: "small", text: r.category || "" }),
+        A.el("td", { class: "small" }, [r.category || "", A.taxonomyChips({ category: r.category, owasp_labels: r.owasp_labels })]),
         A.el("td", { class: "small", text: r.technique || "" }),
         A.el("td", null, A.badge(r.severity || "MEDIUM")),
         A.el("td", null, A.verdictBadge(r.verdict)),
@@ -122,7 +122,7 @@
     }
     ["#r-verdict", "#r-category"].forEach(function (s) { A.$(s).addEventListener("change", function () { R.offset = 0; loadResults(); }); });
     function load() { return A.get("/api/redteam/campaigns/" + encodeURIComponent(id)).then(render).catch(A.fail); }
-    A.get("/api/agents").then(function (list) { agents = A.agentMap(list); }).catch(function () {}).then(load).then(loadResults);
+    A.get("/api/agents").then(function (list) { agents = A.agentMap(list); }).catch(function () {}).then(A.loadTaxonomy).then(load).then(loadResults);
     var refreshResults = A.debounce(loadResults, 1200);
     var refreshCampaign = A.debounce(load, 600);
     A.streamAll("/api/stream/campaigns?replay=0", function (name, data) {

@@ -416,7 +416,7 @@ async def poll_ticket(
     if ticket is None or ticket.agent_id != agent.id:
         return JSONResponse({"error": {"message": "ticket not found", "code": "not_found"}}, status_code=404)
     if ticket.status == TicketStatus.APPROVED.value:
-        headers = {k: v for k, v in (ticket.request_headers or {}).items()}
+        headers = dict((ticket.request_headers or {}).items())
         body = (ticket.request_body or "").encode()
         return await forward_ticket(
             request.app, session, ticket, agent, ticket.method, ticket.path, "", headers, body

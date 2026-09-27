@@ -15,7 +15,7 @@ RUN python -m venv /opt/venv \
 # --- stage 2: minimal runtime ------------------------------------------------------------
 FROM python:3.12-slim AS runtime
 LABEL org.opencontainers.image.title="AIRT" \
-      org.opencontainers.image.description="Enterprise AI red team gateway: human-in-the-loop interception, analysis and red teaming for LLM traffic" \
+      org.opencontainers.image.description="AI Security & Research Framework: human-in-the-loop interception, analysis and red teaming for LLM traffic" \
       org.opencontainers.image.licenses="Apache-2.0"
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 \
     PATH="/opt/venv/bin:$PATH" \

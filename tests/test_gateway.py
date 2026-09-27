@@ -311,7 +311,7 @@ async def test_scan_tokens_authenticate_until_revoked(client, admin_headers, age
     from airt.db import get_sessionmaker
 
     async with get_sessionmaker()() as s:
-        tok, raw = await agents.mint_scan_token(
+        _tok, raw = await agents.mint_scan_token(
             s, agent["id"], ttl_seconds=60, purpose="garak", campaign_id="cmp_test"
         )
         await s.commit()
@@ -325,3 +325,15 @@ async def test_scan_tokens_authenticate_until_revoked(client, admin_headers, age
         assert await agents.revoke_scan_tokens(s, campaign_id="cmp_test") == 1
         await s.commit()
     assert (await client.post("/v1/chat/completions", json=CHAT, headers=h)).status_code == 401
+
+
+async def test_concurrent_tickets_get_unique_numbers(client, admin_headers, agent):
+    h = {"Authorization": f"Bearer {agent['api_key']}", "X-AIRT-Async": "1"}
+    responses = await asyncio.gather(*(client.post("/v1/chat/completions", json=CHAT, headers=h) for _ in range(25)))
+    assert all(r.status_code == 202 for r in responses), [r.status_code for r in responses]
+    ids = [r.json()["ticket_id"] for r in responses]
+    numbers = []
+    for tid in ids:
+        numbers.append((await client.get(f"/api/tickets/{tid}", headers=admin_headers)).json()["number"])
+    assert len(set(numbers)) == 25
+    assert all(isinstance(n, int) for n in numbers)

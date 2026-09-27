@@ -1,0 +1,75 @@
+name: Bug report
+description: Something in Airt (the gateway, analyzers, red team engine, reports, dashboard, CLI, MCP server or SDKs) does not behave as documented.
+title: "[bug]: "
+labels: [bug, needs-info]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. If this is a security vulnerability (auth bypass, credential leak, a request that skips the human hold, audit chain forgery, SSRF), do not file it here: use the private "Report a vulnerability" link in the Security tab, see SECURITY.md.
+  - type: input
+    id: version
+    attributes:
+      label: Airt version
+      description: Output of `airt version` (or the image tag / commit SHA).
+      placeholder: airt 1.0.0
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Gateway / interception (sync or async mode, forwarding, streaming)
+        - Policy engine / thresholds
+        - Analyzers / risk scoring
+        - Red team corpus or campaigns
+        - Reports
+        - Dashboard
+        - CLI
+        - MCP server
+        - Python integration (patch_httpx, AirtClient, mitmproxy addon)
+        - Node SDK (airt-intercept)
+        - Runtime settings / guardrail or scanner integrations
+        - Docker / deployment
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what actually happened.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproduction
+      description: Commands, a request body, a probe id, or a snippet. Redact agent keys, provider keys, tokens and any personal data.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs and ticket details
+      description: Relevant lines from `logs/airt.jsonl`, the ticket timeline or findings. Redact secrets and PII.
+      render: text
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Python version, database (SQLite or PostgreSQL), how it runs (venv, Docker, compose), reverse proxy if any.
+      placeholder: Ubuntu 24.04, Python 3.12, SQLite, docker compose, nginx
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues and discussions.
+          required: true
+        - label: This is not a security vulnerability (those go through SECURITY.md).
+          required: true
+        - label: I removed secrets, agent keys and personal data from everything above.
+          required: true

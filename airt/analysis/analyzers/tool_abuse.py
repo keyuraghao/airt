@@ -4,7 +4,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from ...analysis.base import Finding, Severity
+from ...analysis.base import Finding
 from .common import (
     Signature,
     compile_signatures,
@@ -12,7 +12,6 @@ from .common import (
     iter_tools,
     make_finding,
     normalize_text,
-    safe_text,
     severity_from_weight,
     snippet,
 )

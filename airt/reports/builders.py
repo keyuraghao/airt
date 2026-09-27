@@ -100,7 +100,7 @@ async def _campaign_rows(session: AsyncSession, agent_id: str | None = None, lim
         return columns, []
     try:
         campaigns = await rt.list_campaigns(session, agent_id=agent_id)
-    except Exception:  # noqa: BLE001 - a broken red-team module must not break platform reports
+    except Exception:
         return columns, []
     rows: list[list[Any]] = []
     for c in list(campaigns)[:limit]:

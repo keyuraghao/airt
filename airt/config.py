@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     )
 
     # --- service -----------------------------------------------------------
-    app_name: str = "AIRT Gateway"
+    app_name: str = "Airt"
     environment: str = Field(default="development", description="development | staging | production")
     host: str = "0.0.0.0"
     port: int = 8080

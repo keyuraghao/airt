@@ -483,7 +483,7 @@ def _parse_gateway_response(
     status_code: int, headers: Any, body: bytes, fallback_ticket: str | None = None
 ) -> AirtResponse:
     """Classify an HTTP response from the gateway into an AirtResponse."""
-    hdrs = {k: v for k, v in dict(headers).items()}
+    hdrs = dict(dict(headers).items())
     ticket = hdrs.get("x-airt-ticket") or hdrs.get("X-AIRT-Ticket") or fallback_ticket
     text = body.decode("utf-8", "replace") if body else ""
     data: Any = None

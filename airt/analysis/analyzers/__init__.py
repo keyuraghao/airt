@@ -51,4 +51,4 @@ try:
 except Exception:  # judge is strictly optional and must never block registration
     pass
 
-__all__ = ["prompt_injection", "jailbreak", "pii", "secrets", "data_exfil", "tool_abuse", "harmful_content", "obfuscation", "anomaly", "response_analyzers"]
+__all__ = ["anomaly", "data_exfil", "harmful_content", "jailbreak", "obfuscation", "pii", "prompt_injection", "response_analyzers", "secrets", "tool_abuse"]

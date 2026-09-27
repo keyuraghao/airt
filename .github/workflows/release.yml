@@ -1,0 +1,270 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (must match airt.__version__ and pyproject.toml, e.g. 1.2.3). The tag v<version> must already exist."
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  IMAGE: ghcr.io/keyuraghao/airt
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  verify:
+    name: verify version
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      major_minor: ${{ steps.v.outputs.major_minor }}
+      prerelease: ${{ steps.v.outputs.prerelease }}
+      tag: ${{ steps.v.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/v{0}', inputs.version) || github.ref }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Resolve version from tag or input
+        id: v
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
+          python scripts/bump_version.py --check "$VERSION"
+          MAJOR_MINOR="$(echo "$VERSION" | cut -d. -f1,2)"
+          PRERELEASE=false
+          case "$VERSION" in *-*) PRERELEASE=true ;; esac
+          {
+            echo "version=$VERSION"
+            echo "major_minor=$MAJOR_MINOR"
+            echo "prerelease=$PRERELEASE"
+            echo "tag=v$VERSION"
+          } >> "$GITHUB_OUTPUT"
+          echo "Releasing $VERSION (major.minor=$MAJOR_MINOR, prerelease=$PRERELEASE)"
+      - name: Changelog section present
+        run: python scripts/changelog_notes.py "${{ steps.v.outputs.version }}" > /dev/null || echo "::warning::CHANGELOG.md has no section for ${{ steps.v.outputs.version }}, GitHub auto-generated notes will be used"
+
+  test:
+    name: tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [verify]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.verify.outputs.tag }}
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "pyproject.toml"
+      - name: Install
+        run: |
+          uv venv .venv --python ${{ env.PYTHON_VERSION }}
+          uv pip install --python .venv/bin/python -e ".[dev]"
+      - name: Ruff
+        run: .venv/bin/ruff check airt tests examples
+      - name: Style guard
+        run: .venv/bin/python scripts/check_style.py
+      - name: Pytest
+        env:
+          AIRT_SECRET_KEY: release-only-secret-key-not-for-production
+          AIRT_LOG_JSON_CONSOLE: "true"
+        run: .venv/bin/python -m pytest -q
+      - name: Node SDK self-test
+        run: node sdk/node/test.js
+
+  build:
+    name: sdist, wheel, SBOM, checksums
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [verify, test]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.verify.outputs.tag }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Build sdist and wheel
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build --sdist --wheel --outdir dist
+          ls -l dist
+      - name: Verify the built version
+        run: |
+          python -m pip install --quiet dist/airt-${{ needs.verify.outputs.version }}-py3-none-any.whl
+          INSTALLED="$(python -c 'import airt; print(airt.__version__)')"
+          test "$INSTALLED" = "${{ needs.verify.outputs.version }}" || { echo "::error::wheel reports $INSTALLED"; exit 1; }
+          airt version
+      - name: Generate CycloneDX SBOM
+        run: |
+          python -m pip install --quiet cyclonedx-bom
+          python -m venv /tmp/sbom-env
+          /tmp/sbom-env/bin/pip install --quiet dist/airt-${{ needs.verify.outputs.version }}-py3-none-any.whl
+          cyclonedx-py environment /tmp/sbom-env --of JSON -o dist/airt-${{ needs.verify.outputs.version }}.cyclonedx.json
+          python -c "import json; d=json.load(open('dist/airt-${{ needs.verify.outputs.version }}.cyclonedx.json')); print(d['bomFormat'], d['specVersion'], len(d.get('components', [])), 'components')"
+      - name: Checksums
+        working-directory: dist
+        run: |
+          sha256sum * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 30
+
+  docker:
+    name: multi-arch image to GHCR
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs: [verify, test]
+    outputs:
+      digest: ${{ steps.push.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.verify.outputs.tag }}
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE }}
+          flavor: |
+            latest=${{ needs.verify.outputs.prerelease == 'false' }}
+          tags: |
+            type=raw,value=${{ needs.verify.outputs.version }}
+            type=raw,value=${{ needs.verify.outputs.major_minor }},enable=${{ needs.verify.outputs.prerelease == 'false' }}
+          labels: |
+            org.opencontainers.image.title=Airt
+            org.opencontainers.image.description=Airt, the AI Security & Research Framework: human-in-the-loop interception, analysis and red teaming for LLM traffic
+            org.opencontainers.image.licenses=Apache-2.0
+            org.opencontainers.image.version=${{ needs.verify.outputs.version }}
+      - name: Build and push
+        id: push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: true
+          sbom: true
+      - name: Smoke test the pushed image
+        run: |
+          docker pull ${{ env.IMAGE }}:${{ needs.verify.outputs.version }}
+          docker run --rm ${{ env.IMAGE }}:${{ needs.verify.outputs.version }} version | tee /tmp/version.txt
+          grep -q "${{ needs.verify.outputs.version }}" /tmp/version.txt
+
+  release:
+    name: GitHub release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [verify, build, docker]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.verify.outputs.tag }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - name: Release notes from CHANGELOG.md
+        id: notes
+        shell: bash
+        run: |
+          if python scripts/changelog_notes.py "${{ needs.verify.outputs.version }}" > release-notes.md; then
+            echo "generate=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "generate=true" >> "$GITHUB_OUTPUT"
+            : > release-notes.md
+          fi
+          {
+            echo
+            echo "## Artifacts"
+            echo
+            echo "- Container image: \`docker pull ${{ env.IMAGE }}:${{ needs.verify.outputs.version }}\` (also \`:${{ needs.verify.outputs.major_minor }}\` and \`:latest\` for stable releases), digest \`${{ needs.docker.outputs.digest }}\`, linux/amd64 and linux/arm64"
+            echo "- Python wheel and sdist, CycloneDX SBOM and \`SHA256SUMS.txt\` are attached below"
+          } >> release-notes.md
+          cat release-notes.md
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.verify.outputs.tag }}
+          name: Airt ${{ needs.verify.outputs.version }}
+          body_path: release-notes.md
+          generate_release_notes: ${{ steps.notes.outputs.generate == 'true' }}
+          prerelease: ${{ needs.verify.outputs.prerelease == 'true' }}
+          make_latest: ${{ needs.verify.outputs.prerelease == 'false' }}
+          fail_on_unmatched_files: true
+          files: |
+            dist/*.whl
+            dist/*.tar.gz
+            dist/*.cyclonedx.json
+            dist/SHA256SUMS.txt
+
+  # PyPI publishing via trusted publishing (OIDC, no API token). To enable:
+  #   1. On pypi.org, add a "pending publisher" for project `airt`: owner keyuraghao, repository airt,
+  #      workflow release.yml, environment pypi.
+  #   2. Create a GitHub environment named `pypi` (Settings > Environments) with required reviewers.
+  #   3. Uncomment the job below. `id-token: write` is already granted at the workflow level.
+  #
+  # pypi:
+  #   name: publish to PyPI
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 10
+  #   needs: [verify, release]
+  #   if: needs.verify.outputs.prerelease == 'false'
+  #   environment:
+  #     name: pypi
+  #     url: https://pypi.org/project/airt/${{ needs.verify.outputs.version }}/
+  #   permissions:
+  #     id-token: write
+  #     contents: read
+  #   steps:
+  #     - uses: actions/download-artifact@v4
+  #       with:
+  #         name: dist
+  #         path: dist
+  #     - name: Keep only the wheel and sdist
+  #       run: |
+  #         mkdir -p upload
+  #         cp dist/*.whl dist/*.tar.gz upload/
+  #     - uses: pypa/gh-action-pypi-publish@release/v1
+  #       with:
+  #         packages-dir: upload
+  #         print-hash: true

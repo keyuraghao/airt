@@ -5,7 +5,7 @@ import re
 from typing import Any
 
 from ...analysis.base import Finding, Severity
-from .common import iter_messages, make_finding, normalize_text, safe_text, snippet
+from .common import iter_messages, make_finding, safe_text, snippet
 
 NAME = "anomaly"
 
@@ -167,9 +167,8 @@ class AnomalyAnalyzer:
         # --- unusual request path for the provider ------------------------------
         path = safe_text(context.get("path"), 500).lower() if context else ""
         provider = safe_text(normalized.get("provider"), 60).lower()
-        if path and provider in _PROVIDER_PATHS:
-            if not any(seg in path for seg in _PROVIDER_PATHS[provider]):
-                findings.append(
+        if path and provider in _PROVIDER_PATHS and not any(seg in path for seg in _PROVIDER_PATHS[provider]):
+            findings.append(
                     make_finding(
                         NAME, "anomaly", Severity.LOW, "Unusual request path for provider",
                         f"Path '{path[:80]}' is not a standard {provider} endpoint. Review for path confusion or an unexpected upstream.",

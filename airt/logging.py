@@ -13,6 +13,7 @@ AgentLogger (see airt/agents/service.py) for durable, queryable history.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import logging
 import logging.handlers
@@ -138,10 +139,8 @@ class EventBroadcaster:
         payload = {"ts": time.time(), **payload}
         self._history[channel].append(payload)
         for q in list(self._subs[channel]):
-            try:
+            with contextlib.suppress(asyncio.QueueFull):  # drop for slow consumers instead of blocking the gateway
                 q.put_nowait(payload)
-            except asyncio.QueueFull:  # drop for slow consumers instead of blocking the gateway
-                pass
 
     def subscribe(self, channel: str, replay: int = 0) -> asyncio.Queue:
         q: asyncio.Queue = asyncio.Queue(maxsize=1000)

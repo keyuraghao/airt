@@ -9,7 +9,7 @@ import re
 from typing import Any
 
 from ...analysis.base import Finding, Severity
-from .common import iter_messages, make_finding, normalize_text, safe_text, snippet
+from .common import iter_messages, make_finding, normalize_text, snippet
 
 NAME = "harmful_content"
 

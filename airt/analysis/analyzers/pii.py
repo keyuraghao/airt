@@ -61,9 +61,7 @@ def ssn_ok(value: str) -> bool:
     area, group, serial = digits[:3], digits[3:5], digits[5:]
     if area in ("000", "666") or area.startswith("9") or group == "00" or serial == "0000":
         return False
-    if digits in ("123456789", "111111111", "078051120", "219099999"):
-        return False
-    return True
+    return digits not in ("123456789", "111111111", "078051120", "219099999")
 
 
 def cpf_ok(value: str) -> bool:
@@ -260,7 +258,7 @@ class PIIAnalyzer:
 
     def analyze(self, normalized: dict[str, Any], context: dict[str, Any]) -> list[Finding]:
         findings: list[Finding] = []
-        for location, role, raw in iter_messages(normalized):
+        for location, _role, raw in iter_messages(normalized):
             findings.extend(findings_for_text(raw, location))
         return findings
 

@@ -4,15 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}{{ page_title }}{% endblock %} - {{ app_name }}</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0f17'/%3E%3Cpath d='M16 4l10 4v8c0 6-4.5 10.5-10 12C10.5 26.5 6 22 6 16V8l10-4z' fill='none' stroke='%234f8cff' stroke-width='2.2'/%3E%3Cpath d='M11 17l3.5 3.5L21 13' fill='none' stroke='%23ef5a5a' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+<link rel="apple-touch-icon" href="/static/icon-192.png">
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body data-page="{{ page }}" data-principal="{{ principal.model_dump_json() if principal else 'null' }}" {% block body_attrs %}{% endblock %}>
 {% if principal %}
 <nav class="nav">
   <a class="brand" href="/" title="{{ app_name }} v{{ version }}">
-    <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 4l10 4v8c0 6-4.5 10.5-10 12C10.5 26.5 6 22 6 16V8l10-4z" fill="none" stroke="#4f8cff" stroke-width="2.2"/><path d="M11 17l3.5 3.5L21 13" fill="none" stroke="#ef5a5a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    AIRT
+    <img class="brand-mark brand-mark-dark" src="/static/logo-mark-dark.svg" alt="" aria-hidden="true">
+    <img class="brand-mark brand-mark-light" src="/static/logo-mark.svg" alt="" aria-hidden="true">
+    <span class="brand-name">Airt</span>
   </a>
   <div class="links">
     <a href="/" class="{{ 'active' if page == 'overview' else '' }}">Overview</a>

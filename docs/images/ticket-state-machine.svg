@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="760" viewBox="0 0 1500 760" font-family="Liberation Sans, Arial, Helvetica, sans-serif">
+<title>Airt ticket state machine</title>
+<defs><marker id="arw2dd4bf" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#2dd4bf"/></marker><marker id="arw2dd4bfs" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 10 0 L 0 5 L 10 10 z" fill="#2dd4bf"/></marker><marker id="arwa78bfa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#a78bfa"/></marker><marker id="arwa78bfas" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 10 0 L 0 5 L 10 10 z" fill="#a78bfa"/></marker><marker id="arwcbd5e1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#cbd5e1"/></marker><marker id="arwcbd5e1s" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 10 0 L 0 5 L 10 10 z" fill="#cbd5e1"/></marker><marker id="arwfb923c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#fb923c"/></marker><marker id="arwfb923cs" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 10 0 L 0 5 L 10 10 z" fill="#fb923c"/></marker><marker id="arwfbbf24" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#fbbf24"/></marker><marker id="arwfbbf24s" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 10 0 L 0 5 L 10 10 z" fill="#fbbf24"/></marker></defs>
+<rect x="0" y="0" width="1500" height="760" rx="18" ry="18" fill="#0f172a"/>
+<text x="32" y="44" font-size="24" font-weight="bold" fill="#e5e7eb">Airt ticket state machine</text>
+<text x="32" y="66" font-size="13" fill="#a3adbd">airt.models.TicketStatus and the transitions in airt/tickets/service.py. Only PENDING tickets can be decided (409 otherwise).</text>
+<rect x="60.0" y="310.0" width="130.0" height="40.0" rx="20" ry="20" fill="#162036" stroke="#334155" stroke-width="1.5" opacity="1.0"/>
+<text x="125.0" y="335.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#e5e7eb" text-anchor="middle" font-weight="normal" opacity="1.0">request received</text>
+<path d="M 190.0 330.0 L 235.0 330.0" fill="none" stroke="#cbd5e1" stroke-width="1.8" marker-end="url(#arwcbd5e1)"/>
+<rect x="160.5" y="309.0" width="104.1" height="19.6" rx="4" ry="4" fill="#0f172a" stroke="#0f172a" stroke-width="0" opacity="0.92"/>
+<text x="212.5" y="322.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#e5e7eb" text-anchor="middle" font-weight="normal" opacity="1.0">ticket created</text>
+<rect x="235.0" y="293.0" width="190.0" height="74.0" rx="16" ry="16" fill="#7c2d12" stroke="#fb923c" stroke-width="2" opacity="1.0"/>
+<text x="330.0" y="319.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="17" fill="#e5e7eb" text-anchor="middle" font-weight="bold" opacity="1.0">PENDING</text>
+<text x="330.0" y="337.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="middle" font-weight="normal" opacity="1.0">waiting for a decision</text>
+<text x="330.0" y="351.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="middle" font-weight="normal" opacity="1.0">expires_at = now + 300 s</text>
+<rect x="625.0" y="163.0" width="190.0" height="74.0" rx="16" ry="16" fill="#14532d" stroke="#4ade80" stroke-width="2" opacity="1.0"/>
+<text x="720.0" y="189.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="17" fill="#e5e7eb" text-anchor="middle" font-weight="bold" opacity="1.0">APPROVED</text>
+<text x="720.0" y="207.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="middle" font-weight="normal" opacity="1.0">decided, not yet forwarded</text>
+<rect x="625.0" y="423.0" width="190.0" height="74.0" rx="16" ry="16" fill="#7f1d1d" stroke="#f87171" stroke-width="2" opacity="1.0"/>
+<text x="720.0" y="449.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="17" fill="#e5e7eb" text-anchor="middle" font-weight="bold" opacity="1.0">DENIED</text>
+<text x="720.0" y="467.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="middle" font-weight="normal" opacity="1.0">client gets 403</text>
+<text x="720.0" y="481.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="middle" font-weight="normal" opacity="1.0">nothing sent upstream</text>
+<rect x="235.0" y="553.0" width="190.0" height="74.0" rx="16" ry="16" fill="#7f1d1d" stroke="#f87171" stroke-width="2" opacity="1.0"/>
+<text x="330.0" y="579.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="17" fill="#e5e7eb" text-anchor="middle" font-weight="bold" opacity="1.0">EXPIRED</text>
+<text x="330.0" y="597.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="middle" font-weight="normal" opacity="1.0">client gets 504</text>
+<text x="330.0" y="611.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="middle" font-weight="normal" opacity="1.0">nothing sent upstream</text>
+<rect x="915.0" y="163.0" width="190.0" height="74.0" rx="16" ry="16" fill="#4c1d95" stroke="#a78bfa" stroke-width="2" opacity="1.0"/>
+<text x="1010.0" y="189.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="17" fill="#e5e7eb" text-anchor="middle" font-weight="bold" opacity="1.0">FORWARDING</text>
+<text x="1010.0" y="207.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="middle" font-weight="normal" opacity="1.0">request in flight upstream</text>
+<text x="1010.0" y="221.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="middle" font-weight="normal" opacity="1.0">canary + credential swap done</text>
+<rect x="1235.0" y="83.0" width="190.0" height="74.0" rx="16" ry="16" fill="#14532d" stroke="#4ade80" stroke-width="2" opacity="1.0"/>
+<text x="1330.0" y="109.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="17" fill="#e5e7eb" text-anchor="middle" font-weight="bold" opacity="1.0">COMPLETED</text>
+<text x="1330.0" y="127.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="middle" font-weight="normal" opacity="1.0">upstream status &lt; 500</text>
+<text x="1330.0" y="141.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="middle" font-weight="normal" opacity="1.0">response analysed, relayed</text>
+<rect x="1235.0" y="263.0" width="190.0" height="74.0" rx="16" ry="16" fill="#7f1d1d" stroke="#f87171" stroke-width="2" opacity="1.0"/>
+<text x="1330.0" y="289.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="17" fill="#e5e7eb" text-anchor="middle" font-weight="bold" opacity="1.0">FAILED</text>
+<text x="1330.0" y="307.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="middle" font-weight="normal" opacity="1.0">network error or status &gt;= 500</text>
+<text x="1330.0" y="321.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#d1d5db" text-anchor="middle" font-weight="normal" opacity="1.0">client gets 502</text>
+<path d="M 425.0 310.0 L 625.0 188.0" fill="none" stroke="#2dd4bf" stroke-width="1.8" marker-end="url(#arw2dd4bf)"/>
+<rect x="495.0" y="202.0" width="194.8" height="46.9" rx="4" ry="4" fill="#0f172a" stroke="#0f172a" stroke-width="0" opacity="0.92"/>
+<text x="500.0" y="214.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">policy: approve</text>
+<text x="500.0" y="228.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">require_approval=false or</text>
+<text x="500.0" y="242.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">risk &lt; auto_approve_below_risk</text>
+<path d="M 425.0 332.0 L 625.0 222.0" fill="none" stroke="#fbbf24" stroke-width="1.8" marker-end="url(#arwfbbf24)"/>
+<rect x="585.0" y="288.0" width="139.4" height="32.6" rx="4" ry="4" fill="#0f172a" stroke="#0f172a" stroke-width="0" opacity="0.92"/>
+<text x="590.0" y="300.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">reviewer: approve</text>
+<text x="590.0" y="314.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">dashboard / MCP / CLI</text>
+<path d="M 425.0 352.0 L 625.0 440.0" fill="none" stroke="#2dd4bf" stroke-width="1.8" marker-end="url(#arw2dd4bf)"/>
+<rect x="427.0" y="390.0" width="274.9" height="46.9" rx="4" ry="4" fill="#0f172a" stroke="#0f172a" stroke-width="0" opacity="0.92"/>
+<text x="432.0" y="402.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">policy: deny</text>
+<text x="432.0" y="416.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">path/model not allowed, deny regex,</text>
+<text x="432.0" y="430.6" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">custom deny rule, risk &gt;= auto_deny_at_risk</text>
+<path d="M 390.0 367.0 L 625.0 478.0" fill="none" stroke="#fbbf24" stroke-width="1.8" marker-end="url(#arwfbbf24)"/>
+<rect x="433.0" y="480.0" width="170.2" height="18.3" rx="4" ry="4" fill="#0f172a" stroke="#0f172a" stroke-width="0" opacity="0.92"/>
+<text x="438.0" y="492.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">reviewer: deny (with note)</text>
+<path d="M 330.0 367.0 L 330.0 553.0" fill="none" stroke="#fb923c" stroke-width="1.8" marker-end="url(#arwfb923c)"/>
+<rect x="340.0" y="458.0" width="250.2" height="32.6" rx="4" ry="4" fill="#0f172a" stroke="#0f172a" stroke-width="0" opacity="0.92"/>
+<text x="345.0" y="470.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">timeout: background sweeper (every 5 s)</text>
+<text x="345.0" y="484.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">or the hold wait reaching expires_at</text>
+<path d="M 815.0 200.0 L 915.0 200.0" fill="none" stroke="#cbd5e1" stroke-width="1.8" marker-end="url(#arwcbd5e1)"/>
+<rect x="761.4" y="166.0" width="207.1" height="32.6" rx="4" ry="4" fill="#0f172a" stroke="#0f172a" stroke-width="0" opacity="0.92"/>
+<text x="865.0" y="178.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#e5e7eb" text-anchor="middle" font-weight="normal" opacity="1.0">gateway: forward_ticket()</text>
+<text x="865.0" y="192.3" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#e5e7eb" text-anchor="middle" font-weight="normal" opacity="1.0">sync: at once; async: first poll</text>
+<path d="M 1105.0 186.0 L 1235.0 126.0" fill="none" stroke="#a78bfa" stroke-width="1.8" marker-end="url(#arwa78bfa)"/>
+<rect x="1112.6" y="118.0" width="114.7" height="18.3" rx="4" ry="4" fill="#0f172a" stroke="#0f172a" stroke-width="0" opacity="0.92"/>
+<text x="1170.0" y="130.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#e5e7eb" text-anchor="middle" font-weight="normal" opacity="1.0">upstream answered</text>
+<path d="M 1105.0 214.0 L 1235.0 294.0" fill="none" stroke="#a78bfa" stroke-width="1.8" marker-end="url(#arwa78bfa)"/>
+<rect x="1103.4" y="276.0" width="133.2" height="18.3" rx="4" ry="4" fill="#0f172a" stroke="#0f172a" stroke-width="0" opacity="0.92"/>
+<text x="1170.0" y="288.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11" fill="#e5e7eb" text-anchor="middle" font-weight="normal" opacity="1.0">upstream error / 5xx</text>
+<rect x="900.0" y="400.0" width="560.0" height="190.0" rx="12" ry="12" fill="#162036" stroke="#334155" stroke-width="1.5" opacity="1.0"/>
+<text x="916.0" y="426.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="14" fill="#e5e7eb" text-anchor="start" font-weight="bold" opacity="1.0">Invariants</text>
+<text x="916.0" y="450.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">- decide() raises InvalidTransition (HTTP 409) unless the ticket is PENDING.</text>
+<text x="916.0" y="465.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">- DENIED and EXPIRED tickets never reach the provider; APPROVED is the only path to FORWARDING.</text>
+<text x="916.0" y="480.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">- Every transition writes a ticket_events row, a per-agent log line and an SSE event;</text>
+<text x="916.0" y="495.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">  human decisions also append a hash-chained audit entry.</text>
+<text x="916.0" y="510.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">- hold_registry.resolve() wakes a blocked sync request in-process; other processes see the</text>
+<text x="916.0" y="525.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">  new status on their next DB poll (AIRT_HOLD_POLL_INTERVAL_SECONDS).</text>
+<text x="916.0" y="540.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">- Async clients poll /gateway/tickets/{id}: 202 PENDING, 403 DENIED / EXPIRED, 502 FAILED,</text>
+<text x="916.0" y="555.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">  200 {status: COMPLETED, response} once relayed.</text>
+<text x="916.0" y="570.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="11.5" fill="#d1d5db" text-anchor="start" font-weight="normal" opacity="1.0">- Red-team probes are ordinary tickets (source=redteam) and follow the same machine.</text>
+<rect x="32.0" y="690.0" width="1270.0" height="52.0" rx="10" ry="10" fill="#162036" stroke="#334155" stroke-width="1.5" opacity="1.0"/>
+<text x="44.0" y="709.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#a3adbd" text-anchor="start" font-weight="bold" opacity="1.0">Who triggers the transition</text>
+<path d="M 46 727 L 74 727" fill="none" stroke="#2dd4bf" stroke-width="2" marker-end="url(#arw2dd4bf)"/>
+<text x="86.0" y="731.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">policy engine</text>
+<path d="M 296 727 L 324 727" fill="none" stroke="#fbbf24" stroke-width="2" marker-end="url(#arwfbbf24)"/>
+<text x="336.0" y="731.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">human reviewer</text>
+<path d="M 546 727 L 574 727" fill="none" stroke="#fb923c" stroke-width="2" marker-end="url(#arwfb923c)"/>
+<text x="586.0" y="731.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">timeout sweeper / hold deadline</text>
+<path d="M 796 727 L 824 727" fill="none" stroke="#cbd5e1" stroke-width="2" marker-end="url(#arwcbd5e1)"/>
+<text x="836.0" y="731.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">gateway</text>
+<path d="M 1046 727 L 1074 727" fill="none" stroke="#a78bfa" stroke-width="2" marker-end="url(#arwa78bfa)"/>
+<text x="1086.0" y="731.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="12" fill="#e5e7eb" text-anchor="start" font-weight="normal" opacity="1.0">upstream result</text>
+</svg>

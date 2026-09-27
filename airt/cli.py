@@ -26,7 +26,7 @@ DEFAULT_URL = "http://127.0.0.1:8080"
 TERMINAL_CAMPAIGN_STATES = {"completed", "finished", "done", "failed", "cancelled", "canceled", "error", "aborted"}
 console = Console()
 err_console = Console(stderr=True)
-app = typer.Typer(help="AIRT - enterprise AI red-team gateway.", no_args_is_help=True, rich_markup_mode="rich")
+app = typer.Typer(help="AIRT - AI Security & Research Framework.", no_args_is_help=True, rich_markup_mode="rich")
 agent_app = typer.Typer(help="Manage registered agents (direct database access).", no_args_is_help=True)
 tickets_app = typer.Typer(help="Review intercepted tickets on a running gateway.", no_args_is_help=True)
 redteam_app = typer.Typer(help="Browse the probe corpus and run red-team campaigns.", no_args_is_help=True)

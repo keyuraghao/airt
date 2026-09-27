@@ -512,7 +512,7 @@ def render_sarif(report: Report) -> bytes:
         "version": "2.1.0",
         "runs": [
             {
-                "tool": {"driver": {"name": "AIRT", "fullName": "AIRT AI Red Team Gateway", "version": __version__, "informationUri": "https://github.com/airt", "rules": list(rules.values())}},
+                "tool": {"driver": {"name": "AIRT", "fullName": "AIRT AI Security & Research Framework", "version": __version__, "informationUri": "https://github.com/airt", "rules": list(rules.values())}},
                 "automationDetails": {"id": f"airt/{report.meta.get('kind', 'report')}", "description": {"text": report.title}},
                 "invocations": [{"executionSuccessful": True, "endTimeUtc": report.generated_at.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")}],
                 "results": results,

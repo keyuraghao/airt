@@ -1,0 +1,44 @@
+name: Stale issues and PRs
+
+on:
+  schedule:
+    - cron: "30 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/stale@v9
+        with:
+          days-before-issue-stale: 60
+          days-before-issue-close: 21
+          days-before-pr-stale: 45
+          days-before-pr-close: 21
+          stale-issue-label: stale
+          stale-pr-label: stale
+          exempt-issue-labels: pinned,security,roadmap,help wanted,good first issue
+          exempt-pr-labels: pinned,security,work in progress
+          exempt-all-milestones: true
+          exempt-draft-pr: true
+          stale-issue-message: >-
+            This issue has had no activity for 60 days. It is not forgotten, but we mark quiet issues
+            so the tracker stays useful. If it still matters to you, add a comment or a thumbs up and
+            the label will be removed; otherwise it will be closed in three weeks. Thank you.
+          stale-pr-message: >-
+            This pull request has had no activity for 45 days. If you still plan to finish it, push a
+            commit or leave a comment and the label will be removed. Otherwise it will be closed in
+            three weeks, and you are welcome to reopen it at any time.
+          close-issue-message: >-
+            Closing after a period of inactivity. Feel free to reopen with new information.
+          close-pr-message: >-
+            Closing after a period of inactivity. Reopen whenever you are ready to continue.
+          operations-per-run: 100
+          ascending: true

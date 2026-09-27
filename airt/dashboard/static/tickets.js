@@ -11,6 +11,7 @@
     soundToggle.addEventListener("change", function () { A.setSound(soundToggle.checked); if (soundToggle.checked) A.beep(); });
     var initialStatus = A.param("status");
     if (initialStatus !== null) state.status = initialStatus.toUpperCase();
+    else if (A.ui && A.ui.queue_default_status != null) state.status = String(A.ui.queue_default_status).toUpperCase();
     if (A.param("agent_id")) state.agent_id = A.param("agent_id");
     if (A.param("campaign_id")) state.campaign_id = A.param("campaign_id");
     A.$$("#status-tabs button").forEach(function (b) {

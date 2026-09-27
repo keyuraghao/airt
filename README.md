@@ -1,4 +1,4 @@
-# AIRT - Enterprise AI Red Team Gateway
+# AIRT - AI Security & Research Framework
 
 **Human-in-the-loop interception, analysis and red teaming for LLM traffic.**
 

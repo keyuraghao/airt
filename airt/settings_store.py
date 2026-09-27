@@ -103,7 +103,7 @@ NAMESPACE_DEFAULTS: dict[str, dict[str, Any]] = {
         "queue_default_status": "PENDING",
         "ticket_columns": [],
         "date_format": "relative",
-        "brand_name": "AIRT",
+        "brand_name": "Airt",
         "accent_color": "",
     },
     "policy": {
@@ -120,7 +120,7 @@ def _type_name(annotation: Any) -> str:
     origin = get_origin(annotation)
     if origin is list:
         return "list"
-    if origin is not None and origin.__name__ == "UnionType" or str(origin) == "typing.Union":
+    if (origin is not None and origin.__name__ == "UnionType") or str(origin) == "typing.Union":
         args = [a for a in get_args(annotation) if a is not type(None)]
         return _type_name(args[0]) if args else "str"
     if annotation in (int,):

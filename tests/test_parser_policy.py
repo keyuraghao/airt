@@ -78,18 +78,18 @@ def test_extract_response_text_variants():
 
 
 def _agent(**kw) -> Agent:
-    base = dict(
-        name="a",
-        api_key_hash="h",
-        api_key_prefix="p",
-        is_active=True,
-        require_approval=True,
-        auto_approve_below_risk=0,
-        auto_deny_at_risk=90,
-        auto_deny_patterns=[],
-        allowed_paths=[],
-        allowed_models=[],
-    )
+    base = {
+        "name": "a",
+        "api_key_hash": "h",
+        "api_key_prefix": "p",
+        "is_active": True,
+        "require_approval": True,
+        "auto_approve_below_risk": 0,
+        "auto_deny_at_risk": 90,
+        "auto_deny_patterns": [],
+        "allowed_paths": [],
+        "allowed_models": [],
+    }
     base.update(kw)
     return Agent(**base)
 

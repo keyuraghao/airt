@@ -4,7 +4,7 @@ UV ?= uv
 PORT ?= 8080
 IMAGE ?= airt:latest
 
-.PHONY: help venv install dev run test lint fmt node-test docker-build docker-run compose-up compose-down clean
+.PHONY: help venv install dev run test lint style bump fmt node-test docker-build docker-run compose-up compose-down clean
 
 help:  ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-14s %s\n", $$1, $$2}'
@@ -27,13 +27,21 @@ test:  ## Run the Python test suite
 node-test:  ## Run the Node SDK self-test
 	node sdk/node/test.js
 
-lint:  ## Ruff check (format check on integrations and examples)
-	$(PY) -m ruff check airt tests examples
+lint:  ## Ruff check, format check (integrations, examples, scripts) and the style guard
+	$(PY) -m ruff check airt tests examples scripts
 	$(PY) -m ruff format --check airt/integrations examples
+	$(PY) scripts/check_style.py
+
+style:  ## Style guard only (em dashes, merge markers)
+	$(PY) scripts/check_style.py
+
+bump:  ## Bump the version everywhere: make bump VERSION=1.2.3 (DRY=1 to preview)
+	@test -n "$(VERSION)" || (echo "usage: make bump VERSION=1.2.3 [DRY=1]" && exit 1)
+	$(PY) scripts/bump_version.py $(if $(DRY),--dry-run,) $(VERSION)
 
 fmt:  ## Ruff format and autofix
-	$(PY) -m ruff format airt tests examples
-	$(PY) -m ruff check --fix airt tests examples
+	$(PY) -m ruff format airt tests examples scripts
+	$(PY) -m ruff check --fix airt tests examples scripts
 
 docker-build:  ## Build the container image
 	docker build -t $(IMAGE) .

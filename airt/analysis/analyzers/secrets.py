@@ -200,7 +200,7 @@ class SecretsAnalyzer:
 
     def analyze(self, normalized: dict[str, Any], context: dict[str, Any]) -> list[Finding]:
         findings: list[Finding] = []
-        for location, role, raw in iter_messages(normalized):
+        for location, _role, raw in iter_messages(normalized):
             findings.extend(findings_for_text(raw, location))
         return findings
 

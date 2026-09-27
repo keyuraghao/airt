@@ -38,6 +38,7 @@ for `sdk/node` (`node sdk/node/test.js`).
 * Python 3.11+, type hints everywhere, `from __future__ import annotations` at the top of modules.
 * `ruff check` and `ruff format` must pass (line length 110, see `pyproject.toml`).
 * No em dash characters anywhere (code, comments, docs, strings, config); use a hyphen or a comma.
+  `scripts/check_style.py` (part of `make lint` and CI) enforces this and rejects merge markers.
 * No unnecessary blank lines; keep modules compact and readable.
 * Never log or store raw secrets. Use `airt.security.redact_headers` for headers and the Fernet
   helpers for upstream credentials.
@@ -66,9 +67,11 @@ logic. Keep benign controls in `benign_control` so campaigns can measure over-bl
 1. Branch from `main`, keep PRs focused.
 2. Add or update tests and docs for behaviour changes (`docs/API.md` for new endpoints,
    `docs/CONFIGURATION.md` and `.env.example` for new settings).
-3. Run `make lint test` locally; CI runs ruff and pytest on Python 3.11 and 3.12, the Node self-test
-   and a Docker build.
-4. Describe the security impact of the change in the PR description when it touches the gateway
+3. Add a line to the `Unreleased` section of `CHANGELOG.md` for user visible changes (label the PR
+   `skip-changelog` otherwise).
+4. Run `make lint test` locally; CI runs the style guard, ruff and pytest with coverage on Python 3.11
+   and 3.12, the Node self-test, a Docker build, CodeQL and a dependency review.
+5. Describe the security impact of the change in the PR description when it touches the gateway
    path, authentication, the audit log or credential handling.
 
 ## Reporting security issues

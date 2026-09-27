@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "airt"
 version = "1.0.0"
-description = "AIRT - Enterprise AI Red Team Gateway: human-in-the-loop interception, analysis and red teaming for LLM traffic"
+description = "AIRT - AI Security & Research Framework: human-in-the-loop interception, analysis and red teaming for LLM traffic"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "Apache-2.0" }
@@ -57,3 +57,21 @@ filterwarnings = ["ignore::DeprecationWarning"]
 [tool.ruff]
 line-length = 110
 target-version = "py311"
+extend-exclude = ["docs/images", "sdk", ".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "C4", "PIE", "T20"]
+ignore = [
+  "B008",    # FastAPI Depends() in defaults is the framework idiom
+  "E501",    # line length is handled by the formatter
+  "RUF012",  # mutable class attributes are used deliberately for pydantic models
+  "SIM108",  # ternaries are not always clearer
+  "B904",    # exception chaining is not required in request handlers
+  "RUF001", "RUF002", "RUF003",  # analyzers intentionally contain confusable unicode in detection patterns
+  "T201",    # the CLI prints
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E402", "F401", "B011", "F841", "RUF018", "SIM117", "PIE"]
+"examples/*" = ["E402", "T20"]
+"airt/analysis/analyzers/*" = ["RUF001", "RUF002", "RUF003", "E741", "PLE2515"]

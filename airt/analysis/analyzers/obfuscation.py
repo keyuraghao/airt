@@ -14,7 +14,6 @@ from .common import (
     iter_messages,
     make_finding,
     mixed_script_tokens,
-    safe_text,
     snippet,
 )
 from .prompt_injection import INJECTION_KEYWORD_RE
